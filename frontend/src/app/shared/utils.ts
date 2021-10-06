@@ -3,6 +3,7 @@ import { V1Container } from '@kubernetes/client-node';
 import {
   InferenceServiceK8s,
   PredictorSpec,
+  PredictorType,
   PredictorExtensionSpec,
   ExplainerSpec,
 } from '../types/kfserving/v1beta1';
@@ -108,77 +109,40 @@ export function getK8sObjectStatus(obj: K8sObject): [string, string] {
 
 // functions for processing the InferenceService spec
 export function getPredictorType(predictor: PredictorSpec): string {
-  if ('tensorflow' in predictor) {
-    return 'Tensorflow';
+  for (const predictorType of Object.values(PredictorType)) {
+    if (predictorType in predictor) {
+      return predictorType;
+    }
   }
 
-  if ('triton' in predictor) {
-    return 'Triton';
-  }
-
-  if ('sklearn' in predictor) {
-    return 'SKLearn';
-  }
-
-  if ('onnx' in predictor) {
-    return 'Onnx';
-  }
-
-  if ('pytorch' in predictor) {
-    return 'PyTorch';
-  }
-
-  if ('xgboost' in predictor) {
-    return 'XGBoost';
-  }
-
-  if ('pmml' in predictor) {
-    return 'PMML';
-  }
-
-  if ('lightgbm' in predictor) {
-    return 'LightGBM';
-  }
-
-  return 'Custom';
+  return PredictorType.Custom;
 }
 
 export function getPredictorExtensionSpec(
   predictor: PredictorSpec,
 ): PredictorExtensionSpec {
-  if ('tensorflow' in predictor) {
-    return predictor.tensorflow;
+  for (const predictorType of Object.values(PredictorType)) {
+    if (predictorType in predictor) {
+      return predictor[predictorType];
+    }
   }
 
-  if ('triton' in predictor) {
-    return predictor.triton;
+  // In the case of Custom predictors, set the additional PredictorExtensionSpec fields
+  // manually here
+  const spec = predictor.containers[0] as PredictorExtensionSpec;
+  spec.runtimeVersion = '';
+  spec.protocolVersion = '';
+
+  if (predictor.containers[0].env) {
+    const storageUri = predictor.containers[0].env.find(
+      envVar => envVar.name.toLowerCase() === 'storage_uri'
+    );
+    if (storageUri) {
+      spec.storageUri = storageUri.value;
+    }
   }
 
-  if ('sklearn' in predictor) {
-    return predictor.sklearn;
-  }
-
-  if ('onnx' in predictor) {
-    return predictor.onnx;
-  }
-
-  if ('pytorch' in predictor) {
-    return predictor.pytorch;
-  }
-
-  if ('xgboost' in predictor) {
-    return predictor.xgboost;
-  }
-
-  if ('pmml' in predictor) {
-    return predictor.pmml;
-  }
-
-  if ('lightgbm' in predictor) {
-    return predictor.lightgbm;
-  }
-
-  return null;
+  return spec;
 }
 
 export function getExplainerContainer(explainer: ExplainerSpec): V1Container {

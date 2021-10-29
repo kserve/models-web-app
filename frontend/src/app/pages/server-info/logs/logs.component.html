@@ -1,50 +1,41 @@
-<lib-loading-spinner *ngIf="!logsRequestCompleted"></lib-loading-spinner>
-
-<!--if no logs are present at all then show a warning message-->
-<ng-container *ngIf="logsRequestCompleted && !logsNotEmpty">
+<ng-container>
   <lib-panel class="lib-panel">
-    No logs were found for this InferenceService.
+    Logs are shown for the latest created revision
   </lib-panel>
 </ng-container>
 
-<!--logs loaded successfully from the backend-->
-<ng-container *ngIf="logsRequestCompleted && logsNotEmpty">
-  <ng-container *ngIf="loadErrorMsg">
+<ng-container>
+  <mat-tab-group
+    #componentTabGroup
+    (selectedTabChange)="componentTabChange(componentTabGroup.selectedIndex)"
+    class="page-placement"
+    dynamicHeight
+    animationDuration="0ms"
+  >
+    <mat-tab *ngFor="let component of components" label="{{ component | titlecase }}">
+      <ng-template matTabContent>
+        <mat-tab-group
+          #containerTabGroup
+          (selectedTabChange)="containerTabChange(containerTabGroup.selectedIndex)"
+          class="page-placement"
+          dynamicHeight
+          animationDuration="0ms"
+        >
+          <mat-tab *ngFor="let container of isvcComponents[component].containers" label="{{ container }}"></mat-tab>
+        </mat-tab-group>
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+
+  <lib-loading-spinner *ngIf="!logsRequestCompleted"></lib-loading-spinner>
+
+  <ng-container *ngIf="loadErrorMsg.length">
     <lib-panel>
       {{ loadErrorMsg }}
     </lib-panel>
   </ng-container>
 
-  <div
-    *ngFor="let podLogs of currentLogs?.predictor; trackBy: logsTrackFn"
-    class="margin-bottom"
-  >
-    <lib-logs-viewer
-      heading="Predictor:"
-      [subHeading]="podLogs.podName"
-      [logs]="podLogs.logs"
-    ></lib-logs-viewer>
-  </div>
-
-  <div
-    *ngFor="let podLogs of currentLogs?.transformer; trackBy: logsTrackFn"
-    class="margin-bottom"
-  >
-    <lib-logs-viewer
-      heading="Transformer:"
-      [subHeading]="podLogs.podName"
-      [logs]="podLogs.logs"
-    ></lib-logs-viewer>
-  </div>
-
-  <div
-    *ngFor="let podLogs of currentLogs?.explainer; trackBy: logsTrackFn"
-    class="margin-bottom"
-  >
-    <lib-logs-viewer
-      heading="Explainer:"
-      [subHeading]="podLogs.podName"
-      [logs]="podLogs.logs"
-    ></lib-logs-viewer>
-  </div>
+  <app-logs-viewer *ngIf="currLogs.length"
+    [logs]="currLogs"
+  ></app-logs-viewer>
 </ng-container>

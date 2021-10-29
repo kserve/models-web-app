@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatTabsModule } from '@angular/material/tabs';
 import { LogsComponent } from './logs.component';
 import {
   KubeflowModule,
@@ -14,6 +15,7 @@ import {
     CommonModule,
     KubeflowModule,
     LogsViewerModule,
+    MatTabsModule,
     LoadingSpinnerModule,
     PanelModule,
   ],

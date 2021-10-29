@@ -8,13 +8,8 @@ export interface MWABackendResponse extends BackendResponse {
   knativeConfiguration?: K8sObject;
   knativeRevision?: K8sObject;
   knativeRoute?: K8sObject;
-  serviceLogs?: InferenceServiceLogs;
-}
-
-export interface InferenceServiceLogs {
-  predictor?: { podName: string; logs: string[] }[];
-  transformer?: { podName: string; logs: string[] }[];
-  explainer?: { podName: string; logs: string[] }[];
+  logs?: string[];
+  containers?: string[];
 }
 
 // types presenting the InferenceService dependent k8s objects

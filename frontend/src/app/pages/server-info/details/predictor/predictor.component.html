@@ -2,14 +2,15 @@
   {{ basePredictor?.storageUri }}
 </lib-details-list-item>
 
-<lib-details-list-item key="Runtime">
-  {{ predictorType }} {{ basePredictor.runtimeVersion }}
+<lib-details-list-item key="Predictor">
+  {{ predictorType }}
 </lib-details-list-item>
 
-<lib-details-list-item
-  key="Protocol version"
-  *ngIf="basePredictor.protocolVersion"
->
+<lib-details-list-item key="Runtime" *ngIf="basePredictor?.runtimeVersion">
+  {{ basePredictor.runtimeVersion }}
+</lib-details-list-item>
+
+<lib-details-list-item key="Protocol Version" *ngIf="basePredictor?.protocolVersion">
   {{ basePredictor.protocolVersion }}
 </lib-details-list-item>
 

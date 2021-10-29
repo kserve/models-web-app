@@ -2,15 +2,10 @@ import {
   Component,
   Input,
   ViewChild,
-  NgZone,
-  SimpleChanges,
-  OnChanges,
   HostBinding,
-  ElementRef,
   AfterViewInit,
 } from '@angular/core';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
-import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-logs-viewer',
@@ -22,8 +17,6 @@ export class LogsViewerComponent implements AfterViewInit {
   @ViewChild(CdkVirtualScrollViewport, { static: true })
   viewPort: CdkVirtualScrollViewport;
 
-  @Input() heading = 'Logs';
-  @Input() subHeading = 'tit';
   @Input() height = '400px';
   @Input()
   set logs(newLogs: string[]) {

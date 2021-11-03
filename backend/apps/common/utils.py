@@ -1,3 +1,4 @@
+"""Common utils for parsing and handling InferenceServices."""
 import os
 
 from kubeflow.kubeflow.crud_backend import api, helpers, logging
@@ -13,10 +14,12 @@ INFERENCESERVICE_TEMPLATE_YAML = os.path.join(
 
 def load_inference_service_template(**kwargs):
     """
-    kwargs: the parameters to be replaced in the yaml
+    Return an InferenceService dict, with defaults from the local yaml.
 
     Reads the yaml for the web app's custom resource, replaces the variables
     and returns it as a python dict.
+
+    kwargs: the parameters to be replaced in the yaml
     """
     return helpers.load_param_yaml(INFERENCESERVICE_TEMPLATE_YAML, **kwargs)
 
@@ -24,6 +27,8 @@ def load_inference_service_template(**kwargs):
 # helper functions for accessing the logs of an InferenceService
 def get_inference_service_pods(svc, components=[]):
     """
+    Return the Pod names for the different isvc components.
+
     Return a dictionary with (endpoint, component) keys,
     i.e. ("default", "predictor") and a list of pod names as values
     """
@@ -60,9 +65,7 @@ def get_inference_service_pods(svc, components=[]):
 # FIXME(elikatsis,kimwnasptd): Change the logic of this function according to
 # https://github.com/arrikto/dev/issues/867
 def get_components_revisions_dict(components, svc):
-    """
-    Return a dictionary{revisionId: component}
-    """
+    """Return a dictionary{revisionId: component}."""
     status = svc["status"]
     revisions_dict = {}
 

@@ -10,7 +10,7 @@ commonLabels:
   app.kubernetes.io/name: kserve
 
 bases:
-- ../../default
+- ../../base
 - web-app-authorization-policy.yaml
 
 patchesStrategicMerge:

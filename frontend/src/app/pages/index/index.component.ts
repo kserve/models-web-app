@@ -1,8 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
-import { Clipboard } from '@angular/cdk-experimental/clipboard';
+import { Clipboard } from '@angular/cdk/clipboard';
 import {
-  PredictorSpec,
   InferenceServiceK8s,
   InferenceServiceIR,
 } from 'src/app/types/kfserving/v1beta1';
@@ -116,7 +115,7 @@ export class IndexComponent implements OnInit, OnDestroy {
          */
         if (svc.metadata.deletionTimestamp) {
           this.snack.open(
-            'Model server is being deleted, cannot show details.',
+            $localize`Model server is being deleted, cannot show details.`,
             SnackType.Info,
             4000,
           );
@@ -164,7 +163,7 @@ export class IndexComponent implements OnInit, OnDestroy {
       }
 
       svc.ui.status.phase = STATUS_TYPE.TERMINATING;
-      svc.ui.status.message = 'Preparing to delete Model server...';
+      svc.ui.status.message = $localize`Preparing to delete Model server...`;
     });
   }
 
@@ -186,9 +185,10 @@ export class IndexComponent implements OnInit, OnDestroy {
     svc.ui.actions.copy = this.getCopyActionStatus(svc);
     svc.ui.actions.delete = this.getDeletionActionStatus(svc);
 
+    const predictorType = getPredictorType(svc.spec.predictor);
     const predictor = getPredictorExtensionSpec(svc.spec.predictor);
 
-    svc.ui.predictorType = getPredictorType(svc.spec.predictor);
+    svc.ui.predictorType = predictorType;
     svc.ui.runtimeVersion = predictor.runtimeVersion;
     svc.ui.storageUri = predictor.storageUri;
     svc.ui.protocolVersion = predictor.protocolVersion;

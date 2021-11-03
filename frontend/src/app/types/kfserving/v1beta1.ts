@@ -32,6 +32,18 @@ export interface InferenceServiceSpec {
   transformer: TransformerSpec;
 }
 
+export enum PredictorType {
+  Tensorflow = 'tensorflow',
+  Triton = 'triton',
+  Sklean = 'sklearn',
+  Onnx = 'onnx',
+  Pytorch = 'pytorch',
+  Xgboost = 'xgboost',
+  Pmml = 'pmml',
+  Lightgbm = 'lightgbm',
+  Custom = 'custom',
+}
+
 export interface PredictorSpec extends V1PodSpec, ComponentExtensionSpec {
   sklearn?: PredictorExtensionSpec;
   xgboost?: PredictorExtensionSpec;
@@ -41,6 +53,17 @@ export interface PredictorSpec extends V1PodSpec, ComponentExtensionSpec {
   onnx?: PredictorExtensionSpec;
   pmml?: PredictorExtensionSpec;
   lightgbm?: PredictorExtensionSpec;
+  model?: ModelSpec;
+}
+
+export interface ModelSpec extends PredictorExtensionSpec {
+  modelFormat: ModelFormat
+  runtime?: string
+}
+
+export interface ModelFormat {
+  name: string
+  version?: string
 }
 
 export interface TorchServeSpec extends PredictorExtensionSpec {

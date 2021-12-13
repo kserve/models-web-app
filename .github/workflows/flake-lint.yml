@@ -18,3 +18,5 @@ jobs:
           python-version: "3.7"
       - name: flake8 Lint
         uses: py-actions/flake8@v1
+        with:
+          path: backend

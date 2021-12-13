@@ -9,6 +9,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source ${SCRIPT_DIR}/variables.sh
+
 ############################################################
 # Help                                                     #
 ############################################################
@@ -22,7 +25,6 @@ Help()
    echo "kubectl [compatible with K8s 1.19]"
 }
 
-export KIND_CLUSTER=kserve
 DeleteCluster()
 {
     kind delete cluster --name ${KIND_CLUSTER}
@@ -42,12 +44,6 @@ while getopts ":hd" option; do
    esac
 done
 
-export KSERVE_REPO=https://github.com/kserve/kserve.git
-export KSERVE_TAG=v0.7.0
-export KSERVE_DIR=${KSERVE_DIR:=/tmp/kserve}
-
-# Create the kind cluster
-export KIND_NODE=kindest/node:1.19.0@sha256:3b0289b2d1bab2cb9108645a006939d2f447a10ad2bb21919c332d06b548bbc6
 
 kind create cluster --name kserve --image ${KIND_NODE}
 
@@ -58,7 +54,7 @@ if [[ ! -d ${KSERVE_DIR} ]]; then
 fi
 
 cd ${KSERVE_DIR}
-git checkout ${KSERVE_TAG}
+git checkout ${KSERVE_COMMIT}
 ./hack/quick_install.sh
 
 # use the KinD cluster

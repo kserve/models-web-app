@@ -1,3 +1,4 @@
+"""POST routes of the backend."""
 from flask import request
 
 from kubeflow.kubeflow.crud_backend import api, decorators, logging
@@ -12,6 +13,7 @@ log = logging.getLogger(__name__)
 @decorators.request_is_json_type
 @decorators.required_body_params("apiVersion", "kind", "metadata", "spec")
 def post_inference_service(namespace):
+    """Handle creation of an InferenceService."""
     cr = request.get_json()
 
     gvk = versions.inference_service_gvk()

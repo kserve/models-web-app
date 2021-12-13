@@ -1,6 +1,7 @@
 **/__pycache__/
 **/.vscode/
 **/static/*
+**/fonts/
 
 # Swap
 [._]*.s[a-v][a-z]

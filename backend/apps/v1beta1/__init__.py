@@ -1,3 +1,5 @@
+"""Package for the v1beta1 backend of the web app."""
+
 import os
 
 from kubeflow.kubeflow.crud_backend import config, logging
@@ -9,6 +11,7 @@ log = logging.getLogger(__name__)
 
 
 def create_app(name=__name__, cfg: config.Config = None):
+    """Create a WSGI app."""
     cfg = config.Config() if cfg is None else cfg
 
     # Properly set the static serving directory

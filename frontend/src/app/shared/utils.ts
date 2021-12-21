@@ -108,7 +108,7 @@ export function getK8sObjectStatus(obj: K8sObject): [string, string] {
 }
 
 // functions for processing the InferenceService spec
-export function getPredictorType(predictor: PredictorSpec): string {
+export function getPredictorType(predictor: PredictorSpec): PredictorType {
   for (const predictorType of Object.values(PredictorType)) {
     if (predictorType in predictor) {
       return predictorType;

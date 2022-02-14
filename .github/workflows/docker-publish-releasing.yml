@@ -50,7 +50,7 @@ jobs:
           IMAGE_ID=kserve/$IMAGE_NAME
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          VERSION=$(echo ./releasing/VERSION)
+          VERSION=$(cat ./releasing/VERSION)
 
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION

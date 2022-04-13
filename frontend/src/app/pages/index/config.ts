@@ -4,7 +4,6 @@ import {
   ActionListValue,
   ActionIconValue,
   ActionButtonValue,
-  TRUNCATE_TEXT_SIZE,
   MenuValue,
   DateTimeValue,
   DialogConfig,
@@ -38,7 +37,7 @@ export const defaultConfig: TableConfig = {
       matColumnDef: 'name',
       value: new PropertyValue({
         field: 'metadata.name',
-        truncate: TRUNCATE_TEXT_SIZE.SMALL,
+        truncate: true,
         popoverField: 'metadata.name',
         isLink: true,
       }),
@@ -70,14 +69,14 @@ export const defaultConfig: TableConfig = {
       value: new PropertyValue({
         field: 'ui.protocolVersion',
       }),
-      minWidth: '40px',
+      // minWidth: '40px',
     },
     {
       matHeaderCellDef: 'Storage URI',
       matColumnDef: 'storageUri',
       value: new PropertyValue({
         field: 'ui.storageUri',
-        truncate: TRUNCATE_TEXT_SIZE.MEDIUM,
+        truncate: true,
         popoverField: 'ui.storageUri',
       }),
     },

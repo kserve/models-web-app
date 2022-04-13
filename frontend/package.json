@@ -21,6 +21,7 @@
     "@angular/compiler": "~12.2.16",
     "@angular/core": "~12.2.16",
     "@angular/forms": "~12.2.16",
+    "@angular/localize": "^13.3.2",
     "@angular/material": "^12.2.13",
     "@angular/platform-browser": "~12.2.16",
     "@angular/platform-browser-dynamic": "~12.2.16",

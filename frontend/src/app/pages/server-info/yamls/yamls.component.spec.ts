@@ -1,4 +1,4 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { YamlsComponent } from './yamls.component';
 
@@ -6,7 +6,7 @@ describe('YamlsComponent', () => {
   let component: YamlsComponent;
   let fixture: ComponentFixture<YamlsComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ YamlsComponent ]
     })

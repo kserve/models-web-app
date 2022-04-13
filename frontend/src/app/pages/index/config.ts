@@ -14,26 +14,26 @@ import { parseRuntime } from './utils';
 
 export function generateDeleteConfig(svc: InferenceServiceK8s): DialogConfig {
   return {
-    title: 'Delete Model server',
-    message: `You cannot undo this action. Are you sure you want to delete this Model server?`,
-    accept: 'DELETE',
-    applying: 'DELETING',
+    title: $localize`Delete Model server? ${svc.metadata.name}`,
+    message: $localize`You cannot undo this action. Are you sure you want to delete this Model server?`,
+    accept: $localize`DELETE`,
+    applying: $localize`DELETING`,
     confirmColor: 'warn',
-    cancel: 'cancel',
+    cancel: $localize`CANCEL`,
   };
 }
 
 export const defaultConfig: TableConfig = {
-  title: 'Model Servers',
-  newButtonText: 'NEW MODEL SERVER',
+  title: $localize`Model Servers`,
+  newButtonText: $localize`NEW MODEL SERVER`,
   columns: [
     {
-      matHeaderCellDef: 'Status',
+      matHeaderCellDef: $localize`Status`,
       matColumnDef: 'status',
       value: new StatusValue({ field: 'ui.status' }),
     },
     {
-      matHeaderCellDef: 'Name',
+      matHeaderCellDef: $localize`Name`,
       matColumnDef: 'name',
       value: new PropertyValue({
         field: 'metadata.name',
@@ -43,28 +43,28 @@ export const defaultConfig: TableConfig = {
       }),
     },
     {
-      matHeaderCellDef: 'Age',
+      matHeaderCellDef: $localize`Age`,
       matColumnDef: 'age',
       value: new DateTimeValue({
         field: 'metadata.creationTimestamp',
       }),
     },
     {
-      matHeaderCellDef: 'Predictor',
+      matHeaderCellDef: $localize`Predictor`,
       matColumnDef: 'predictorType',
       value: new PropertyValue({
         field: 'ui.predictorType',
       }),
     },
     {
-      matHeaderCellDef: 'Runtime',
+      matHeaderCellDef: $localize`Runtime`,
       matColumnDef: 'runtimeVersion',
       value: new PropertyValue({
         field: 'ui.runtimeVersion',
       }),
     },
     {
-      matHeaderCellDef: 'Protocol',
+      matHeaderCellDef: $localize`Protocol`,
       matColumnDef: 'protocol',
       value: new PropertyValue({
         field: 'ui.protocolVersion',
@@ -72,7 +72,7 @@ export const defaultConfig: TableConfig = {
       // minWidth: '40px',
     },
     {
-      matHeaderCellDef: 'Storage URI',
+      matHeaderCellDef: $localize`Storage URI`,
       matColumnDef: 'storageUri',
       value: new PropertyValue({
         field: 'ui.storageUri',
@@ -86,14 +86,14 @@ export const defaultConfig: TableConfig = {
       value: new ActionListValue([
         new ActionIconValue({
           name: 'copy-link',
-          tooltip: "Copy the server's endpoint",
+          tooltip: $localize`Copy the server's endpoint`,
           color: 'primary',
           field: 'ui.actions.copy',
           iconReady: 'material:content_copy',
         }),
         new ActionIconValue({
           name: 'delete',
-          tooltip: 'Delete Server',
+          tooltip: $localize`Delete Server`,
           color: '',
           field: 'ui.actions.delete',
           iconReady: 'material:delete',

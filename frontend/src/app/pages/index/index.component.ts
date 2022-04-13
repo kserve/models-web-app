@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
-import { Clipboard } from '@angular/cdk-experimental/clipboard';
+import { Clipboard } from '@angular/cdk/clipboard';
 import {
   InferenceServiceK8s,
   InferenceServiceIR,

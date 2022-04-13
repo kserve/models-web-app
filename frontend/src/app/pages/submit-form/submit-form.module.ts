@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SubmitFormComponent } from './submit-form.component';
 import { FormModule, KubeflowModule } from 'kubeflow';
-import { AceEditorModule } from 'ngx-ace-editor-wrapper';
+import { AceEditorModule } from '@derekbaker/ngx-ace-editor-wrapper';
 
 @NgModule({
   declarations: [SubmitFormComponent],

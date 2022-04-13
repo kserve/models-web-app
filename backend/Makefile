@@ -20,4 +20,6 @@ run-dev:
 	UI_FLAVOR=default \
 	BACKEND_MODE=dev \
 	APP_PREFIX=/ \
-	gunicorn -w 3 --bind 0.0.0.0:5000 --access-logfile - entrypoint:app
+	APP_SECURE_COOKIES=False \
+	APP_DISABLE_AUTH=True \
+	gunicorn -w 3 --bind 0.0.0.0:5050 --access-logfile - entrypoint:app

@@ -1,20 +1,20 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
-import { PredictorComponent } from './predictor.component';
+import { PredictorDetailsComponent } from './predictor.component';
 
 describe('PredictorComponent', () => {
-  let component: PredictorComponent;
-  let fixture: ComponentFixture<PredictorComponent>;
+  let component: PredictorDetailsComponent;
+  let fixture: ComponentFixture<PredictorDetailsComponent>;
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ PredictorComponent ]
+      declarations: [ PredictorDetailsComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(PredictorComponent);
+    fixture = TestBed.createComponent(PredictorDetailsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

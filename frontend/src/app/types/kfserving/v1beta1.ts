@@ -53,6 +53,17 @@ export interface PredictorSpec extends V1PodSpec, ComponentExtensionSpec {
   onnx?: PredictorExtensionSpec;
   pmml?: PredictorExtensionSpec;
   lightgbm?: PredictorExtensionSpec;
+  model?: ModelSpec;
+}
+
+export interface ModelSpec extends PredictorExtensionSpec {
+  modelFormat: ModelFormat
+  runtime?: string
+}
+
+export interface ModelFormat {
+  name: string
+  version?: string
 }
 
 export interface TorchServeSpec extends PredictorExtensionSpec {

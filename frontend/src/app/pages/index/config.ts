@@ -37,7 +37,7 @@ export const defaultConfig: TableConfig = {
       matColumnDef: 'name',
       value: new PropertyValue({
         field: 'metadata.name',
-        truncate: true,
+        truncate: false,
         popoverField: 'metadata.name',
         isLink: true,
       }),

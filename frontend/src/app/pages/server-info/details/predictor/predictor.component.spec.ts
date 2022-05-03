@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
 import { PredictorDetailsComponent } from './predictor.component';
 
-describe('PredictorComponent', () => {
+describe('PredictorDetailsComponent', () => {
   let component: PredictorDetailsComponent;
   let fixture: ComponentFixture<PredictorDetailsComponent>;
 

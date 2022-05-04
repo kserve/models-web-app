@@ -109,21 +109,32 @@ export function getK8sObjectStatus(obj: K8sObject): [string, string] {
 
 // functions for processing the InferenceService spec
 export function getPredictorType(predictor: PredictorSpec): PredictorType {
-  for (const predictorType of Object.values(PredictorType)) {
-    if (predictorType in predictor) {
-      return predictorType;
+  if (predictor.model) {
+    return predictor.model?.modelFormat.name as PredictorType
+  } else {
+    for (const predictorType of Object.values(PredictorType)) {
+      if (predictorType in predictor) {
+        return predictorType;
+      }
     }
-  }
 
-  return PredictorType.Custom;
+    return PredictorType.Custom;
+  }
 }
 
 export function getPredictorExtensionSpec(
   predictor: PredictorSpec,
 ): PredictorExtensionSpec {
-  for (const predictorType of Object.values(PredictorType)) {
-    if (predictorType in predictor) {
-      return predictor[predictorType];
+  if (predictor.model) {
+    if (Object.values(PredictorType).includes(predictor.model?.modelFormat.name as PredictorType)) {
+      const spec = predictor.model
+      return spec;
+    }
+  } else {
+    for (const predictorType of Object.values(PredictorType)) {
+      if (predictorType in predictor) {
+        return predictor[predictorType];
+      }
     }
   }
 

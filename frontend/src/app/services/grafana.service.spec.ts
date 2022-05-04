@@ -6,7 +6,7 @@ describe('GrafanaService', () => {
   beforeEach(() => TestBed.configureTestingModule({}));
 
   it('should be created', () => {
-    const service: GrafanaService = TestBed.get(GrafanaService);
+    const service: GrafanaService = TestBed.inject(GrafanaService);
     expect(service).toBeTruthy();
   });
 });

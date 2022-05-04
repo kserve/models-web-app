@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
-import { Clipboard } from '@angular/cdk-experimental/clipboard';
+import { Clipboard } from '@angular/cdk/clipboard';
 import {
   InferenceServiceK8s,
   InferenceServiceIR,
@@ -115,7 +115,7 @@ export class IndexComponent implements OnInit, OnDestroy {
          */
         if (svc.metadata.deletionTimestamp) {
           this.snack.open(
-            'Model server is being deleted, cannot show details.',
+            $localize`Model server is being deleted, cannot show details.`,
             SnackType.Info,
             4000,
           );
@@ -163,7 +163,7 @@ export class IndexComponent implements OnInit, OnDestroy {
       }
 
       svc.ui.status.phase = STATUS_TYPE.TERMINATING;
-      svc.ui.status.message = 'Preparing to delete Model server...';
+      svc.ui.status.message = $localize`Preparing to delete Model server...`;
     });
   }
 

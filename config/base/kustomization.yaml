@@ -3,9 +3,13 @@ resources:
 - service.yaml
 - deployment.yaml
 - istio.yaml
+
+namespace: kserve
+
 commonLabels:
   kustomize.component: kserve-models-web-app
   app.kubernetes.io/component: kserve-models-web-app
+
 images:
 - name: kserve/models-web-app
   newName: kserve/models-web-app

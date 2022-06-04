@@ -6,11 +6,11 @@ The web app currently works with `v1beta1` versions of `InferenceService` object
 
 ## Connect to the app
 
-The web app is installed alongside the other KFServing components, either in the `kfserving-system` or in the `kubeflow` namespace. There is a `VirtualService` that exposes the app via an Istio Ingress Gateway. Depending on the installation environment the following Ingress Gateway will be used.
+The web app is installed alongside the other KServe components, either in the `kserve` or in the `kubeflow` namespace. There is a `VirtualService` that exposes the app via an Istio Ingress Gateway. Depending on the installation environment the following Ingress Gateway will be used.
 
 | Installation mode | IngressGateway |
 | - | - |
-| Standalone KFServing | knative-ingress-gateway.knative-serving |
+| Standalone KServe | knative-ingress-gateway.knative-serving |
 | Kubeflow | kubeflow-gateway.kubeflow |
 
 To access the app you will need to navigate with your browser to
@@ -27,11 +27,11 @@ You can apply the mentioned configurations by doing the following commands:
 ```bash
 # edit the configmap
 # CONFIG=config/overlays/kubeflow/kustomization.yaml
-CONFIG=config/web-app/kustomization.yaml
+CONFIG=config/base/kustomization.yaml
 vim ${CONFIG}
 
 # Add the following env vars to the configMapGenerator's literals
-# for kfserving-models-web-app-config
+# for kserve-models-web-app-config
 - APP_PREFIX=/
 - APP_DISABLE_AUTH="True"
 - APP_SECURE_COOKIES="False"
@@ -83,7 +83,7 @@ cd dist/kubeflow
 npm link
 
 # run the app frontend
-cd $KFSERVING_REPO/web-app/frontend
+cd $KSERVE_MODELS_WEB_APP_REPO/frontend
 npm i
 npm link kubeflow
 npm run build:watch
@@ -95,7 +95,7 @@ npm run build:watch
 ```bash
 # create a virtual env and install deps
 # https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
-cd $KFSERVING_REPO/web-app/backend
+cd $KSERVE_MODELS_WEB_APP_REPO/backend
 python3.7 -m pip install --user virtualenv
 python3.7 -m venv web-apps-dev
 source web-apps-dev/bin/activate

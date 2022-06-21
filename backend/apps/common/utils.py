@@ -1,11 +1,13 @@
 """Common utils for parsing and handling InferenceServices."""
 import os
+from typing import Dict, Union
 
 from kubeflow.kubeflow.crud_backend import api, helpers, logging
 
 log = logging.getLogger(__name__)
 
 KNATIVE_REVISION_LABEL = "serving.knative.dev/revision"
+LATEST_CREATED_REVISION = "latestCreatedRevision"
 FILE_ABS_PATH = os.path.abspath(os.path.dirname(__file__))
 
 INFERENCESERVICE_TEMPLATE_YAML = os.path.join(
@@ -24,71 +26,57 @@ def load_inference_service_template(**kwargs):
     return helpers.load_param_yaml(INFERENCESERVICE_TEMPLATE_YAML, **kwargs)
 
 
-# helper functions for accessing the logs of an InferenceService
-def get_inference_service_pods(svc, components=[]):
-    """
-    Return the Pod names for the different isvc components.
+def get_component_latest_pod(svc: Dict,
+                             component: str) -> Union[api.client.V1Pod, None]:
+    """Get pod of the latest Knative revision for the given component.
 
-    Return a dictionary with (endpoint, component) keys,
-    i.e. ("default", "predictor") and a list of pod names as values
+    Return:
+        Latest pod: k8s V1Pod
     """
     namespace = svc["metadata"]["namespace"]
 
-    # dictionary{revisionName: (endpoint, component)}
-    revisions_dict = get_components_revisions_dict(components, svc)
+    latest_revision = get_component_latest_revision(svc, component)
 
-    if len(revisions_dict.keys()) == 0:
-        return {}
+    if latest_revision is None:
+        return None
 
     pods = api.list_pods(namespace, auth=False).items
-    component_pods_dict = {}
+
     for pod in pods:
-        for revision in revisions_dict:
-            if KNATIVE_REVISION_LABEL not in pod.metadata.labels:
-                continue
+        if KNATIVE_REVISION_LABEL not in pod.metadata.labels:
+            continue
 
-            if pod.metadata.labels[KNATIVE_REVISION_LABEL] != revision:
-                continue
+        if pod.metadata.labels[KNATIVE_REVISION_LABEL] != latest_revision:
+            continue
 
-            component = revisions_dict[revision]
-            curr_pod_names = component_pods_dict.get(component, [])
-            curr_pod_names.append(pod.metadata.name)
-            component_pods_dict[component] = curr_pod_names
+        return pod
 
-    if len(component_pods_dict.keys()) == 0:
-        log.info("No pods are found for inference service: %s",
-                 svc["metadata"]["name"])
+    log.info(
+        f"No pods are found for inference service: {svc['metadata']['name']}")
 
-    return component_pods_dict
+    return None
 
 
-# FIXME(elikatsis,kimwnasptd): Change the logic of this function according to
-# https://github.com/arrikto/dev/issues/867
-def get_components_revisions_dict(components, svc):
-    """Return a dictionary{revisionId: component}."""
+def get_component_latest_revision(svc: Dict,
+                                  component: str) -> Union[str, None]:
+    """Get the name of the latest created knative revision for the given component.
+
+    Return:
+        Latest Created Knative Revision: str
+    """
     status = svc["status"]
-    revisions_dict = {}
 
-    for component in components:
-        if "components" not in status:
-            log.info("Component '%s' not in inference service '%s'",
-                     component, svc["metadata"]["name"])
-            continue
+    if "components" not in status:
+        log.info(f"Components field not found in status object of {svc['metadata']['name']}")  # noqa: E501
+        return None
 
-        if component not in status["components"]:
-            log.info("Component '%s' not in inference service '%s'",
-                     component, svc["metadata"]["name"])
-            continue
+    if component not in status["components"]:
+        log.info(f"Component {component} not found in inference service {svc['metadata']['name']}")  # noqa: E501
+        return None
 
-        if "latestReadyRevision" in status["components"][component]:
-            revision = status["components"][component]["latestReadyRevision"]
+    if LATEST_CREATED_REVISION in status["components"][component]:
+        return status["components"][component][LATEST_CREATED_REVISION]
 
-            revisions_dict[revision] = component
+    log.info(f"No {LATEST_CREATED_REVISION} found for the {component} in {svc['metadata']['name']}")  # noqa: E501
 
-    if len(revisions_dict.keys()) == 0:
-        log.info(
-            "No revisions found for the inference service's components: %s",
-            svc["metadata"]["name"],
-        )
-
-    return revisions_dict
+    return None

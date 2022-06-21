@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { svcHasComponent, getSvcComponents } from '../shared/utils';
 import { InferenceServiceK8s } from '../types/kfserving/v1beta1';
-import { MWABackendResponse, InferenceServiceLogs } from '../types/backend';
+import { MWABackendResponse } from '../types/backend';
 
 @Injectable({
   providedIn: 'root',
@@ -101,24 +101,37 @@ export class MWABackendService extends BackendService {
     );
   }
 
-  public getInferenceServiceLogs(
+  public getInferenceServiceContainers(
     svc: InferenceServiceK8s,
-    components: string[] = [],
-  ): Observable<InferenceServiceLogs> {
+    component: string,
+  ): Observable<string[]> {
     const name = svc.metadata.name;
     const namespace = svc.metadata.namespace;
-    let url = `api/namespaces/${namespace}/inferenceservices/${name}?logs=true`;
 
-    ['predictor', 'explainer', 'transformer'].forEach(component => {
-      if (component in svc.spec) {
-        url += `&component=${component}`;
-      }
-    });
+    const url = `api/namespaces/${namespace}/inferenceservices/${name}/components/${component}/pods/containers`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
       catchError(error => this.handleError(error, false)),
       map((resp: MWABackendResponse) => {
-        return resp.serviceLogs;
+        return resp.containers;
+      }),
+    );
+  }
+
+  public getInferenceServiceLogs(
+    svc: InferenceServiceK8s,
+    component: string,
+    container: string,
+  ): Observable<string[]> {
+    const name = svc.metadata.name;
+    const namespace = svc.metadata.namespace;
+
+    const url = `api/namespaces/${namespace}/inferenceservices/${name}/components/${component}/pods/containers/${container}/logs`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error, false)),
+      map((resp: MWABackendResponse) => {
+        return resp.logs;
       }),
     );
   }

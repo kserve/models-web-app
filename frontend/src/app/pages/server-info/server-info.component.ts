@@ -50,7 +50,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   public buttonsConfig: ToolbarButton[] = [
     new ToolbarButton({
-      text: 'DELETE',
+      text: $localize`DELETE`,
       icon: 'delete',
       fn: () => {
         this.deleteInferenceService();
@@ -77,7 +77,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.route.params.subscribe(params => {
-      console.log(`Using namespace: ${params.namespace}`);
+      console.log($localize`Using namespace: ${params.namespace}`);
       this.ns.updateSelectedNamespace(params.namespace);
 
       this.serverName = params.name;
@@ -89,7 +89,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     });
 
     // don't show a METRICS tab if Grafana is not exposed
-    console.log('Checking if Grafana endpoint is exposed');
+    console.log($localize`Checking if Grafana endpoint is exposed`);
     const grafanaApi = environment.grafanaPrefix + '/api/search';
 
     this.http
@@ -99,17 +99,17 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         next: resp => {
           if (!Array.isArray(resp)) {
             console.log(
-              'Response from the Grafana endpoint was not as expected.',
+              $localize`Response from the Grafana endpoint was not as expected.`,
             );
             this.grafanaFound = false;
             return;
           }
 
-          console.log('Grafana endpoint detected. Will expose a metrics tab.');
+          console.log($localize`Grafana endpoint detected. Will expose a metrics tab.`);
           this.grafanaFound = true;
         },
         error: () => {
-          console.log('Could not detect a Grafana endpoint..');
+          console.log($localize`Could not detect a Grafana endpoint..`);
           this.grafanaFound = false;
         },
       });
@@ -158,7 +158,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     const svc = this.inferenceService;
     const config = generateDeleteConfig(svc);
 
-    const dialogRef = this.confirmDialog.open('Model server', config);
+    const dialogRef = this.confirmDialog.open($localize`Model server`, config);
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {
@@ -170,9 +170,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
             dialogRef.close(DIALOG_RESP.ACCEPT);
             this.pollingSub.unsubscribe();
 
-            const name = `${svc.metadata.namespace}/${svc.metadata.name}`;
+            // const name = `${svc.metadata.namespace}/${svc.metadata.name}`;
             this.snack.open(
-              `${name}: Delete request was sent.`,
+              $localize`$Delete request was sent.`,
               SnackType.Info,
               5000,
             );
@@ -198,7 +198,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   private getBackendObjects() {
     console.log(
-      `Fetching info for InferenceService ${this.namespace}/${this.serverName}`,
+      $localize`Fetching info for InferenceService ${this.namespace}/${this.serverName}`,
     );
 
     this.backend

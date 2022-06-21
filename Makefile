@@ -1,4 +1,4 @@
-IMG ?= gcr.io/kfserving/models-web-app
+IMG ?= kserve/models-web-app
 
 # We want the git tag to be the last commit to this directory so we don't
 # bump the image on unrelated changes.

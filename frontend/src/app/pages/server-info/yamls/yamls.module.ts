@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { YamlsComponent } from './yamls.component';
-import { AceEditorModule } from 'ng2-ace-editor';
+import { AceEditorModule } from '@derekbaker/ngx-ace-editor-wrapper';
 
 @NgModule({
   declarations: [YamlsComponent],

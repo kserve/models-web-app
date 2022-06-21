@@ -26,7 +26,8 @@ def load_inference_service_template(**kwargs):
     return helpers.load_param_yaml(INFERENCESERVICE_TEMPLATE_YAML, **kwargs)
 
 
-def get_component_latest_pod(svc: Dict, component: str) -> Union[api.client.V1Pod, None]:
+def get_component_latest_pod(svc: Dict,
+                             component: str) -> Union[api.client.V1Pod, None]:
     """Get pod of the latest Knative revision for the given component.
 
     Return:
@@ -50,12 +51,14 @@ def get_component_latest_pod(svc: Dict, component: str) -> Union[api.client.V1Po
 
         return pod
 
-    log.info(f"No pods are found for inference service: {svc['metadata']['name']}")
+    log.info(
+        f"No pods are found for inference service: {svc['metadata']['name']}")
 
     return None
 
 
-def get_component_latest_revision(svc: Dict, component: str) -> Union[str, None]:
+def get_component_latest_revision(svc: Dict,
+                                  component: str) -> Union[str, None]:
     """Get the name of the latest created knative revision for the given component.
 
     Return:
@@ -64,16 +67,16 @@ def get_component_latest_revision(svc: Dict, component: str) -> Union[str, None]
     status = svc["status"]
 
     if "components" not in status:
-        log.info(f"Components field not found in status object of {svc['metadata']['name']}")
+        log.info(f"Components field not found in status object of {svc['metadata']['name']}")  # noqa: E501
         return None
 
     if component not in status["components"]:
-        log.info(f"Component {component} not found in inference service {svc['metadata']['name']}")
+        log.info(f"Component {component} not found in inference service {svc['metadata']['name']}")  # noqa: E501
         return None
 
     if LATEST_CREATED_REVISION in status["components"][component]:
         return status["components"][component][LATEST_CREATED_REVISION]
 
-    log.info(f"No {LATEST_CREATED_REVISION} found for the {component} in {svc['metadata']['name']}")
+    log.info(f"No {LATEST_CREATED_REVISION} found for the {component} in {svc['metadata']['name']}")  # noqa: E501
 
     return None

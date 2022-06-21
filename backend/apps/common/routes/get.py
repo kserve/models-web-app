@@ -35,9 +35,11 @@ def get_inference_service(namespace, name):
     return api.success_response("inferenceService", inference_service)
 
 
-@bp.route("/api/namespaces/<namespace>/inferenceservices/<name>/components/<component>/pods/containers")
-def get_inference_service_containers(namespace: str, name: str, component: str):
-    """Get all containers and init-containers for the latest pod of the given component.
+@bp.route("/api/namespaces/<namespace>/inferenceservices/<name>/components/<component>/pods/containers")  # noqa: E501
+def get_inference_service_containers(
+        namespace: str, name: str, component: str):
+    """Get all containers and init-containers for the latest pod of
+    the given component.
 
     Return:
         {
@@ -50,7 +52,8 @@ def get_inference_service_containers(namespace: str, name: str, component: str):
     latest_pod = utils.get_component_latest_pod(inference_service, component)
 
     if latest_pod is None:
-        return api.failed_response(f"couldn't find latest pod for component: {component}", 404)
+        return api.failed_response(
+            f"couldn't find latest pod for component: {component}", 404)
 
     containers = []
     if latest_pod.spec.init_containers:
@@ -70,10 +73,11 @@ def get_inference_service_containers(namespace: str, name: str, component: str):
     return api.success_response("containers", containers)
 
 
-@bp.route("/api/namespaces/<namespace>/inferenceservices/<name>/components/<component>/pods/containers"
-          "/<container>/logs")
-def get_container_logs(namespace: str, name: str, component: str, container: str):
-    """Get logs for a particular container inside the latest pod of the given component
+@bp.route("/api/namespaces/<namespace>/inferenceservices/<name>/components/<component>/pods/containers/<container>/logs")  # noqa: E501
+def get_container_logs(namespace: str, name: str,
+                       component: str, container: str):
+    """Get logs for a particular container inside the latest pod of
+    the given component
 
     Logs are split on newline and returned as an array of lines
 
@@ -88,9 +92,11 @@ def get_container_logs(namespace: str, name: str, component: str, container: str
 
     latest_pod = utils.get_component_latest_pod(inference_service, component)
     if latest_pod is None:
-        return api.failed_response(f"couldn't find latest pod for component: {component}", 404)
+        return api.failed_response(
+            f"couldn't find latest pod for component: {component}", 404)
 
-    logs = api.get_pod_logs(namespace, latest_pod.metadata.name, container, auth=False)
+    logs = api.get_pod_logs(
+        namespace, latest_pod.metadata.name, container, auth=False)
     logs = logs.split("\n")
 
     return api.success_response("logs", logs)

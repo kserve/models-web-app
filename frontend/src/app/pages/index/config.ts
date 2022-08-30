@@ -26,6 +26,7 @@ export const defaultConfig: TableConfig = {
       matHeaderCellDef: $localize`Status`,
       matColumnDef: 'status',
       value: new StatusValue({ field: 'ui.status' }),
+      sort: true,
     },
     {
       matHeaderCellDef: $localize`Name`,
@@ -36,6 +37,7 @@ export const defaultConfig: TableConfig = {
         popoverField: 'metadata.name',
         isLink: true,
       }),
+      sort: true,
     },
     {
       matHeaderCellDef: $localize`Created at`,
@@ -44,6 +46,7 @@ export const defaultConfig: TableConfig = {
       value: new DateTimeValue({
         field: 'metadata.creationTimestamp',
       }),
+      sort: true,
     },
     {
       matHeaderCellDef: $localize`Predictor`,
@@ -51,6 +54,7 @@ export const defaultConfig: TableConfig = {
       value: new PropertyValue({
         field: 'ui.predictorType',
       }),
+      sort: true,
     },
     {
       matHeaderCellDef: $localize`Runtime`,
@@ -58,6 +62,7 @@ export const defaultConfig: TableConfig = {
       value: new PropertyValue({
         field: 'ui.runtimeVersion',
       }),
+      sort: true,
     },
     {
       matHeaderCellDef: $localize`Protocol`,
@@ -65,7 +70,7 @@ export const defaultConfig: TableConfig = {
       value: new PropertyValue({
         field: 'ui.protocolVersion',
       }),
-      // minWidth: '40px',
+      sort: true,
     },
     {
       matHeaderCellDef: $localize`Storage URI`,
@@ -75,6 +80,7 @@ export const defaultConfig: TableConfig = {
         truncate: true,
         popoverField: 'ui.storageUri',
       }),
+      sort: true,
     },
     {
       matHeaderCellDef: '',

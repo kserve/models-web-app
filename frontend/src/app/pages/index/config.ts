@@ -3,14 +3,11 @@ import {
   StatusValue,
   ActionListValue,
   ActionIconValue,
-  ActionButtonValue,
-  MenuValue,
   DateTimeValue,
   DialogConfig,
   TableConfig,
 } from 'kubeflow';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
-import { parseRuntime } from './utils';
 
 export function generateDeleteConfig(svc: InferenceServiceK8s): DialogConfig {
   return {
@@ -24,8 +21,6 @@ export function generateDeleteConfig(svc: InferenceServiceK8s): DialogConfig {
 }
 
 export const defaultConfig: TableConfig = {
-  title: $localize`Model Servers`,
-  newButtonText: $localize`NEW MODEL SERVER`,
   columns: [
     {
       matHeaderCellDef: $localize`Status`,

@@ -148,7 +148,7 @@ export function getPredictorExtensionSpec(
   spec.runtimeVersion = '';
   spec.protocolVersion = '';
 
-  if (predictor.containers[0].env) {
+  if (predictor.containers[0]?.env) {
     const storageUri = predictor.containers[0].env.find(
       envVar => envVar.name.toLowerCase() === 'storage_uri',
     );
@@ -170,4 +170,54 @@ export function getExplainerContainer(explainer: ExplainerSpec): V1Container {
   }
 
   return null;
+}
+
+export function parseRuntime(svc: InferenceServiceK8s): string {
+  return getPredictorRuntime(svc.spec.predictor);
+}
+
+export function getPredictorRuntime(predictor: PredictorSpec): string {
+  if (predictor === null) {
+    return '';
+  }
+
+  if (predictor?.model?.runtime) {
+    return predictor.model.runtime;
+  }
+
+  const predictorType = getPredictorType(predictor);
+
+  if (
+    predictorType === PredictorType.Triton ||
+    predictorType === PredictorType.Onnx
+  ) {
+    return 'Triton Inference Server';
+  }
+  if (predictorType === PredictorType.Tensorflow) {
+    return 'TFServing';
+  }
+  if (predictorType === PredictorType.Pytorch) {
+    return 'TorchServe';
+  }
+  if (predictorType === PredictorType.Sklearn) {
+    if (predictor.sklearn?.protocolVersion === 'v2') {
+      return 'SKLearn MLServer';
+    }
+    return 'SKLearn ModelServer';
+  }
+  if (predictorType === PredictorType.Xgboost) {
+    if (predictor.xgboost?.protocolVersion === 'v2') {
+      return 'XGBoost MLServer';
+    }
+    return 'XGBoost ModelServer';
+  }
+  if (predictorType === PredictorType.Pmml) {
+    return 'PMML ModelServer';
+  }
+  if (predictorType === PredictorType.Lightgbm) {
+    return 'LightGBM ModelServer';
+  }
+  if (predictorType === PredictorType.Custom) {
+    return 'Custom ModelServer';
+  }
 }

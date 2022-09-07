@@ -12,6 +12,7 @@ import {
 } from 'kubeflow';
 import { StorageUriColumnComponent } from 'src/app/shared/storage-uri-column/storage-uri-column.component';
 import { getPredictorExtensionSpec } from 'src/app/shared/utils';
+import { parseRuntime } from 'src/app/shared/utils';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 
 export function generateDeleteConfig(svc: InferenceServiceK8s): DialogConfig {
@@ -65,7 +66,8 @@ export const defaultConfig: TableConfig = {
       matHeaderCellDef: $localize`Runtime`,
       matColumnDef: 'runtimeVersion',
       value: new PropertyValue({
-        field: 'ui.runtimeVersion',
+        valueFn: parseRuntime,
+        popoverField: 'ui.runtimeVersion',
       }),
       sort: true,
     },

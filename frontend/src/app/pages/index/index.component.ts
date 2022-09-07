@@ -200,11 +200,10 @@ export class IndexComponent implements OnInit, OnDestroy {
 
     const predictorType = getPredictorType(svc.spec.predictor);
     const predictor = getPredictorExtensionSpec(svc.spec.predictor);
-
     svc.ui.predictorType = predictorType;
     svc.ui.runtimeVersion = predictor.runtimeVersion;
     svc.ui.storageUri = predictor.storageUri;
-    svc.ui.protocolVersion = predictor.protocolVersion;
+    svc.ui.protocolVersion = predictor.protocolVersion || 'v1';
     svc.ui.link = {
       text: svc.metadata.name,
       url: `/details/${this.currNamespace}/${svc.metadata.name}`,

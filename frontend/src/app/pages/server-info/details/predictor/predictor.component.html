@@ -9,7 +9,14 @@
   {{ predictorType }}
 </lib-details-list-item>
 
-<lib-details-list-item key="Runtime" *ngIf="basePredictor?.runtimeVersion">
+<lib-details-list-item key="Runtime">
+  {{ predictorRuntime }}
+</lib-details-list-item>
+
+<lib-details-list-item
+  key="Runtime Version"
+  *ngIf="basePredictor?.runtimeVersion"
+>
   {{ basePredictor.runtimeVersion }}
 </lib-details-list-item>
 

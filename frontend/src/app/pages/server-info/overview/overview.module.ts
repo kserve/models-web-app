@@ -11,6 +11,7 @@ import {
   HeadingSubheadingRowModule,
 } from 'kubeflow';
 import { ComponentOverviewComponent } from './component/component.component';
+import { SharedModule } from 'src/app/shared/shared.module';
 
 @NgModule({
   declarations: [OverviewComponent, ComponentOverviewComponent],
@@ -23,6 +24,7 @@ import { ComponentOverviewComponent } from './component/component.component';
     DetailsListModule,
     ConditionsTableModule,
     HeadingSubheadingRowModule,
+    SharedModule,
   ],
   exports: [OverviewComponent],
 })

@@ -6,7 +6,10 @@ import {
   DateTimeValue,
   DialogConfig,
   TableConfig,
+  ComponentValue,
 } from 'kubeflow';
+import { StorageUriColumnComponent } from 'src/app/shared/storage-uri-column/storage-uri-column.component';
+import { getPredictorExtensionSpec } from 'src/app/shared/utils';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 
 export function generateDeleteConfig(svc: InferenceServiceK8s): DialogConfig {
@@ -75,12 +78,16 @@ export const defaultConfig: TableConfig = {
     {
       matHeaderCellDef: $localize`Storage URI`,
       matColumnDef: 'storageUri',
-      value: new PropertyValue({
-        field: 'ui.storageUri',
-        truncate: true,
-        popoverField: 'ui.storageUri',
+      value: new ComponentValue({
+        component: StorageUriColumnComponent,
       }),
       sort: true,
+      sortingPreprocessorFn: element => {
+        return getPredictorExtensionSpec(element.spec.predictor)?.storageUri;
+      },
+      filteringPreprocessorFn: element => {
+        return getPredictorExtensionSpec(element.spec.predictor)?.storageUri;
+      },
     },
     {
       matHeaderCellDef: '',

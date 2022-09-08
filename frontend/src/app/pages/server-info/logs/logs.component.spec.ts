@@ -1,4 +1,8 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { CommonModule } from '@angular/common';
+import { KubeflowModule, PanelModule, LoadingSpinnerModule } from 'kubeflow';
 
 import { LogsComponent } from './logs.component';
 
@@ -9,6 +13,14 @@ describe('LogsComponent', () => {
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [LogsComponent],
+      imports: [
+        HttpClientTestingModule,
+        MatSnackBarModule,
+        CommonModule,
+        KubeflowModule,
+        LoadingSpinnerModule,
+        PanelModule,
+      ],
     }).compileComponents();
   }));
 

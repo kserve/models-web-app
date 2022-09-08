@@ -60,7 +60,9 @@ export class LogsComponent implements OnDestroy {
   constructor(public backend: MWABackendService) {}
 
   ngOnDestroy() {
-    this.pollingSub.unsubscribe();
+    if (this.pollingSub) {
+      this.pollingSub.unsubscribe();
+    }
   }
 
   logsTrackFn(i: number, podLogs: any) {

@@ -1,15 +1,10 @@
 import { Component, Input } from '@angular/core';
+import { ListEntry, ChipDescriptor } from 'kubeflow';
 import {
-  NamespaceService,
-  ListEntry,
-  ChipDescriptor,
-  K8sObject,
-} from 'kubeflow';
-import {
-  getReadyCondition,
   getPredictorType,
   getK8sObjectStatus,
   getPredictorExtensionSpec,
+  getPredictorRuntime,
 } from 'src/app/shared/utils';
 import {
   InferenceServiceK8s,
@@ -82,6 +77,10 @@ export class OverviewComponent {
 
   get predictorType(): string {
     return getPredictorType(this.svc.spec.predictor);
+  }
+
+  get predictorRuntime(): string {
+    return getPredictorRuntime(this.svc.spec.predictor);
   }
 
   private generateDefaultComponents(

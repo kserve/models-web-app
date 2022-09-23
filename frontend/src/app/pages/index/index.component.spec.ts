@@ -8,6 +8,7 @@ import {
   NamespaceService,
   ConfirmDialogService,
   SnackBarService,
+  PollerService,
 } from 'kubeflow';
 import { CommonModule } from '@angular/common';
 import { KubeflowModule } from 'kubeflow';
@@ -47,6 +48,7 @@ describe('IndexComponent', () => {
         { provide: NamespaceService, useValue: NamespaceServiceStub },
         { provide: SnackBarService, useValue: {} },
         { provide: Clipboard, useValue: {} },
+        { provide: PollerService, useValue: {} },
       ],
     }).compileComponents();
   }));

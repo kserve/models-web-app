@@ -27,6 +27,7 @@ export function generateDeleteConfig(svc: InferenceServiceK8s): DialogConfig {
 }
 
 export const defaultConfig: TableConfig = {
+  dynamicNamespaceColumn: true,
   columns: [
     {
       matHeaderCellDef: $localize`Status`,

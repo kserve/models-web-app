@@ -8,9 +8,8 @@ describe('YamlsComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ YamlsComponent ]
-    })
-    .compileComponents();
+      declarations: [YamlsComponent],
+    }).compileComponents();
   }));
 
   beforeEach(() => {

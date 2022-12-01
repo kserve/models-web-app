@@ -57,13 +57,13 @@ export interface PredictorSpec extends V1PodSpec, ComponentExtensionSpec {
 }
 
 export interface ModelSpec extends PredictorExtensionSpec {
-  modelFormat: ModelFormat
-  runtime?: string
+  modelFormat: ModelFormat;
+  runtime?: string;
 }
 
 export interface ModelFormat {
-  name: string
-  version?: string
+  name: string;
+  version?: string;
 }
 
 export interface TorchServeSpec extends PredictorExtensionSpec {

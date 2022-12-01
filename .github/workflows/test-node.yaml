@@ -1,0 +1,30 @@
+name: Frontend Test
+
+on:
+  pull_request:
+    paths:
+      - frontend/**
+
+jobs:
+  test:
+    name: Code format and lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 12
+
+      - name: Format code
+        run: |
+          npm install prettier --prefix ./frontend
+          make prettier-check
+
+      - name: Lint code
+        run: |
+          cd frontend
+          npm run lint-check

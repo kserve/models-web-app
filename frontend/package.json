@@ -14,7 +14,8 @@
     "format:write": "prettier --write 'src/**/*.{js,ts,html,scss,css}'",
     "i18n:extract": "ng extract-i18n --output-path i18n",
     "test": "ng test",
-    "lint": "ng lint",
+    "lint-check": "ng lint",
+    "lint": "ng lint --fix",
     "e2e": "ng e2e"
   },
   "private": true,

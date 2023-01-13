@@ -1,10 +1,21 @@
-<lib-namespace-select
-  *ngIf="(ns.dashboardConnected$ | async) === dashboardDisconnectedState"
-></lib-namespace-select>
+<div class="lib-content-wrapper">
+  <lib-title-actions-toolbar
+    title="Model Servers"
+    [buttons]="buttons"
+    i18n-title
+  >
+    <lib-namespace-select
+      *ngIf="(ns.dashboardConnected$ | async) === dashboardDisconnectedState"
+    ></lib-namespace-select>
+  </lib-title-actions-toolbar>
 
-<lib-resource-table
-  [config]="config"
-  [data]="inferenceServices"
-  [trackByFn]="inferenceServiceTrackByFn"
-  (actionsEmitter)="reactToAction($event)"
-></lib-resource-table>
+  <!--scrollable page content-->
+  <div class="page-padding lib-flex-grow lib-overflow-auto">
+    <lib-table
+      [config]="config"
+      [data]="inferenceServices"
+      [trackByFn]="inferenceServiceTrackByFn"
+      (actionsEmitter)="reactToAction($event)"
+    ></lib-table>
+  </div>
+</div>

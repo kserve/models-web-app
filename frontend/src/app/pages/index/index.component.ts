@@ -16,6 +16,7 @@ import {
   SnackBarService,
   SnackType,
   DashboardState,
+  ToolbarButton,
 } from 'kubeflow';
 import { Subscription } from 'rxjs';
 import { isEqual } from 'lodash';
@@ -41,6 +42,17 @@ export class IndexComponent implements OnInit, OnDestroy {
   public dashboardDisconnectedState = DashboardState.Disconnected;
 
   private rawData: InferenceServiceK8s[] = [];
+
+  buttons: ToolbarButton[] = [
+    new ToolbarButton({
+      text: `New Model Server`,
+      icon: 'add',
+      stroked: true,
+      fn: () => {
+        this.router.navigate(['/new']);
+      },
+    }),
+  ];
 
   constructor(
     private backend: MWABackendService,
@@ -97,9 +109,6 @@ export class IndexComponent implements OnInit, OnDestroy {
     const svc = a.data as InferenceServiceIR;
 
     switch (a.action) {
-      case 'newResourceButton':
-        this.router.navigate(['/new']);
-        break;
       case 'delete':
         this.deleteClicked(svc);
         break;

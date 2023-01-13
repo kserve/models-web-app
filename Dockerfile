@@ -9,7 +9,7 @@ RUN git clone https://github.com/kubeflow/kubeflow.git && \
     git checkout d1da825
 
 # --- Build the backend kubeflow-wheel ---
-FROM python:3.7-slim-buster AS backend-kubeflow-wheel
+FROM python:3.7-slim AS backend-kubeflow-wheel
 
 WORKDIR /src
 
@@ -42,7 +42,7 @@ COPY ./frontend/ .
 RUN npm run build -- --output-path=./dist/default --configuration=production
 
 # Web App
-FROM python:3.7-slim-buster
+FROM python:3.7-slim
 
 WORKDIR /package
 COPY --from=backend-kubeflow-wheel /src/dist .

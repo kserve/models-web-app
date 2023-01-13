@@ -11,3 +11,7 @@ docker-push:
 	docker push $(IMG):$(GIT_TAG)
 
 image: docker-build docker-push
+
+# Prettier UI format check.
+prettier-check:
+	npm run format:check --prefix frontend

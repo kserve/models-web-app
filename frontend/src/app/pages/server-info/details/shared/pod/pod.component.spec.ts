@@ -8,9 +8,8 @@ describe('PodComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ PodComponent ]
-    })
-    .compileComponents();
+      declarations: [PodComponent],
+    }).compileComponents();
   }));
 
   beforeEach(() => {

@@ -105,7 +105,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
             return;
           }
 
-          console.log($localize`Grafana endpoint detected. Will expose a metrics tab.`);
+          console.log(
+            $localize`Grafana endpoint detected. Will expose a metrics tab.`,
+          );
           this.grafanaFound = true;
         },
         error: () => {

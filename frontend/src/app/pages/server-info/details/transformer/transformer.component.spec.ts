@@ -8,9 +8,8 @@ describe('TransformerComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ TransformerComponent ]
-    })
-    .compileComponents();
+      declarations: [TransformerComponent],
+    }).compileComponents();
   }));
 
   beforeEach(() => {

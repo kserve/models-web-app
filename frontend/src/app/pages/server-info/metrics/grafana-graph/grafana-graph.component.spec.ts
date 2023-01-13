@@ -8,9 +8,8 @@ describe('GrafanaGraphComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ GrafanaGraphComponent ]
-    })
-    .compileComponents();
+      declarations: [GrafanaGraphComponent],
+    }).compileComponents();
   }));
 
   beforeEach(() => {

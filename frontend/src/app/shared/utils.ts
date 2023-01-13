@@ -110,7 +110,7 @@ export function getK8sObjectStatus(obj: K8sObject): [string, string] {
 // functions for processing the InferenceService spec
 export function getPredictorType(predictor: PredictorSpec): PredictorType {
   if (predictor.model) {
-    return predictor.model?.modelFormat.name as PredictorType
+    return predictor.model?.modelFormat.name as PredictorType;
   } else {
     for (const predictorType of Object.values(PredictorType)) {
       if (predictorType in predictor) {
@@ -126,8 +126,12 @@ export function getPredictorExtensionSpec(
   predictor: PredictorSpec,
 ): PredictorExtensionSpec {
   if (predictor.model) {
-    if (Object.values(PredictorType).includes(predictor.model?.modelFormat.name as PredictorType)) {
-      const spec = predictor.model
+    if (
+      Object.values(PredictorType).includes(
+        predictor.model?.modelFormat.name as PredictorType,
+      )
+    ) {
+      const spec = predictor.model;
       return spec;
     }
   } else {
@@ -146,7 +150,7 @@ export function getPredictorExtensionSpec(
 
   if (predictor.containers[0].env) {
     const storageUri = predictor.containers[0].env.find(
-      envVar => envVar.name.toLowerCase() === 'storage_uri'
+      envVar => envVar.name.toLowerCase() === 'storage_uri',
     );
     if (storageUri) {
       spec.storageUri = storageUri.value;

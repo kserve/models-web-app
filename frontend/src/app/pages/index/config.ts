@@ -38,8 +38,9 @@ export const defaultConfig: TableConfig = {
       }),
     },
     {
-      matHeaderCellDef: $localize`Age`,
+      matHeaderCellDef: $localize`Created at`,
       matColumnDef: 'age',
+      textAlignment: 'right',
       value: new DateTimeValue({
         field: 'metadata.creationTimestamp',
       }),

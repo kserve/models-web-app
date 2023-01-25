@@ -11,8 +11,8 @@ import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 
 export function generateDeleteConfig(svc: InferenceServiceK8s): DialogConfig {
   return {
-    title: $localize`Delete Model server? ${svc.metadata.name}`,
-    message: $localize`You cannot undo this action. Are you sure you want to delete this Model server?`,
+    title: $localize`Delete Endpoint ${svc.metadata.name}?`,
+    message: $localize`You cannot undo this action. Are you sure you want to delete this Endpoint?`,
     accept: $localize`DELETE`,
     applying: $localize`DELETING`,
     confirmColor: 'warn',
@@ -82,14 +82,14 @@ export const defaultConfig: TableConfig = {
       value: new ActionListValue([
         new ActionIconValue({
           name: 'copy-link',
-          tooltip: $localize`Copy the server's endpoint`,
+          tooltip: $localize`Copy endpoint's url`,
           color: 'primary',
           field: 'ui.actions.copy',
           iconReady: 'material:content_copy',
         }),
         new ActionIconValue({
           name: 'delete',
-          tooltip: $localize`Delete Server`,
+          tooltip: $localize`Delete endpoint`,
           color: '',
           field: 'ui.actions.delete',
           iconReady: 'material:delete',

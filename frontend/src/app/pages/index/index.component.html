@@ -1,9 +1,5 @@
 <div class="lib-content-wrapper">
-  <lib-title-actions-toolbar
-    title="Model Servers"
-    [buttons]="buttons"
-    i18n-title
-  >
+  <lib-title-actions-toolbar title="Endpoints" [buttons]="buttons" i18n-title>
     <lib-namespace-select
       *ngIf="(ns.dashboardConnected$ | async) === dashboardDisconnectedState"
     ></lib-namespace-select>

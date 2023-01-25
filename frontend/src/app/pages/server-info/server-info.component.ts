@@ -160,7 +160,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     const svc = this.inferenceService;
     const config = generateDeleteConfig(svc);
 
-    const dialogRef = this.confirmDialog.open($localize`Model server`, config);
+    const dialogRef = this.confirmDialog.open($localize`Endpoint`, config);
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {

@@ -45,7 +45,7 @@ export class IndexComponent implements OnInit, OnDestroy {
 
   buttons: ToolbarButton[] = [
     new ToolbarButton({
-      text: `New Model Server`,
+      text: `New Endpoint`,
       icon: 'add',
       stroked: true,
       fn: () => {
@@ -124,7 +124,7 @@ export class IndexComponent implements OnInit, OnDestroy {
          */
         if (svc.metadata.deletionTimestamp) {
           this.snack.open(
-            $localize`Model server is being deleted, cannot show details.`,
+            $localize`Endpoint is being deleted, cannot show details.`,
             SnackType.Info,
             4000,
           );
@@ -144,7 +144,7 @@ export class IndexComponent implements OnInit, OnDestroy {
   private deleteClicked(svc: InferenceServiceIR) {
     const config = generateDeleteConfig(svc);
 
-    const dialogRef = this.confirmDialog.open('Model server', config);
+    const dialogRef = this.confirmDialog.open('Endpoint', config);
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {
@@ -172,7 +172,7 @@ export class IndexComponent implements OnInit, OnDestroy {
       }
 
       svc.ui.status.phase = STATUS_TYPE.TERMINATING;
-      svc.ui.status.message = $localize`Preparing to delete Model server...`;
+      svc.ui.status.message = $localize`Preparing to delete Endpoint...`;
     });
   }
 

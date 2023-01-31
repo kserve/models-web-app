@@ -52,16 +52,16 @@ export class OverviewComponent {
 
   get externalUrl() {
     if (!this.svc.status) {
-      return 'InferenceService is not ready to recieve traffic yet.';
+      return 'InferenceService is not ready to receive traffic yet.';
     }
 
     return this.svc.status.url !== undefined
       ? this.svc.status.url
-      : 'InferenceService is not ready to recieve traffic yet.';
+      : 'InferenceService is not ready to receive traffic yet.';
   }
 
   get internalUrl() {
-    const msg = 'InferenceService is not ready to recieve traffic yet.';
+    const msg = 'InferenceService is not ready to receive traffic yet.';
 
     if (!this.svc.status || !this.svc.status.address) {
       return msg;

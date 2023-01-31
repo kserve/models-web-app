@@ -38,12 +38,12 @@ export class DetailsComponent {
 
   get externalUrl() {
     if (!this.svc.status) {
-      return 'InferenceService is not ready to recieve traffic yet.';
+      return 'InferenceService is not ready to receive traffic yet.';
     }
 
     return this.svc.status.url !== undefined
       ? this.svc.status.url
-      : 'InferenceService is not ready to recieve traffic yet.';
+      : 'InferenceService is not ready to receive traffic yet.';
   }
 
   private svcPrv: InferenceServiceK8s;

@@ -19,32 +19,32 @@
     *ngFor="let podLogs of currLogs?.predictor; trackBy: logsTrackFn"
     class="margin-bottom"
   >
-    <app-logs-viewer
+    <lib-logs-viewer
       heading="Predictor:"
       [subHeading]="podLogs.podName"
       [logs]="podLogs.logs"
-    ></app-logs-viewer>
+    ></lib-logs-viewer>
   </div>
 
   <div
     *ngFor="let podLogs of currLogs?.transformer; trackBy: logsTrackFn"
     class="margin-bottom"
   >
-    <app-logs-viewer
+    <lib-logs-viewer
       heading="Transformer:"
       [subHeading]="podLogs.podName"
       [logs]="podLogs.logs"
-    ></app-logs-viewer>
+    ></lib-logs-viewer>
   </div>
 
   <div
     *ngFor="let podLogs of currLogs?.explainer; trackBy: logsTrackFn"
     class="margin-bottom"
   >
-    <app-logs-viewer
+    <lib-logs-viewer
       heading="Explainer:"
       [subHeading]="podLogs.podName"
       [logs]="podLogs.logs"
-    ></app-logs-viewer>
+    ></lib-logs-viewer>
   </div>
 </ng-container>

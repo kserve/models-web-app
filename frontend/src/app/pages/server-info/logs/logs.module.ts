@@ -1,8 +1,12 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogsComponent } from './logs.component';
-import { KubeflowModule, PanelModule, LoadingSpinnerModule } from 'kubeflow';
-import { LogsViewerModule } from './logs-viewer/logs-viewer.module';
+import {
+  KubeflowModule,
+  PanelModule,
+  LoadingSpinnerModule,
+  LogsViewerModule,
+} from 'kubeflow';
 
 @NgModule({
   declarations: [LogsComponent],

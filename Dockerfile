@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install git -y
 WORKDIR /kf
 RUN git clone https://github.com/kubeflow/kubeflow.git && \
     cd kubeflow && \
-    git checkout 0b229aa57
+    git checkout 2b4cc42e
 
 # --- Build the backend kubeflow-wheel ---
 FROM python:3.7-slim AS backend-kubeflow-wheel

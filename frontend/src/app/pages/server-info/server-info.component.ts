@@ -23,6 +23,7 @@ import {
   DIALOG_RESP,
   SnackBarService,
   SnackType,
+  SnackBarConfig,
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { isEqual } from 'lodash';
@@ -173,11 +174,13 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
             this.pollingSub.unsubscribe();
 
             // const name = `${svc.metadata.namespace}/${svc.metadata.name}`;
-            this.snack.open(
-              $localize`$Delete request was sent.`,
-              SnackType.Info,
-              5000,
-            );
+            const config: SnackBarConfig = {
+              data: {
+                msg: $localize`$Delete request was sent.`,
+                snackType: SnackType.Info,
+              },
+            };
+            this.snack.open(config);
 
             this.router.navigate(['']);
           },

@@ -14,6 +14,7 @@ import {
 })
 export class PredictorDetailsComponent {
   @Input() predictorSpec: PredictorSpec;
+  @Input() namespace: string;
 
   get basePredictor(): PredictorExtensionSpec {
     return getPredictorExtensionSpec(this.predictorSpec);

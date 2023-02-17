@@ -1,5 +1,8 @@
 <lib-details-list-item key="Storage uri" *ngIf="basePredictor?.storageUri">
-  {{ basePredictor?.storageUri }}
+  <app-storage-uri
+    [namespace]="namespace"
+    [basePredictor]="basePredictor"
+  ></app-storage-uri>
 </lib-details-list-item>
 
 <lib-details-list-item key="Predictor">

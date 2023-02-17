@@ -74,8 +74,9 @@ Requirements:
 ### Frontend
 ```bash
 # build the common library
+COMMIT=$(cat ./frontend/COMMIT)
 cd $KUBEFLOW_REPO/components/crud-web-apps/common/frontend/kubeflow-common-lib
-git checkout 8dcfe792c
+git checkout $COMMIT
 
 npm i
 npm run build

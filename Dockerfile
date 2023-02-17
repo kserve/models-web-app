@@ -4,9 +4,11 @@ FROM ubuntu AS fetch-kubeflow-kubeflow
 RUN apt-get update && apt-get install git -y
 
 WORKDIR /kf
+COPY ./frontend/COMMIT ./
 RUN git clone https://github.com/kubeflow/kubeflow.git && \
+    COMMIT=$(cat ./COMMIT) && \
     cd kubeflow && \
-    git checkout 8dcfe792c
+    git checkout $COMMIT
 
 # --- Build the backend kubeflow-wheel ---
 FROM python:3.7-slim AS backend-kubeflow-wheel

@@ -122,21 +122,16 @@ export class IndexComponent implements OnInit, OnDestroy {
          * don't allow the user to navigate to the details page of a server
          * that is being deleted
          */
-        if (svc.metadata.deletionTimestamp) {
+        if (svc.ui.status.phase === STATUS_TYPE.TERMINATING) {
+          a.event.stopPropagation();
+          a.event.preventDefault();
           this.snack.open(
             $localize`Endpoint is being deleted, cannot show details.`,
             SnackType.Info,
             4000,
           );
-
           return;
         }
-
-        this.router.navigate([
-          '/details/',
-          this.currNamespace,
-          a.data.metadata.name,
-        ]);
         break;
     }
   }
@@ -201,6 +196,10 @@ export class IndexComponent implements OnInit, OnDestroy {
     svc.ui.runtimeVersion = predictor.runtimeVersion;
     svc.ui.storageUri = predictor.storageUri;
     svc.ui.protocolVersion = predictor.protocolVersion;
+    svc.ui.link = {
+      text: svc.metadata.name,
+      url: `/details/${this.currNamespace}/${svc.metadata.name}`,
+    };
   }
 
   private getCopyActionStatus(svc: InferenceServiceIR) {

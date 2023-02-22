@@ -7,6 +7,8 @@ import {
   DialogConfig,
   TableConfig,
   ComponentValue,
+  LinkValue,
+  LinkType,
 } from 'kubeflow';
 import { StorageUriColumnComponent } from 'src/app/shared/storage-uri-column/storage-uri-column.component';
 import { getPredictorExtensionSpec } from 'src/app/shared/utils';
@@ -34,11 +36,11 @@ export const defaultConfig: TableConfig = {
     {
       matHeaderCellDef: $localize`Name`,
       matColumnDef: 'name',
-      value: new PropertyValue({
-        field: 'metadata.name',
-        truncate: false,
+      value: new LinkValue({
+        field: 'ui.link',
         popoverField: 'metadata.name',
-        isLink: true,
+        truncate: true,
+        linkType: LinkType.Internal,
       }),
       sort: true,
     },

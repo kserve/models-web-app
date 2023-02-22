@@ -1,5 +1,6 @@
 import { Status, STATUS_TYPE, K8sObject, Condition } from 'kubeflow';
 import { V1ObjectMeta, V1Container, V1PodSpec } from '@kubernetes/client-node';
+import { Params } from '@angular/router';
 
 export interface InferenceServiceIR extends InferenceServiceK8s {
   // this typed is used in the frontend after parsing the backend response
@@ -14,6 +15,11 @@ export interface InferenceServiceIR extends InferenceServiceK8s {
     predictorType?: string;
     storageUri?: string;
     protocolVersion?: string;
+    link?: {
+      text: string;
+      url: string;
+      queryParams?: Params | null;
+    };
   };
 }
 

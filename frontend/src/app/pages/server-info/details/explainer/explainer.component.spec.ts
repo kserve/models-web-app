@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { ExplainerSpec } from 'src/app/types/kfserving/v1beta1';
 
 import { ExplainerComponent } from './explainer.component';
 
@@ -15,6 +16,7 @@ describe('ExplainerComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(ExplainerComponent);
     component = fixture.componentInstance;
+    component.explainerSpec = {} as ExplainerSpec;
     fixture.detectChanges();
   });
 

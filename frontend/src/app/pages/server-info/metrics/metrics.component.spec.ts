@@ -1,4 +1,6 @@
+import { CommonModule } from '@angular/common';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { HeadingSubheadingRowModule, KubeflowModule } from 'kubeflow';
 
 import { MetricsComponent } from './metrics.component';
 
@@ -9,6 +11,7 @@ describe('MetricsComponent', () => {
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [MetricsComponent],
+      imports: [CommonModule, KubeflowModule, HeadingSubheadingRowModule],
     }).compileComponents();
   }));
 

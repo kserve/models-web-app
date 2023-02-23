@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { V1PodSpec } from '@kubernetes/client-node';
 
 import { PodComponent } from './pod.component';
 
@@ -15,6 +16,7 @@ describe('PodComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(PodComponent);
     component = fixture.componentInstance;
+    component.pod = {} as V1PodSpec;
     fixture.detectChanges();
   });
 

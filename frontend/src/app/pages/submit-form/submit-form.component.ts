@@ -1,6 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { NamespaceService, SnackBarService, SnackType } from 'kubeflow';
+import {
+  NamespaceService,
+  SnackBarConfig,
+  SnackBarService,
+  SnackType,
+} from 'kubeflow';
 import { load, YAMLException } from 'js-yaml';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { MWABackendService } from 'src/app/services/backend.service';
@@ -44,18 +49,27 @@ export class SubmitFormComponent implements OnInit {
       if (e.mark && e.mark.line) {
         msg = 'Error parsing the provided YAML in line: ' + e.mark.line;
       }
-
-      this.snack.open(msg, SnackType.Error, 16000);
+      const config: SnackBarConfig = {
+        data: {
+          msg,
+          snackType: SnackType.Error,
+        },
+        duration: 16000,
+      };
+      this.snack.open(config);
       this.applying = false;
       return;
     }
 
     if (!cr.metadata) {
-      this.snack.open(
-        'InferenceService must have a metadata field.',
-        SnackType.Error,
-        8000,
-      );
+      const config: SnackBarConfig = {
+        data: {
+          msg: 'InferenceService must have a metadata field.',
+          snackType: SnackType.Error,
+        },
+        duration: 8000,
+      };
+      this.snack.open(config);
 
       this.applying = false;
       return;

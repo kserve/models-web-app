@@ -17,6 +17,7 @@ import {
   SnackType,
   DashboardState,
   ToolbarButton,
+  SnackBarConfig,
 } from 'kubeflow';
 import { Subscription } from 'rxjs';
 import { isEqual } from 'lodash';
@@ -115,7 +116,13 @@ export class IndexComponent implements OnInit, OnDestroy {
       case 'copy-link':
         console.log(`Copied to clipboard: ${svc.status.url}`);
         this.clipboard.copy(svc.status.url);
-        this.snack.open(`Copied: ${svc.status.url}`, SnackType.Info, 4000);
+        const config: SnackBarConfig = {
+          data: {
+            msg: `Copied: ${svc.status.url}`,
+            snackType: SnackType.Info,
+          },
+        };
+        this.snack.open(config);
         break;
       case 'name:link':
         /*
@@ -125,11 +132,13 @@ export class IndexComponent implements OnInit, OnDestroy {
         if (svc.ui.status.phase === STATUS_TYPE.TERMINATING) {
           a.event.stopPropagation();
           a.event.preventDefault();
-          this.snack.open(
-            $localize`Endpoint is being deleted, cannot show details.`,
-            SnackType.Info,
-            4000,
-          );
+          const config: SnackBarConfig = {
+            data: {
+              msg: $localize`Endpoint is being deleted, cannot show details.`,
+              snackType: SnackType.Info,
+            },
+          };
+          this.snack.open(config);
           return;
         }
         break;

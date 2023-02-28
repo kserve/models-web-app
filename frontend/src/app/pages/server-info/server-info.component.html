@@ -61,6 +61,11 @@
             <app-logs [svc]="inferenceService"></app-logs>
           </ng-template>
         </mat-tab>
+        <mat-tab label="EVENTS">
+          <ng-template matTabContent>
+            <app-events [svc]="inferenceService"></app-events>
+          </ng-template>
+        </mat-tab>
         <mat-tab label="YAML">
           <ng-template matTabContent>
             <app-yamls [svc]="inferenceService"></app-yamls>

@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { InferenceServiceK8s } from '../types/kfserving/v1beta1';
 import { MWABackendResponse, InferenceServiceLogs } from '../types/backend';
+import { EventObject } from '../types/event';
 
 @Injectable({
   providedIn: 'root',
@@ -138,6 +139,19 @@ export class MWABackendService extends BackendService {
       map((resp: MWABackendResponse) => {
         return resp.serviceLogs;
       }),
+    );
+  }
+
+  public getInferenceServiceEvents(
+    svc: InferenceServiceK8s,
+  ): Observable<EventObject[]> {
+    const name = svc.metadata.name;
+    const namespace = svc.metadata.namespace;
+    const url = `api/namespaces/${namespace}/inferenceservices/${name}/events`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error, false)),
+      map((resp: MWABackendResponse) => resp.events),
     );
   }
 

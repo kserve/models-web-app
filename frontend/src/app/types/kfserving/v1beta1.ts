@@ -41,7 +41,7 @@ export interface InferenceServiceSpec {
 export enum PredictorType {
   Tensorflow = 'tensorflow',
   Triton = 'triton',
-  Sklean = 'sklearn',
+  Sklearn = 'sklearn',
   Onnx = 'onnx',
   Pytorch = 'pytorch',
   Xgboost = 'xgboost',

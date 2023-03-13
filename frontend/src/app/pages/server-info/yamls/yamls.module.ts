@@ -1,11 +1,11 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { YamlsComponent } from './yamls.component';
-import { AceEditorModule } from '@derekbaker/ngx-ace-editor-wrapper';
+import { EditorModule } from 'kubeflow';
 
 @NgModule({
   declarations: [YamlsComponent],
-  imports: [CommonModule, AceEditorModule],
+  imports: [CommonModule, EditorModule],
   exports: [YamlsComponent],
 })
 export class YamlsModule {}

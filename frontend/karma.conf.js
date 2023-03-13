@@ -4,6 +4,24 @@
 module.exports = function (config) {
   config.set({
     basePath: '',
+    files: [
+      {
+        pattern: 'node_modules/monaco-editor/**',
+        watched: false,
+        included: false,
+        served: true,
+      },
+      {
+        pattern: 'src/assets/**',
+        watched: false,
+        included: false,
+        served: true,
+      },
+    ],
+    proxies: {
+      '/static/assets/monaco-editor/': '/base/node_modules/monaco-editor/',
+      '/static/assets/': '/base/src/assets/',
+    },
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
     plugins: [
       require('karma-jasmine'),

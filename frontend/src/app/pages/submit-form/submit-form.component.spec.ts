@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CommonModule } from '@angular/common';
 import { KubeflowModule } from 'kubeflow';
-import { AceEditorModule } from '@derekbaker/ngx-ace-editor-wrapper';
 import { NamespaceService, SnackBarService } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { SubmitFormComponent } from './submit-form.component';
@@ -26,12 +25,7 @@ describe('SubmitFormComponent', () => {
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [SubmitFormComponent],
-      imports: [
-        RouterTestingModule,
-        CommonModule,
-        KubeflowModule,
-        AceEditorModule,
-      ],
+      imports: [RouterTestingModule, CommonModule, KubeflowModule],
       providers: [
         { provide: MWABackendService, useValue: MWABackendServiceStub },
         { provide: NamespaceService, useValue: NamespaceServiceStub },

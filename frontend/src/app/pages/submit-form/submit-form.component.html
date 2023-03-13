@@ -8,7 +8,11 @@
   >
   </lib-title-actions-toolbar>
 
-  <div ace-editor mode="yaml" theme="xcode" [(text)]="yaml"></div>
+  <lib-monaco-editor
+    [(text)]="yaml"
+    language="yaml"
+    [height]="620"
+  ></lib-monaco-editor>
 
   <lib-submit-bar
     [allowYAMLEditing]="false"

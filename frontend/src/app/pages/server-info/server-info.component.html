@@ -62,7 +62,9 @@
           </ng-template>
         </mat-tab>
         <mat-tab label="YAML">
-          <app-yamls [svc]="inferenceService"></app-yamls>
+          <ng-template matTabContent>
+            <app-yamls [svc]="inferenceService"></app-yamls>
+          </ng-template>
         </mat-tab>
       </mat-tab-group>
     </ng-container>

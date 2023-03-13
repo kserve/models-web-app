@@ -1,12 +1,11 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SubmitFormComponent } from './submit-form.component';
-import { FormModule, KubeflowModule } from 'kubeflow';
-import { AceEditorModule } from '@derekbaker/ngx-ace-editor-wrapper';
+import { KubeflowModule } from 'kubeflow';
 
 @NgModule({
   declarations: [SubmitFormComponent],
-  imports: [CommonModule, KubeflowModule, AceEditorModule],
+  imports: [CommonModule, KubeflowModule],
   exports: [SubmitFormComponent],
 })
 export class SubmitFormModule {}

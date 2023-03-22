@@ -41,8 +41,10 @@ def get_inference_service_logs(svc):
     log.info(components)
 
     # dictionary{component: [pod-names]}
-    if svc["metadata"]["annotations"].get("serving.kubeflow.org/raw", "false") == "true":
-        component_pods_dict = utils.get_raw_inference_service_pods(svc, components)
+    if svc["metadata"]["annotations"].get(
+            "serving.kubeflow.org/raw", "false") == "true":
+        component_pods_dict = utils.get_raw_inference_service_pods(
+            svc, components)
     else:
         component_pods_dict = utils.get_inference_service_pods(svc, components)
 

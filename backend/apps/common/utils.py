@@ -23,7 +23,10 @@ def load_inference_service_template(**kwargs):
     """
     return helpers.load_param_yaml(INFERENCESERVICE_TEMPLATE_YAML, **kwargs)
 
-# helper functions for accessing the logs of an InferenceService in raw kubernetes mode
+# helper functions for accessing the logs of an InferenceService in raw
+# kubernetes mode
+
+
 def get_raw_inference_service_pods(svc, components=[]):
     """
     Return a dictionary with (endpoint, component) keys
@@ -31,8 +34,10 @@ def get_raw_inference_service_pods(svc, components=[]):
     """
     namespace = svc["metadata"]["namespace"]
     svc_name = svc["metadata"]["name"]
-    label_selector = "serving.kubeflow.org/inferenceservice={}".format(svc_name)
-    pods = api.v1_core.list_namespaced_pod(namespace, label_selector=label_selector).items
+    label_selector = "serving.kubeflow.org/inferenceservice={}".format(
+        svc_name)
+    pods = api.v1_core.list_namespaced_pod(
+        namespace, label_selector=label_selector).items
     component_pods_dict = {}
     for pod in pods:
         component = pod.metadata.labels.get("component", "")
@@ -50,6 +55,8 @@ def get_raw_inference_service_pods(svc, components=[]):
     return component_pods_dict
 
 # helper functions for accessing the logs of an InferenceService
+
+
 def get_inference_service_pods(svc, components=[]):
     """
     Return the Pod names for the different isvc components.

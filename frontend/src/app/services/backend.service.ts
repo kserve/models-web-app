@@ -3,7 +3,6 @@ import { BackendService, SnackBarService, K8sObject } from 'kubeflow';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { svcHasComponent, getSvcComponents } from '../shared/utils';
 import { InferenceServiceK8s } from '../types/kfserving/v1beta1';
 import { MWABackendResponse, InferenceServiceLogs } from '../types/backend';
 
@@ -32,7 +31,7 @@ export class MWABackendService extends BackendService {
     );
   }
 
-  public getInferenceServices(
+  private getInferenceServicesSingleNamespace(
     namespace: string,
   ): Observable<InferenceServiceK8s[]> {
     const url = `api/namespaces/${namespace}/inferenceservices`;
@@ -43,6 +42,25 @@ export class MWABackendService extends BackendService {
         return resp.inferenceServices;
       }),
     );
+  }
+
+  private getInferenceServicesAllNamespaces(
+    namespaces: string[],
+  ): Observable<InferenceServiceK8s[]> {
+    return this.getObjectsAllNamespaces(
+      this.getInferenceServicesSingleNamespace.bind(this),
+      namespaces,
+    );
+  }
+
+  public getInferenceServices(
+    ns: string | string[],
+  ): Observable<InferenceServiceK8s[]> {
+    if (Array.isArray(ns)) {
+      return this.getInferenceServicesAllNamespaces(ns);
+    }
+
+    return this.getInferenceServicesSingleNamespace(ns);
   }
 
   public getKnativeService(

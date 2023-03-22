@@ -8,7 +8,6 @@ import {
 import { environment } from 'src/environments/environment';
 import {
   NamespaceService,
-  ExponentialBackoff,
   STATUS_TYPE,
   ActionEvent,
   ConfirmDialogService,
@@ -18,9 +17,9 @@ import {
   DashboardState,
   ToolbarButton,
   SnackBarConfig,
+  PollerService,
 } from 'kubeflow';
 import { Subscription } from 'rxjs';
-import { isEqual } from 'lodash';
 import { defaultConfig, generateDeleteConfig } from './config';
 import { Router } from '@angular/router';
 import {
@@ -34,26 +33,27 @@ import {
   templateUrl: './index.component.html',
 })
 export class IndexComponent implements OnInit, OnDestroy {
-  public env = environment;
-  public currNamespace = '';
-  public inferenceServices: InferenceServiceIR[] = [];
-  public poller: ExponentialBackoff;
-  public subs = new Subscription();
-  public config = defaultConfig;
-  public dashboardDisconnectedState = DashboardState.Disconnected;
+  env = environment;
 
-  private rawData: InferenceServiceK8s[] = [];
+  nsSub = new Subscription();
+  pollSub = new Subscription();
 
-  buttons: ToolbarButton[] = [
-    new ToolbarButton({
-      text: `New Endpoint`,
-      icon: 'add',
-      stroked: true,
-      fn: () => {
-        this.router.navigate(['/new']);
-      },
-    }),
-  ];
+  currNamespace: string | string[];
+  config = defaultConfig;
+  inferenceServices: InferenceServiceIR[] = [];
+
+  dashboardDisconnectedState = DashboardState.Disconnected;
+
+  private newEndpointButton = new ToolbarButton({
+    text: $localize`New Endpoint`,
+    icon: 'add',
+    stroked: true,
+    fn: () => {
+      this.router.navigate(['/new']);
+    },
+  });
+
+  buttons: ToolbarButton[] = [this.newEndpointButton];
 
   constructor(
     private backend: MWABackendService,
@@ -62,47 +62,32 @@ export class IndexComponent implements OnInit, OnDestroy {
     private router: Router,
     private clipboard: Clipboard,
     public ns: NamespaceService,
+    public poller: PollerService,
   ) {}
 
-  ngOnInit() {
-    this.poller = new ExponentialBackoff({
-      interval: 1000,
-      retries: 3,
-      maxInterval: 4000,
-    });
-
-    this.subs.add(
-      this.poller.start().subscribe(() => {
-        if (!this.currNamespace) {
-          return;
-        }
-
-        this.backend
-          .getInferenceServices(this.currNamespace)
-          .subscribe((svcs: InferenceServiceK8s[]) => {
-            if (isEqual(this.rawData, svcs)) {
-              return;
-            }
-
-            this.inferenceServices = this.processIncomingData(svcs);
-            this.rawData = svcs;
-            this.poller.reset();
-          });
-      }),
-    );
-
+  ngOnInit(): void {
     // Reset the poller whenever the selected namespace changes
-    this.subs.add(
-      this.ns.getSelectedNamespace().subscribe(ns => {
-        this.currNamespace = ns;
-        this.poller.reset();
-      }),
-    );
+    this.nsSub = this.ns.getSelectedNamespace2().subscribe(ns => {
+      this.currNamespace = ns;
+      this.poll(ns);
+      this.newEndpointButton.namespaceChanged(ns, $localize`Endpoint`);
+    });
   }
 
   ngOnDestroy() {
-    this.subs.unsubscribe();
-    this.poller.stop();
+    this.nsSub.unsubscribe();
+    this.pollSub.unsubscribe();
+  }
+
+  public poll(ns: string | string[]) {
+    this.pollSub.unsubscribe();
+    this.inferenceServices = [];
+
+    const request = this.backend.getInferenceServices(ns);
+
+    this.pollSub = this.poller.exponential(request).subscribe(svcs => {
+      this.inferenceServices = this.processIncomingData(svcs);
+    });
   }
 
   // action handling functions
@@ -157,7 +142,6 @@ export class IndexComponent implements OnInit, OnDestroy {
 
         this.backend.deleteInferenceService(svc).subscribe(
           res => {
-            this.poller.reset();
             dialogRef.close(DIALOG_RESP.ACCEPT);
           },
           err => {

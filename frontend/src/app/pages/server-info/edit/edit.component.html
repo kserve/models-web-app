@@ -1,0 +1,40 @@
+<div class="edit-component">
+  <ng-container>
+    <lib-panel class="lib-panel">
+      The InferenceService name and namespace fields have been hidden because they cannot be changed
+    </lib-panel>
+  </ng-container>
+
+  <mat-divider class="edit-top-divider"></mat-divider>
+
+  <div
+    ace-editor
+    [(text)]="data"
+    mode="yaml"
+    theme="xcode"
+  ></div>
+
+  <mat-divider></mat-divider>
+
+  <div class="flex bar">
+    <button
+      *ngIf="!applying"
+      mat-raised-button
+      color="primary"
+      (click)="submit()"
+      [disabled]="applying"
+    >
+      EDIT
+    </button>
+
+    <button *ngIf="applying" mat-raised-button disabled>
+      <div class="waiting-button-wrapper">
+        <mat-spinner diameter="16"></mat-spinner>
+        <div>APPLYING</div>
+      </div>
+    </button>
+
+    <button mat-raised-button (click)="cancelEdit.emit(true)">CANCEL</button>
+  </div>
+</div>
+

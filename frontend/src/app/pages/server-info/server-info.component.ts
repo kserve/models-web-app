@@ -1,18 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable, of, forkJoin, Subscription } from 'rxjs';
-import {
-  tap,
-  map,
-  concatMap,
-  concat,
-  mergeMap,
-  concatAll,
-  mergeAll,
-  merge,
-  combineAll,
-  reduce,
-  timeout,
-} from 'rxjs/operators';
+import { tap, map, concatMap, timeout } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
 import {
   NamespaceService,
@@ -24,6 +12,7 @@ import {
   SnackBarService,
   SnackType,
   SnackBarConfig,
+  Status,
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { isEqual } from 'lodash';
@@ -35,6 +24,7 @@ import {
   InferenceServiceOwnedObjects,
   ComponentOwnedObjects,
 } from 'src/app/types/backend';
+import { getK8sObjectUiStatus } from 'src/app/shared/utils';
 
 @Component({
   selector: 'app-server-info',
@@ -112,7 +102,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
           this.grafanaFound = true;
         },
         error: () => {
-          console.log($localize`Could not detect a Grafana endpoint..`);
+          console.log($localize`Could not detect a Grafana endpoint.`);
           this.grafanaFound = false;
         },
       });
@@ -122,35 +112,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     this.pollingSub.unsubscribe();
   }
 
-  get statusIcon(): string {
-    if (!this.inferenceService) {
-      return 'warning';
-    }
-
-    let cs: Condition[] = [];
-    try {
-      cs = this.inferenceService.status.conditions;
-    } catch (err) {
-      return 'warning';
-    }
-
-    if (!cs) {
-      return 'warning';
-    }
-
-    for (const c of cs) {
-      if (c.type !== 'Ready') {
-        continue;
-      }
-
-      if (c.status !== 'True') {
-        return 'warning';
-      }
-
-      return 'check_circle';
-    }
-
-    return 'warning';
+  get status(): Status {
+    return getK8sObjectUiStatus(this.inferenceService);
   }
 
   public navigateBack() {

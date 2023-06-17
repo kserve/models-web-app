@@ -2,7 +2,6 @@ import { Component, Input } from '@angular/core';
 import { ListEntry, ChipDescriptor } from 'kubeflow';
 import {
   getPredictorType,
-  getK8sObjectStatus,
   getPredictorExtensionSpec,
   getPredictorRuntime,
 } from 'src/app/shared/utils';
@@ -36,14 +35,6 @@ export class OverviewComponent {
   @Input() ownedObjects: InferenceServiceOwnedObjects;
 
   private svcPrv: InferenceServiceK8s;
-
-  get status() {
-    return getK8sObjectStatus(this.svc)[0];
-  }
-
-  get statusIcon() {
-    return getK8sObjectStatus(this.svc)[1];
-  }
 
   get externalUrl() {
     if (!this.svc.status) {

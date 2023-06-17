@@ -1,10 +1,5 @@
 import { Component, Input } from '@angular/core';
 import { ListEntry, ChipDescriptor } from 'kubeflow';
-import {
-  getReadyCondition,
-  getPredictorType,
-  getK8sObjectStatus,
-} from 'src/app/shared/utils';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 
 @Component({
@@ -26,14 +21,6 @@ export class DetailsComponent {
   }
   get svc(): InferenceServiceK8s {
     return this.svcPrv;
-  }
-
-  get status() {
-    return getK8sObjectStatus(this.svc)[0];
-  }
-
-  get statusIcon() {
-    return getK8sObjectStatus(this.svc)[1];
   }
 
   get externalUrl() {

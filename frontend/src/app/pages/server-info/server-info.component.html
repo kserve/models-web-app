@@ -1,4 +1,4 @@
-<div class="lib-content-wrapper">
+<div class="lib-content-wrapper details-page">
   <lib-title-actions-toolbar
     title="Endpoint details"
     [buttons]="buttonsConfig"
@@ -10,21 +10,20 @@
   </lib-title-actions-toolbar>
 
   <!--scrollable page content-->
-  <div class="page-padding lib-flex-grow lib-overflow-auto">
+  <div class="details-page-outer">
     <lib-loading-spinner *ngIf="!serverInfoLoaded"></lib-loading-spinner>
 
     <ng-container *ngIf="serverInfoLoaded">
-      <div class="page-padding margin-bottom">
-        <div class="flex page-placement center">
-          <mat-icon
+      <div class="details-page-inner">
+        <div class="details-page-inner-2">
+          <lib-status-icon
             class="small-padding-right"
-            [class.warning]="statusIcon === 'warning'"
-            [class.check_circle]="statusIcon === 'check_circle'"
-          >
-            {{ statusIcon }}
-          </mat-icon>
-
+            [phase]="status.phase"
+          ></lib-status-icon>
           <div class="title">{{ serverName }}</div>
+        </div>
+        <div class="small-padding-up">
+          <lib-status-info [status]="status"></lib-status-info>
         </div>
       </div>
 
@@ -59,6 +58,11 @@
         <mat-tab label="LOGS">
           <ng-template matTabContent>
             <app-logs [svc]="inferenceService"></app-logs>
+          </ng-template>
+        </mat-tab>
+        <mat-tab label="EVENTS">
+          <ng-template matTabContent>
+            <app-events [svc]="inferenceService"></app-events>
           </ng-template>
         </mat-tab>
         <mat-tab label="YAML">

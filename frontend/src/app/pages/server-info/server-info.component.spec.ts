@@ -16,6 +16,7 @@ import { YamlsModule } from './yamls/yamls.module';
 
 import { ServerInfoComponent } from './server-info.component';
 import { of } from 'rxjs';
+import { EventsModule } from './events/events.module';
 
 let ActivatedRouteStub: Partial<ActivatedRoute>;
 
@@ -45,6 +46,7 @@ describe('ServerInfoComponent', () => {
         MetricsModule,
         LogsModule,
         YamlsModule,
+        EventsModule,
       ],
       providers: [{ provide: ActivatedRoute, useValue: ActivatedRouteStub }],
     }).compileComponents();

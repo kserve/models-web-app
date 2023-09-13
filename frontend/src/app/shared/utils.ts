@@ -234,6 +234,9 @@ export function getPredictorRuntime(predictor: PredictorSpec): string {
   if (predictorType === PredictorType.Lightgbm) {
     return 'LightGBM ModelServer';
   }
+  if (predictorType === PredictorType.MLFlow) {
+    return 'MLFlow ModelServer';
+  }
   if (predictorType === PredictorType.Custom) {
     return 'Custom ModelServer';
   }

@@ -51,8 +51,8 @@
         <mat-tab *ngIf="grafanaFound" label="METRICS">
           <app-metrics
             *ngIf="serverInfoLoaded"
-            [status]="inferenceService?.status"
             [namespace]="namespace"
+            [status]="inferenceService?.status"
           ></app-metrics>
         </mat-tab>
         <mat-tab label="LOGS">

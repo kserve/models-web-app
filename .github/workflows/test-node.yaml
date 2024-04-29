@@ -21,7 +21,7 @@ jobs:
 
       - name: Format code
         run: |
-          npm install prettier --prefix ./frontend
+          npm install prettier@2.8.8 --prefix ./frontend
           make prettier-check
 
       - name: Lint code

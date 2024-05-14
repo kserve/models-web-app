@@ -161,12 +161,12 @@ export function getPredictorExtensionSpec(
 
   // In the case of Custom predictors, set the additional PredictorExtensionSpec fields
   // manually here
-  const spec = predictor.containers[0] as PredictorExtensionSpec;
+  const spec = (predictor?.containers?.[0] || {}) as PredictorExtensionSpec;
   spec.runtimeVersion = '';
   spec.protocolVersion = '';
 
-  if (predictor.containers[0]?.env) {
-    const storageUri = predictor.containers[0].env.find(
+  if (spec?.env) {
+    const storageUri = spec.env.find(
       envVar => envVar.name.toLowerCase() === 'storage_uri',
     );
     if (storageUri) {

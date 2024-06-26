@@ -7,8 +7,8 @@ web app.
 
 1. Create a new release branch
     ```
-    VERSION="v0.7.0"
-    RELEASE_BRANCH="release-0.7"
+    VERSION="v0.13.0-rc.0"
+    RELEASE_BRANCH="v0.13.0-rc.0"
     git checkout -b $RELEASE_BRANCH origin/master
     ```
 2. Update the VERSION file with the corresponding tag

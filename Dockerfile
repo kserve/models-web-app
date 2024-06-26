@@ -4,12 +4,14 @@ FROM ubuntu AS fetch-kubeflow-kubeflow
 RUN apt-get update && apt-get install git -y
 
 WORKDIR /kf
+COPY ./frontend/COMMIT ./
 RUN git clone https://github.com/kubeflow/kubeflow.git && \
+    COMMIT=$(cat ./COMMIT) && \
     cd kubeflow && \
-    git checkout d1da825
+    git checkout $COMMIT
 
 # --- Build the backend kubeflow-wheel ---
-FROM python:3.7-slim-buster AS backend-kubeflow-wheel
+FROM python:3.12-slim AS backend-kubeflow-wheel
 
 WORKDIR /src
 
@@ -18,7 +20,7 @@ COPY --from=fetch-kubeflow-kubeflow $BACKEND_LIB .
 RUN python setup.py sdist bdist_wheel
 
 # --- Build the frontend kubeflow library ---
-FROM node:12-buster-slim AS frontend-kubeflow-lib
+FROM node:16-buster-slim AS frontend-kubeflow-lib
 
 WORKDIR /src
 
@@ -30,7 +32,7 @@ COPY --from=fetch-kubeflow-kubeflow $LIB/ ./
 RUN npm run build
 
 # --- Build the frontend ---
-FROM node:12-buster-slim AS frontend
+FROM node:16-buster-slim AS frontend
 
 WORKDIR /src
 COPY ./frontend/package*.json ./
@@ -42,7 +44,7 @@ COPY ./frontend/ .
 RUN npm run build -- --output-path=./dist/default --configuration=production
 
 # Web App
-FROM python:3.7-slim-buster
+FROM python:3.12-slim
 
 WORKDIR /package
 COPY --from=backend-kubeflow-wheel /src/dist .

@@ -1,15 +1,9 @@
 import { Component, Input } from '@angular/core';
+import { ListEntry, ChipDescriptor } from 'kubeflow';
 import {
-  NamespaceService,
-  ListEntry,
-  ChipDescriptor,
-  K8sObject,
-} from 'kubeflow';
-import {
-  getReadyCondition,
   getPredictorType,
-  getK8sObjectStatus,
   getPredictorExtensionSpec,
+  getPredictorRuntime,
 } from 'src/app/shared/utils';
 import {
   InferenceServiceK8s,
@@ -42,26 +36,18 @@ export class OverviewComponent {
 
   private svcPrv: InferenceServiceK8s;
 
-  get status() {
-    return getK8sObjectStatus(this.svc)[0];
-  }
-
-  get statusIcon() {
-    return getK8sObjectStatus(this.svc)[1];
-  }
-
   get externalUrl() {
     if (!this.svc.status) {
-      return 'InferenceService is not ready to recieve traffic yet.';
+      return 'InferenceService is not ready to receive traffic yet.';
     }
 
     return this.svc.status.url !== undefined
       ? this.svc.status.url
-      : 'InferenceService is not ready to recieve traffic yet.';
+      : 'InferenceService is not ready to receive traffic yet.';
   }
 
   get internalUrl() {
-    const msg = 'InferenceService is not ready to recieve traffic yet.';
+    const msg = 'InferenceService is not ready to receive traffic yet.';
 
     if (!this.svc.status || !this.svc.status.address) {
       return msg;
@@ -82,6 +68,10 @@ export class OverviewComponent {
 
   get predictorType(): string {
     return getPredictorType(this.svc.spec.predictor);
+  }
+
+  get predictorRuntime(): string {
+    return getPredictorRuntime(this.svc.spec.predictor);
   }
 
   private generateDefaultComponents(

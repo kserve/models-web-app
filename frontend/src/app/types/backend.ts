@@ -1,4 +1,5 @@
 import { BackendResponse, Status, STATUS_TYPE, K8sObject } from 'kubeflow';
+import { EventObject } from './event';
 import { InferenceServiceK8s } from './kfserving/v1beta1';
 
 export interface MWABackendResponse extends BackendResponse {
@@ -9,6 +10,7 @@ export interface MWABackendResponse extends BackendResponse {
   knativeRevision?: K8sObject;
   knativeRoute?: K8sObject;
   serviceLogs?: InferenceServiceLogs;
+  events?: EventObject[];
 }
 
 export interface InferenceServiceLogs {

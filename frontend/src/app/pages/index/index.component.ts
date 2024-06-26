@@ -8,7 +8,6 @@ import {
 import { environment } from 'src/environments/environment';
 import {
   NamespaceService,
-  ExponentialBackoff,
   STATUS_TYPE,
   ActionEvent,
   ConfirmDialogService,
@@ -16,9 +15,11 @@ import {
   SnackBarService,
   SnackType,
   DashboardState,
+  ToolbarButton,
+  SnackBarConfig,
+  PollerService,
 } from 'kubeflow';
 import { Subscription } from 'rxjs';
-import { isEqual } from 'lodash';
 import { defaultConfig, generateDeleteConfig } from './config';
 import { Router } from '@angular/router';
 import {
@@ -32,15 +33,27 @@ import {
   templateUrl: './index.component.html',
 })
 export class IndexComponent implements OnInit, OnDestroy {
-  public env = environment;
-  public currNamespace = '';
-  public inferenceServices: InferenceServiceIR[] = [];
-  public poller: ExponentialBackoff;
-  public subs = new Subscription();
-  public config = defaultConfig;
-  public dashboardDisconnectedState = DashboardState.Disconnected;
+  env = environment;
 
-  private rawData: InferenceServiceK8s[] = [];
+  nsSub = new Subscription();
+  pollSub = new Subscription();
+
+  currNamespace: string | string[];
+  config = defaultConfig;
+  inferenceServices: InferenceServiceIR[] = [];
+
+  dashboardDisconnectedState = DashboardState.Disconnected;
+
+  private newEndpointButton = new ToolbarButton({
+    text: $localize`New Endpoint`,
+    icon: 'add',
+    stroked: true,
+    fn: () => {
+      this.router.navigate(['/new']);
+    },
+  });
+
+  buttons: ToolbarButton[] = [this.newEndpointButton];
 
   constructor(
     private backend: MWABackendService,
@@ -49,47 +62,32 @@ export class IndexComponent implements OnInit, OnDestroy {
     private router: Router,
     private clipboard: Clipboard,
     public ns: NamespaceService,
+    public poller: PollerService,
   ) {}
 
-  ngOnInit() {
-    this.poller = new ExponentialBackoff({
-      interval: 1000,
-      retries: 3,
-      maxInterval: 4000,
-    });
-
-    this.subs.add(
-      this.poller.start().subscribe(() => {
-        if (!this.currNamespace) {
-          return;
-        }
-
-        this.backend
-          .getInferenceServices(this.currNamespace)
-          .subscribe((svcs: InferenceServiceK8s[]) => {
-            if (isEqual(this.rawData, svcs)) {
-              return;
-            }
-
-            this.inferenceServices = this.processIncomingData(svcs);
-            this.rawData = svcs;
-            this.poller.reset();
-          });
-      }),
-    );
-
+  ngOnInit(): void {
     // Reset the poller whenever the selected namespace changes
-    this.subs.add(
-      this.ns.getSelectedNamespace().subscribe(ns => {
-        this.currNamespace = ns;
-        this.poller.reset();
-      }),
-    );
+    this.nsSub = this.ns.getSelectedNamespace2().subscribe(ns => {
+      this.currNamespace = ns;
+      this.poll(ns);
+      this.newEndpointButton.namespaceChanged(ns, $localize`Endpoint`);
+    });
   }
 
   ngOnDestroy() {
-    this.subs.unsubscribe();
-    this.poller.stop();
+    this.nsSub.unsubscribe();
+    this.pollSub.unsubscribe();
+  }
+
+  public poll(ns: string | string[]) {
+    this.pollSub.unsubscribe();
+    this.inferenceServices = [];
+
+    const request = this.backend.getInferenceServices(ns);
+
+    this.pollSub = this.poller.exponential(request).subscribe(svcs => {
+      this.inferenceServices = this.processIncomingData(svcs);
+    });
   }
 
   // action handling functions
@@ -97,37 +95,37 @@ export class IndexComponent implements OnInit, OnDestroy {
     const svc = a.data as InferenceServiceIR;
 
     switch (a.action) {
-      case 'newResourceButton':
-        this.router.navigate(['/new']);
-        break;
       case 'delete':
         this.deleteClicked(svc);
         break;
       case 'copy-link':
         console.log(`Copied to clipboard: ${svc.status.url}`);
         this.clipboard.copy(svc.status.url);
-        this.snack.open(`Copied: ${svc.status.url}`, SnackType.Info, 4000);
+        const config: SnackBarConfig = {
+          data: {
+            msg: `Copied: ${svc.status.url}`,
+            snackType: SnackType.Info,
+          },
+        };
+        this.snack.open(config);
         break;
       case 'name:link':
         /*
          * don't allow the user to navigate to the details page of a server
          * that is being deleted
          */
-        if (svc.metadata.deletionTimestamp) {
-          this.snack.open(
-            $localize`Model server is being deleted, cannot show details.`,
-            SnackType.Info,
-            4000,
-          );
-
+        if (svc.ui.status.phase === STATUS_TYPE.TERMINATING) {
+          a.event.stopPropagation();
+          a.event.preventDefault();
+          const config: SnackBarConfig = {
+            data: {
+              msg: $localize`Endpoint is being deleted, cannot show details.`,
+              snackType: SnackType.Info,
+            },
+          };
+          this.snack.open(config);
           return;
         }
-
-        this.router.navigate([
-          '/details/',
-          this.currNamespace,
-          a.data.metadata.name,
-        ]);
         break;
     }
   }
@@ -135,7 +133,7 @@ export class IndexComponent implements OnInit, OnDestroy {
   private deleteClicked(svc: InferenceServiceIR) {
     const config = generateDeleteConfig(svc);
 
-    const dialogRef = this.confirmDialog.open('Model server', config);
+    const dialogRef = this.confirmDialog.open('Endpoint', config);
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {
@@ -144,7 +142,6 @@ export class IndexComponent implements OnInit, OnDestroy {
 
         this.backend.deleteInferenceService(svc).subscribe(
           res => {
-            this.poller.reset();
             dialogRef.close(DIALOG_RESP.ACCEPT);
           },
           err => {
@@ -163,7 +160,7 @@ export class IndexComponent implements OnInit, OnDestroy {
       }
 
       svc.ui.status.phase = STATUS_TYPE.TERMINATING;
-      svc.ui.status.message = $localize`Preparing to delete Model server...`;
+      svc.ui.status.message = $localize`Preparing to delete Endpoint...`;
     });
   }
 
@@ -187,11 +184,14 @@ export class IndexComponent implements OnInit, OnDestroy {
 
     const predictorType = getPredictorType(svc.spec.predictor);
     const predictor = getPredictorExtensionSpec(svc.spec.predictor);
-
     svc.ui.predictorType = predictorType;
     svc.ui.runtimeVersion = predictor.runtimeVersion;
     svc.ui.storageUri = predictor.storageUri;
-    svc.ui.protocolVersion = predictor.protocolVersion;
+    svc.ui.protocolVersion = predictor.protocolVersion || 'v1';
+    svc.ui.link = {
+      text: svc.metadata.name,
+      url: `/details/${this.currNamespace}/${svc.metadata.name}`,
+    };
   }
 
   private getCopyActionStatus(svc: InferenceServiceIR) {

@@ -1,5 +1,6 @@
 import { Status, STATUS_TYPE, K8sObject, Condition } from 'kubeflow';
 import { V1ObjectMeta, V1Container, V1PodSpec } from '@kubernetes/client-node';
+import { Params } from '@angular/router';
 
 export interface InferenceServiceIR extends InferenceServiceK8s {
   // this typed is used in the frontend after parsing the backend response
@@ -14,6 +15,11 @@ export interface InferenceServiceIR extends InferenceServiceK8s {
     predictorType?: string;
     storageUri?: string;
     protocolVersion?: string;
+    link?: {
+      text: string;
+      url: string;
+      queryParams?: Params | null;
+    };
   };
 }
 
@@ -35,7 +41,7 @@ export interface InferenceServiceSpec {
 export enum PredictorType {
   Tensorflow = 'tensorflow',
   Triton = 'triton',
-  Sklean = 'sklearn',
+  Sklearn = 'sklearn',
   Onnx = 'onnx',
   Pytorch = 'pytorch',
   Xgboost = 'xgboost',
@@ -57,13 +63,13 @@ export interface PredictorSpec extends V1PodSpec, ComponentExtensionSpec {
 }
 
 export interface ModelSpec extends PredictorExtensionSpec {
-  modelFormat: ModelFormat
-  runtime?: string
+  modelFormat: ModelFormat;
+  runtime?: string;
 }
 
 export interface ModelFormat {
-  name: string
-  version?: string
+  name: string;
+  version?: string;
 }
 
 export interface TorchServeSpec extends PredictorExtensionSpec {

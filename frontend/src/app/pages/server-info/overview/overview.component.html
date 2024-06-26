@@ -1,11 +1,3 @@
-<lib-details-list-item
-  key="Status"
-  [icon]="statusIcon"
-  valueTooltip="Status is deduced from the Ready condition"
->
-  {{ status }}
-</lib-details-list-item>
-
 <lib-details-list-item key="URL external" [copyValue]="externalUrl">
   {{ externalUrl }}
 </lib-details-list-item>
@@ -18,24 +10,33 @@
 </lib-details-list-item>
 
 <lib-details-list-item *ngIf="basePredictor?.storageUri" key="Storage URI">
-  {{ basePredictor?.storageUri }}
+  <app-storage-uri
+    [namespace]="namespace"
+    [basePredictor]="basePredictor"
+  ></app-storage-uri>
 </lib-details-list-item>
 
 <lib-details-list-item key="Predictor">
   {{ predictorType }}
 </lib-details-list-item>
 
-<lib-details-list-item key="Runtime" *ngIf="basePredictor?.runtimeVersion">
+<lib-details-list-item key="Runtime">
+  {{ predictorRuntime }}
+</lib-details-list-item>
+
+<lib-details-list-item
+  key="Runtime Version"
+  *ngIf="basePredictor?.runtimeVersion"
+>
   {{ basePredictor.runtimeVersion }}
 </lib-details-list-item>
 
-<lib-details-list-item key="Protocol Version" *ngIf="basePredictor?.protocolVersion">
+<lib-details-list-item
+  key="Protocol Version"
+  *ngIf="basePredictor?.protocolVersion"
+>
   {{ basePredictor.protocolVersion }}
 </lib-details-list-item>
-
-<lib-panel *ngIf="!svc.status" class="lib-panel">
-  This InferenceService has no status.
-</lib-panel>
 
 <lib-conditions-table
   *ngIf="svc?.status"

@@ -5,6 +5,7 @@ import {
 } from 'src/app/types/kfserving/v1beta1';
 import {
   getPredictorExtensionSpec,
+  getPredictorRuntime,
   getPredictorType,
 } from 'src/app/shared/utils';
 
@@ -14,6 +15,7 @@ import {
 })
 export class PredictorDetailsComponent {
   @Input() predictorSpec: PredictorSpec;
+  @Input() namespace: string;
 
   get basePredictor(): PredictorExtensionSpec {
     return getPredictorExtensionSpec(this.predictorSpec);
@@ -21,5 +23,9 @@ export class PredictorDetailsComponent {
 
   get predictorType(): string {
     return getPredictorType(this.predictorSpec);
+  }
+
+  get predictorRuntime(): string {
+    return getPredictorRuntime(this.predictorSpec);
   }
 }

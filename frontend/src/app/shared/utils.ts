@@ -39,8 +39,24 @@ export function getSvcComponents(svc: InferenceServiceK8s): string[] {
   return components;
 }
 
-export function getReadyCondition(obj: K8sObject): Condition {
+// functions for setting the status of an InferenceService
+export function getCondition(obj: K8sObject): Condition {
   let cs: Condition[] = [];
+
+  // The order list based on Condition's types
+  const order = {
+    PredictorConfigurationReady: 1,
+    TransformerConfigurationReady: 2,
+    ExplainerConfigurationReady: 3,
+    PredictorRouteReady: 4,
+    TransformerRouteReady: 5,
+    ExplainerRoutesReady: 6,
+    PredictorReady: 7,
+    TransformerReady: 8,
+    ExplainerReady: 9,
+    IngressReady: 10,
+  };
+
   try {
     cs = obj.status.conditions;
   } catch (err) {
@@ -51,66 +67,67 @@ export function getReadyCondition(obj: K8sObject): Condition {
     return undefined;
   }
 
+  // Check for a Ready condition
   for (const c of cs) {
-    if (c.type !== 'Ready') {
-      continue;
+    if (c.type === 'Ready' && c.status === 'True') {
+      return c;
     }
+  }
 
-    return c;
+  // Sort the conditions based on their type
+  cs.sort(function (a, b) {
+    return order[a.type] - order[b.type];
+  });
+
+  // Return the first condition of the sorted list with a message
+  for (const c of cs) {
+    if (c.message) {
+      return c;
+    }
   }
 }
 
 export function getK8sObjectUiStatus(obj: K8sObject): Status {
-  const status: Status = { phase: '', state: '', message: '' };
+  const status: Status = {
+    phase: STATUS_TYPE.UNINITIALIZED,
+    state: '',
+    message: '',
+  };
 
   if (obj.metadata.deletionTimestamp) {
     status.phase = STATUS_TYPE.TERMINATING;
-    status.message = `${obj.kind} is being deleted`;
+    status.message = `${obj.kind} is being deleted.`;
     return status;
   }
 
   if (!obj.status) {
-    status.phase = STATUS_TYPE.UNAVAILABLE;
-    status.message = `${obj.kind} has no status`;
-    return status;
-  }
-
-  const readyCondition = getReadyCondition(obj);
-  if (readyCondition === undefined) {
     status.phase = STATUS_TYPE.WARNING;
-    status.message = 'No Ready condition available';
+    status.message = `Couldn't find any information for the status. Please take a look at the Events emitted for this ${obj.kind}.`;
     return status;
   }
 
-  if (readyCondition.status === 'True') {
+  const condition = getCondition(obj);
+  if (condition === undefined) {
+    status.phase = STATUS_TYPE.WARNING;
+    status.message = `Couldn't find any available condition.`;
+    return status;
+  }
+
+  if (condition.type === 'Ready') {
     status.phase = STATUS_TYPE.READY;
-    status.message = `${obj.kind} is Ready`;
+    status.message = `${obj.kind} is Ready.`;
     return status;
   }
 
-  status.phase = STATUS_TYPE.WAITING;
-  status.message = readyCondition.message;
+  status.phase = STATUS_TYPE.WARNING;
+  status.message = condition.reason + ': ' + condition.message;
   return status;
-}
-
-export function getK8sObjectStatus(obj: K8sObject): [string, string] {
-  const readyCondition = getReadyCondition(obj);
-
-  if (readyCondition === undefined) {
-    return [`Couldn't deduce the status. Missing Ready condition`, 'warning'];
-  }
-
-  if (readyCondition.status === 'True') {
-    return ['Ready', 'check_circle'];
-  }
-
-  return [readyCondition.message, 'warning'];
 }
 
 // functions for processing the InferenceService spec
 export function getPredictorType(predictor: PredictorSpec): PredictorType {
   if (predictor.model) {
-    return predictor.model?.modelFormat.name as PredictorType
+    return predictor.model?.modelFormat.name as PredictorType;
   } else {
     for (const predictorType of Object.values(PredictorType)) {
       if (predictorType in predictor) {
@@ -126,8 +143,12 @@ export function getPredictorExtensionSpec(
   predictor: PredictorSpec,
 ): PredictorExtensionSpec {
   if (predictor.model) {
-    if (Object.values(PredictorType).includes(predictor.model?.modelFormat.name as PredictorType)) {
-      const spec = predictor.model
+    if (
+      Object.values(PredictorType).includes(
+        predictor.model?.modelFormat.name as PredictorType,
+      )
+    ) {
+      const spec = predictor.model;
       return spec;
     }
   } else {
@@ -140,13 +161,13 @@ export function getPredictorExtensionSpec(
 
   // In the case of Custom predictors, set the additional PredictorExtensionSpec fields
   // manually here
-  const spec = predictor.containers[0] as PredictorExtensionSpec;
+  const spec = (predictor?.containers?.[0] || {}) as PredictorExtensionSpec;
   spec.runtimeVersion = '';
   spec.protocolVersion = '';
 
-  if (predictor.containers[0].env) {
-    const storageUri = predictor.containers[0].env.find(
-      envVar => envVar.name.toLowerCase() === 'storage_uri'
+  if (spec?.env) {
+    const storageUri = spec.env.find(
+      envVar => envVar.name.toLowerCase() === 'storage_uri',
     );
     if (storageUri) {
       spec.storageUri = storageUri.value;
@@ -166,4 +187,54 @@ export function getExplainerContainer(explainer: ExplainerSpec): V1Container {
   }
 
   return null;
+}
+
+export function parseRuntime(svc: InferenceServiceK8s): string {
+  return getPredictorRuntime(svc.spec.predictor);
+}
+
+export function getPredictorRuntime(predictor: PredictorSpec): string {
+  if (predictor === null) {
+    return '';
+  }
+
+  if (predictor?.model?.runtime) {
+    return predictor.model.runtime;
+  }
+
+  const predictorType = getPredictorType(predictor);
+
+  if (
+    predictorType === PredictorType.Triton ||
+    predictorType === PredictorType.Onnx
+  ) {
+    return 'Triton Inference Server';
+  }
+  if (predictorType === PredictorType.Tensorflow) {
+    return 'TFServing';
+  }
+  if (predictorType === PredictorType.Pytorch) {
+    return 'TorchServe';
+  }
+  if (predictorType === PredictorType.Sklearn) {
+    if (predictor.sklearn?.protocolVersion === 'v2') {
+      return 'SKLearn MLServer';
+    }
+    return 'SKLearn ModelServer';
+  }
+  if (predictorType === PredictorType.Xgboost) {
+    if (predictor.xgboost?.protocolVersion === 'v2') {
+      return 'XGBoost MLServer';
+    }
+    return 'XGBoost ModelServer';
+  }
+  if (predictorType === PredictorType.Pmml) {
+    return 'PMML ModelServer';
+  }
+  if (predictorType === PredictorType.Lightgbm) {
+    return 'LightGBM ModelServer';
+  }
+  if (predictorType === PredictorType.Custom) {
+    return 'Custom ModelServer';
+  }
 }

@@ -1,11 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable, of, forkJoin, Subscription } from 'rxjs';
-import {
-  tap,
-  map,
-  concatMap,
-  timeout,
-} from 'rxjs/operators';
+import { tap, map, concatMap, timeout } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
 import {
   NamespaceService,
@@ -16,6 +11,8 @@ import {
   DIALOG_RESP,
   SnackBarService,
   SnackType,
+  SnackBarConfig,
+  Status,
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { isEqual } from 'lodash';
@@ -27,6 +24,7 @@ import {
   InferenceServiceOwnedObjects,
   ComponentOwnedObjects,
 } from 'src/app/types/backend';
+import { getK8sObjectUiStatus } from 'src/app/shared/utils';
 
 @Component({
   selector: 'app-server-info',
@@ -109,11 +107,13 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
             return;
           }
 
-          console.log($localize`Grafana endpoint detected. Will expose a metrics tab.`);
+          console.log(
+            $localize`Grafana endpoint detected. Will expose a metrics tab.`,
+          );
           this.grafanaFound = true;
         },
         error: () => {
-          console.log($localize`Could not detect a Grafana endpoint..`);
+          console.log($localize`Could not detect a Grafana endpoint.`);
           this.grafanaFound = false;
         },
       });
@@ -123,35 +123,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     this.pollingSub.unsubscribe();
   }
 
-  get statusIcon(): string {
-    if (!this.inferenceService) {
-      return 'warning';
-    }
-
-    let cs: Condition[] = [];
-    try {
-      cs = this.inferenceService.status.conditions;
-    } catch (err) {
-      return 'warning';
-    }
-
-    if (!cs) {
-      return 'warning';
-    }
-
-    for (const c of cs) {
-      if (c.type !== 'Ready') {
-        continue;
-      }
-
-      if (c.status !== 'True') {
-        return 'warning';
-      }
-
-      return 'check_circle';
-    }
-
-    return 'warning';
+  get status(): Status {
+    return getK8sObjectUiStatus(this.inferenceService);
   }
 
   public cancelEdit() {
@@ -166,7 +139,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     const svc = this.inferenceService;
     const config = generateDeleteConfig(svc);
 
-    const dialogRef = this.confirmDialog.open($localize`Model server`, config);
+    const dialogRef = this.confirmDialog.open($localize`Endpoint`, config);
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {
@@ -179,11 +152,13 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
             this.pollingSub.unsubscribe();
 
             // const name = `${svc.metadata.namespace}/${svc.metadata.name}`;
-            this.snack.open(
-              $localize`$Delete request was sent.`,
-              SnackType.Info,
-              5000,
-            );
+            const config: SnackBarConfig = {
+              data: {
+                msg: $localize`$Delete request was sent.`,
+                snackType: SnackType.Info,
+              },
+            };
+            this.snack.open(config);
 
             this.router.navigate(['']);
           },

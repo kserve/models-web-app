@@ -1,4 +1,6 @@
+import { CommonModule } from '@angular/common';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { EditorModule } from 'kubeflow';
 
 import { YamlsComponent } from './yamls.component';
 
@@ -8,9 +10,9 @@ describe('YamlsComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ YamlsComponent ]
-    })
-    .compileComponents();
+      declarations: [YamlsComponent],
+      imports: [CommonModule, EditorModule],
+    }).compileComponents();
   }));
 
   beforeEach(() => {

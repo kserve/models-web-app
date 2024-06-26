@@ -1,6 +1,6 @@
 # Models web app
 
-This web app is responsible for allowing the user to manipulate the Model Servers in their Kubeflow cluster. To achieve this it provides a user friendly way to handle the lifecycle of `InferenceService` CRs.
+This web app is responsible for allowing the user to manipulate the Model Servers (Endpoints) in their Kubeflow cluster. To achieve this it provides a user friendly way to handle the lifecycle of `InferenceService` CRs.
 
 The web app currently works with `v1beta1` versions of `InferenceService` objects.
 
@@ -38,7 +38,7 @@ vim ${CONFIG}
 
 # reapply the kustomization
 # kustomize build config/overlays/kubeflow | kubectl apply -f -
-kustomize build config/default | kubectl apply -f -
+kustomize build config/base | kubectl apply -f -
 ```
 
 ## Configuration
@@ -74,8 +74,9 @@ Requirements:
 ### Frontend
 ```bash
 # build the common library
+COMMIT=$(cat ./frontend/COMMIT)
 cd $KUBEFLOW_REPO/components/crud-web-apps/common/frontend/kubeflow-common-lib
-git checkout e6fdf51
+git checkout $COMMIT
 
 npm i
 npm run build

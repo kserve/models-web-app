@@ -1,10 +1,10 @@
 name: Models web app Docker Publisher
-
 on:
   push:
     # Publish `master` as Docker `latest` image.
     branches:
       - master
+      - release-*
 
     # Publish `v1.2.3` tags as releases.
     tags:
@@ -14,7 +14,8 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: models-web-app
+  IMG: kserve/models-web-app
+  ARCH: linux/ppc64le,linux/amd64,linux/arm64
 
 jobs:
   # Run tests.
@@ -27,12 +28,8 @@ jobs:
 
       - name: Run tests
         run: |
-          if [ -f docker-compose.test.yml ]; then
-            docker-compose --file docker-compose.test.yml build
-            docker-compose --file docker-compose.test.yml run sut
-          else
-            docker build . --file Dockerfile
-          fi
+            make docker-build
+
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
   push:
@@ -45,25 +42,30 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Build image
-        run: |
-          docker build . --file Dockerfile --tag $IMAGE_NAME
-      - name: Log into registry
-        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: ppc64le,arm64
 
-      - name: Push image
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: export version variable
         run: |
-          IMAGE_ID=kserve/$IMAGE_NAME
-          # Change all uppercase to lowercase
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          # Strip "v" prefix from tag name
-          # [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+          TAG=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
 
+          # Use Docker `latest` tag convention
+          [ "$TAG" == "master" ] && VERSION=latest
+
+          echo TAG=$TAG >> $GITHUB_ENV
+
+      - name: Build and push multi-arch docker image
+        run: |
+          make docker-build-push-multi-arch

@@ -12,6 +12,7 @@ import { ExplainerComponent } from './explainer/explainer.component';
 import { ContainerComponent } from './shared/container/container.component';
 import { ComponentExtensionComponent } from './shared/component-extension/component-extension.component';
 import { PodComponent } from './shared/pod/pod.component';
+import { SharedModule } from 'src/app/shared/shared.module';
 
 @NgModule({
   declarations: [
@@ -28,6 +29,7 @@ import { PodComponent } from './shared/pod/pod.component';
     DetailsListModule,
     HeadingSubheadingRowModule,
     DateTimeModule,
+    SharedModule,
   ],
   exports: [DetailsComponent],
 })

@@ -1,0 +1,9 @@
+<a
+  *ngIf="isPVC(basePredictor?.storageUri)"
+  [href]="getPVCUrl(basePredictor.storageUri, namespace)"
+  class="lib-link"
+  >{{ basePredictor.storageUri }}</a
+>
+<div *ngIf="!isPVC(basePredictor?.storageUri)">
+  {{ basePredictor?.storageUri }}
+</div>

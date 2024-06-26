@@ -12,6 +12,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { LogsModule } from './logs/logs.module';
 import { YamlsModule } from './yamls/yamls.module';
 import { EditModule } from './edit/edit.module';
+import { EventsModule } from './events/events.module';
 
 @NgModule({
   declarations: [ServerInfoComponent],
@@ -28,6 +29,7 @@ import { EditModule } from './edit/edit.module';
     LogsModule,
     YamlsModule,
     EditModule,
+    EventsModule,
   ],
 })
 export class ServerInfoModule {}

@@ -41,7 +41,12 @@ def get_inference_service_logs(svc):
     log.info(components)
 
     # dictionary{component: [pod-names]}
-    component_pods_dict = utils.get_inference_service_pods(svc, components)
+    if svc["metadata"]["annotations"].get(
+            "serving.kubeflow.org/raw", "false") == "true":
+        component_pods_dict = utils.get_raw_inference_service_pods(
+            svc, components)
+    else:
+        component_pods_dict = utils.get_inference_service_pods(svc, components)
 
     if len(component_pods_dict.keys()) == 0:
         return {}
@@ -94,3 +99,15 @@ def get_knative_route(namespace, name):
                               name=name)
 
     return api.success_response("knativeRoute", svc)
+
+
+@bp.route("/api/namespaces/<namespace>/inferenceservices/<name>/events")
+def get_inference_service_events(namespace, name):
+
+    field_selector = api.events_field_selector("InferenceService", name)
+
+    events = api.events.list_events(namespace, field_selector).items
+
+    return api.success_response(
+        "events", api.serialize(events),
+    )

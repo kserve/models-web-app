@@ -38,7 +38,7 @@ vim ${CONFIG}
 
 # reapply the kustomization
 # kustomize build config/overlays/kubeflow | kubectl apply -f -
-kustomize build config/default | kubectl apply -f -
+kustomize build config/base | kubectl apply -f -
 ```
 
 ## Configuration

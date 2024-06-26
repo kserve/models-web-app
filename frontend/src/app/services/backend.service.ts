@@ -3,9 +3,9 @@ import { BackendService, SnackBarService, K8sObject } from 'kubeflow';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { svcHasComponent, getSvcComponents } from '../shared/utils';
 import { InferenceServiceK8s } from '../types/kfserving/v1beta1';
 import { MWABackendResponse, InferenceServiceLogs } from '../types/backend';
+import { EventObject } from '../types/event';
 
 @Injectable({
   providedIn: 'root',
@@ -32,7 +32,7 @@ export class MWABackendService extends BackendService {
     );
   }
 
-  public getInferenceServices(
+  private getInferenceServicesSingleNamespace(
     namespace: string,
   ): Observable<InferenceServiceK8s[]> {
     const url = `api/namespaces/${namespace}/inferenceservices`;
@@ -43,6 +43,25 @@ export class MWABackendService extends BackendService {
         return resp.inferenceServices;
       }),
     );
+  }
+
+  private getInferenceServicesAllNamespaces(
+    namespaces: string[],
+  ): Observable<InferenceServiceK8s[]> {
+    return this.getObjectsAllNamespaces(
+      this.getInferenceServicesSingleNamespace.bind(this),
+      namespaces,
+    );
+  }
+
+  public getInferenceServices(
+    ns: string | string[],
+  ): Observable<InferenceServiceK8s[]> {
+    if (Array.isArray(ns)) {
+      return this.getInferenceServicesAllNamespaces(ns);
+    }
+
+    return this.getInferenceServicesSingleNamespace(ns);
   }
 
   public getKnativeService(
@@ -120,6 +139,19 @@ export class MWABackendService extends BackendService {
       map((resp: MWABackendResponse) => {
         return resp.serviceLogs;
       }),
+    );
+  }
+
+  public getInferenceServiceEvents(
+    svc: InferenceServiceK8s,
+  ): Observable<EventObject[]> {
+    const name = svc.metadata.name;
+    const namespace = svc.metadata.namespace;
+    const url = `api/namespaces/${namespace}/inferenceservices/${name}/events`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error, false)),
+      map((resp: MWABackendResponse) => resp.events),
     );
   }
 

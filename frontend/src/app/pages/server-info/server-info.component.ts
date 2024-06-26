@@ -1,18 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable, of, forkJoin, Subscription } from 'rxjs';
-import {
-  tap,
-  map,
-  concatMap,
-  concat,
-  mergeMap,
-  concatAll,
-  mergeAll,
-  merge,
-  combineAll,
-  reduce,
-  timeout,
-} from 'rxjs/operators';
+import { tap, map, concatMap, timeout } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
 import {
   NamespaceService,
@@ -23,6 +11,8 @@ import {
   DIALOG_RESP,
   SnackBarService,
   SnackType,
+  SnackBarConfig,
+  Status,
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { isEqual } from 'lodash';
@@ -34,6 +24,7 @@ import {
   InferenceServiceOwnedObjects,
   ComponentOwnedObjects,
 } from 'src/app/types/backend';
+import { getK8sObjectUiStatus } from 'src/app/shared/utils';
 
 @Component({
   selector: 'app-server-info',
@@ -50,7 +41,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   public buttonsConfig: ToolbarButton[] = [
     new ToolbarButton({
-      text: 'DELETE',
+      text: $localize`DELETE`,
       icon: 'delete',
       fn: () => {
         this.deleteInferenceService();
@@ -77,7 +68,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.route.params.subscribe(params => {
-      console.log(`Using namespace: ${params.namespace}`);
+      console.log($localize`Using namespace: ${params.namespace}`);
       this.ns.updateSelectedNamespace(params.namespace);
 
       this.serverName = params.name;
@@ -89,7 +80,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     });
 
     // don't show a METRICS tab if Grafana is not exposed
-    console.log('Checking if Grafana endpoint is exposed');
+    console.log($localize`Checking if Grafana endpoint is exposed`);
     const grafanaApi = environment.grafanaPrefix + '/api/search';
 
     this.http
@@ -99,17 +90,19 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         next: resp => {
           if (!Array.isArray(resp)) {
             console.log(
-              'Response from the Grafana endpoint was not as expected.',
+              $localize`Response from the Grafana endpoint was not as expected.`,
             );
             this.grafanaFound = false;
             return;
           }
 
-          console.log('Grafana endpoint detected. Will expose a metrics tab.');
+          console.log(
+            $localize`Grafana endpoint detected. Will expose a metrics tab.`,
+          );
           this.grafanaFound = true;
         },
         error: () => {
-          console.log('Could not detect a Grafana endpoint..');
+          console.log($localize`Could not detect a Grafana endpoint.`);
           this.grafanaFound = false;
         },
       });
@@ -119,35 +112,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     this.pollingSub.unsubscribe();
   }
 
-  get statusIcon(): string {
-    if (!this.inferenceService) {
-      return 'warning';
-    }
-
-    let cs: Condition[] = [];
-    try {
-      cs = this.inferenceService.status.conditions;
-    } catch (err) {
-      return 'warning';
-    }
-
-    if (!cs) {
-      return 'warning';
-    }
-
-    for (const c of cs) {
-      if (c.type !== 'Ready') {
-        continue;
-      }
-
-      if (c.status !== 'True') {
-        return 'warning';
-      }
-
-      return 'check_circle';
-    }
-
-    return 'warning';
+  get status(): Status {
+    return getK8sObjectUiStatus(this.inferenceService);
   }
 
   public navigateBack() {
@@ -158,7 +124,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     const svc = this.inferenceService;
     const config = generateDeleteConfig(svc);
 
-    const dialogRef = this.confirmDialog.open('Model server', config);
+    const dialogRef = this.confirmDialog.open($localize`Endpoint`, config);
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {
@@ -170,12 +136,14 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
             dialogRef.close(DIALOG_RESP.ACCEPT);
             this.pollingSub.unsubscribe();
 
-            const name = `${svc.metadata.namespace}/${svc.metadata.name}`;
-            this.snack.open(
-              `${name}: Delete request was sent.`,
-              SnackType.Info,
-              5000,
-            );
+            // const name = `${svc.metadata.namespace}/${svc.metadata.name}`;
+            const config: SnackBarConfig = {
+              data: {
+                msg: $localize`$Delete request was sent.`,
+                snackType: SnackType.Info,
+              },
+            };
+            this.snack.open(config);
 
             this.router.navigate(['']);
           },
@@ -198,7 +166,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   private getBackendObjects() {
     console.log(
-      `Fetching info for InferenceService ${this.namespace}/${this.serverName}`,
+      $localize`Fetching info for InferenceService ${this.namespace}/${this.serverName}`,
     );
 
     this.backend

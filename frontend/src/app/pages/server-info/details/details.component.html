@@ -1,12 +1,4 @@
 <div>
-  <lib-details-list-item
-    key="Status"
-    [icon]="statusIcon"
-    valueTooltip="Status is deduced from the Ready condition"
-  >
-    {{ status }}
-  </lib-details-list-item>
-
   <lib-details-list-item key="Name">
     {{ svc.metadata.name }}
   </lib-details-list-item>
@@ -42,6 +34,7 @@
 
   <app-predictor-details
     [predictorSpec]="svc.spec.predictor"
+    [namespace]="namespace"
   ></app-predictor-details>
 
   <!--transformer-->

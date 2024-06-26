@@ -1,3 +1,4 @@
+"""Helpers with GVK needed, stored in one place."""
 from flask import current_app
 
 KNATIVE_ROUTE = {"group": "serving.knative.dev",
@@ -15,6 +16,11 @@ KNATIVE_SERVICE = {"group": "serving.knative.dev",
 
 
 def inference_service_gvk():
+    """
+    Return the GVK needed for an InferenceService.
+
+    This also checks the APP_VERSION env var to detect the version.
+    """
     try:
         version = current_app.config["APP_VERSION"]
         if version not in ['v1alpha2', 'v1beta1']:

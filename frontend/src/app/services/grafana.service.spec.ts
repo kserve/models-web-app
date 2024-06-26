@@ -1,12 +1,18 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { GrafanaService } from './grafana.service';
 
 describe('GrafanaService', () => {
-  beforeEach(() => TestBed.configureTestingModule({}));
+  beforeEach(waitForAsync(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule, MatSnackBarModule],
+    }).compileComponents();
+  }));
 
   it('should be created', () => {
-    const service: GrafanaService = TestBed.get(GrafanaService);
+    const service: GrafanaService = TestBed.inject(GrafanaService);
     expect(service).toBeTruthy();
   });
 });

@@ -10,7 +10,7 @@ commonLabels:
   app.kubernetes.io/name: kserve
 
 bases:
-- ../../web-app
+- ../../base
 - web-app-authorization-policy.yaml
 
 patchesStrategicMerge:
@@ -36,6 +36,7 @@ configMapGenerator:
     behavior: replace
     literals:
     - USERID_HEADER=kubeflow-userid
+    - APP_PREFIX=/kserve-endpoints
 
 configurations:
 - params.yaml

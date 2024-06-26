@@ -1,20 +1,32 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { CommonModule } from '@angular/common';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { ComponentOverviewComponent } from './component.component';
+import {
+  KubeflowModule,
+  ConditionsTableModule,
+  DetailsListModule,
+  HeadingSubheadingRowModule,
+} from 'kubeflow';
 
-import { ComponentComponent } from './component.component';
+describe('ComponentOverviewComponent', () => {
+  let component: ComponentOverviewComponent;
+  let fixture: ComponentFixture<ComponentOverviewComponent>;
 
-describe('ComponentComponent', () => {
-  let component: ComponentComponent;
-  let fixture: ComponentFixture<ComponentComponent>;
-
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ComponentComponent ]
-    })
-    .compileComponents();
+      declarations: [ComponentOverviewComponent],
+      imports: [
+        CommonModule,
+        KubeflowModule,
+        ConditionsTableModule,
+        DetailsListModule,
+        HeadingSubheadingRowModule,
+      ],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ComponentComponent);
+    fixture = TestBed.createComponent(ComponentOverviewComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

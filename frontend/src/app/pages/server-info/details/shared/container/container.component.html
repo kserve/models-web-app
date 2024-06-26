@@ -21,26 +21,29 @@
 <lib-details-list-item *ngIf="env" key="Environment" [chipsList]="env">
 </lib-details-list-item>
 
-<lib-details-list-item *ngIf="container.resources?.limits.cpu" key="CPU limits">
-  {{ container.resources.limits.cpu }}
+<lib-details-list-item
+  *ngIf="container.resources?.limits && container.resources?.limits.cpu"
+  key="CPU limits"
+>
+  {{ container.resources?.limits.cpu }}
 </lib-details-list-item>
 
 <lib-details-list-item
-  *ngIf="container.resources?.requests.cpu"
+  *ngIf="container.resources?.requests && container.resources?.requests.cpu"
   key="CPU requests"
 >
   {{ container.resources.requests.cpu }}
 </lib-details-list-item>
 
 <lib-details-list-item
-  *ngIf="container.resources?.limits.memory"
+  *ngIf="container.resources?.limits && container.resources?.limits.memory"
   key="Memory limits"
 >
   {{ container.resources.limits.memory }}
 </lib-details-list-item>
 
 <lib-details-list-item
-  *ngIf="container.resources?.requests.memory"
+  *ngIf="container.resources?.requests && container.resources?.requests.memory"
   key="Memory requests"
 >
   {{ container.resources.requests.memory }}

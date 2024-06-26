@@ -2,6 +2,10 @@ approvers:
   - kimwnasptd
   - yuzisun
   - markwinter
+  - rimolive
+  - juliusvonkohout
 reviewers:
-  - elikatsis
-  - StefanoFioravanzo
+  - kimwnasptd
+  - yuzisun
+  - rimolive
+  - juliusvonkohout

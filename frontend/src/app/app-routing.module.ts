@@ -7,11 +7,11 @@ import { SubmitFormComponent } from './pages/submit-form/submit-form.component';
 const routes: Routes = [
   { path: '', component: IndexComponent },
   { path: 'details/:namespace/:name', component: ServerInfoComponent },
-  { path: 'new', component: SubmitFormComponent},
+  { path: 'new', component: SubmitFormComponent },
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, { relativeLinkResolution: 'legacy' })],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

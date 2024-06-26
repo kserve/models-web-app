@@ -1,4 +1,6 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { CommonModule } from '@angular/common';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { HeadingSubheadingRowModule, KubeflowModule } from 'kubeflow';
 
 import { MetricsComponent } from './metrics.component';
 
@@ -6,11 +8,11 @@ describe('MetricsComponent', () => {
   let component: MetricsComponent;
   let fixture: ComponentFixture<MetricsComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ MetricsComponent ]
-    })
-    .compileComponents();
+      declarations: [MetricsComponent],
+      imports: [CommonModule, KubeflowModule, HeadingSubheadingRowModule],
+    }).compileComponents();
   }));
 
   beforeEach(() => {

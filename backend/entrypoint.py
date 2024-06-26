@@ -1,3 +1,4 @@
+"""The entrypoint of the backend."""
 import os
 import sys
 

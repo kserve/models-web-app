@@ -1,21 +1,57 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { CommonModule } from '@angular/common';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import {
+  DateTimeModule,
+  DetailsListModule,
+  HeadingSubheadingRowModule,
+} from 'kubeflow';
+import { PredictorSpec } from 'src/app/types/kfserving/v1beta1';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
-import { PredictorComponent } from './predictor.component';
+import { PredictorDetailsComponent } from './predictor.component';
+import { TransformerComponent } from '../transformer/transformer.component';
+import { ExplainerComponent } from '../explainer/explainer.component';
+import { ContainerComponent } from '../shared/container/container.component';
+import { ComponentExtensionComponent } from '../shared/component-extension/component-extension.component';
+import { PodComponent } from '../shared/pod/pod.component';
+import { V1EnvVar } from '@kubernetes/client-node';
 
-describe('PredictorComponent', () => {
-  let component: PredictorComponent;
-  let fixture: ComponentFixture<PredictorComponent>;
+describe('PredictorDetailsComponent', () => {
+  let component: PredictorDetailsComponent;
+  let fixture: ComponentFixture<PredictorDetailsComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ PredictorComponent ]
-    })
-    .compileComponents();
+      declarations: [
+        PredictorDetailsComponent,
+        TransformerComponent,
+        ExplainerComponent,
+        ContainerComponent,
+        ComponentExtensionComponent,
+        PodComponent,
+      ],
+      imports: [
+        CommonModule,
+        DetailsListModule,
+        HeadingSubheadingRowModule,
+        DateTimeModule,
+        MatSnackBarModule,
+      ],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(PredictorComponent);
+    fixture = TestBed.createComponent(PredictorDetailsComponent);
     component = fixture.componentInstance;
+    component.predictorSpec = {
+      sklearn: {
+        command: [],
+        env: [] as V1EnvVar[],
+        storageUri: '',
+        runtimeVersion: '',
+        protocolVersion: '',
+      },
+    } as PredictorSpec;
     fixture.detectChanges();
   });
 

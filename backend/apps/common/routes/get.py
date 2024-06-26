@@ -1,3 +1,4 @@
+"""GET request handlers."""
 from flask import request
 
 from kubeflow.kubeflow.crud_backend import api, logging
@@ -10,6 +11,7 @@ log = logging.getLogger(__name__)
 
 @bp.route("/api/namespaces/<namespace>/inferenceservices")
 def get_inference_services(namespace):
+    """Return a list of InferenceService CRs as json objects."""
     gvk = versions.inference_service_gvk()
     inference_services = api.list_custom_rsrc(**gvk, namespace=namespace)
 
@@ -19,25 +21,32 @@ def get_inference_services(namespace):
 
 @bp.route("/api/namespaces/<namespace>/inferenceservices/<name>")
 def get_inference_service(namespace, name):
+    """Return an InferenceService CR as a json object."""
     inference_service = api.get_custom_rsrc(**versions.inference_service_gvk(),
                                             namespace=namespace, name=name)
     if request.args.get("logs", "false") == "true":
         # find the logs
         return api.success_response(
-            "serviceLogs", get_inference_service_logs(inference_service)
+            "serviceLogs", get_inference_service_logs(inference_service),
         )
 
     return api.success_response("inferenceService", inference_service)
 
 
 def get_inference_service_logs(svc):
+    """Return all logs for all isvc component pods."""
     namespace = svc["metadata"]["namespace"]
     components = request.args.getlist("component")
 
     log.info(components)
 
     # dictionary{component: [pod-names]}
-    component_pods_dict = utils.get_inference_service_pods(svc, components)
+    if svc["metadata"]["annotations"].get(
+            "serving.kubeflow.org/raw", "false") == "true":
+        component_pods_dict = utils.get_raw_inference_service_pods(
+            svc, components)
+    else:
+        component_pods_dict = utils.get_inference_service_pods(svc, components)
 
     if len(component_pods_dict.keys()) == 0:
         return {}
@@ -58,6 +67,7 @@ def get_inference_service_logs(svc):
 
 @bp.route("/api/namespaces/<namespace>/knativeServices/<name>")
 def get_knative_service(namespace, name):
+    """Return a Knative Services object as json."""
     svc = api.get_custom_rsrc(**versions.KNATIVE_SERVICE, namespace=namespace,
                               name=name)
 
@@ -66,6 +76,7 @@ def get_knative_service(namespace, name):
 
 @bp.route("/api/namespaces/<namespace>/configurations/<name>")
 def get_knative_configuration(namespace, name):
+    """Return a Knative Configurations object as json."""
     svc = api.get_custom_rsrc(**versions.KNATIVE_CONF, namespace=namespace,
                               name=name)
 
@@ -74,6 +85,7 @@ def get_knative_configuration(namespace, name):
 
 @bp.route("/api/namespaces/<namespace>/revisions/<name>")
 def get_knative_revision(namespace, name):
+    """Return a Knative Revision object as json."""
     svc = api.get_custom_rsrc(**versions.KNATIVE_REVISION, namespace=namespace,
                               name=name)
 
@@ -82,7 +94,20 @@ def get_knative_revision(namespace, name):
 
 @bp.route("/api/namespaces/<namespace>/routes/<name>")
 def get_knative_route(namespace, name):
+    """Return a Knative Route object as json."""
     svc = api.get_custom_rsrc(**versions.KNATIVE_ROUTE, namespace=namespace,
                               name=name)
 
     return api.success_response("knativeRoute", svc)
+
+
+@bp.route("/api/namespaces/<namespace>/inferenceservices/<name>/events")
+def get_inference_service_events(namespace, name):
+
+    field_selector = api.events_field_selector("InferenceService", name)
+
+    events = api.events.list_events(namespace, field_selector).items
+
+    return api.success_response(
+        "events", api.serialize(events),
+    )

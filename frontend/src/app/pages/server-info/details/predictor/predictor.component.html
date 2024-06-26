@@ -1,20 +1,34 @@
 <lib-details-list-item key="Storage uri" *ngIf="basePredictor?.storageUri">
-  {{ basePredictor?.storageUri }}
+  <app-storage-uri
+    [namespace]="namespace"
+    [basePredictor]="basePredictor"
+  ></app-storage-uri>
+</lib-details-list-item>
+
+<lib-details-list-item key="Predictor">
+  {{ predictorType }}
 </lib-details-list-item>
 
 <lib-details-list-item key="Runtime">
-  {{ predictorType }} {{ basePredictor.runtimeVersion }}
+  {{ predictorRuntime }}
 </lib-details-list-item>
 
 <lib-details-list-item
-  key="Protocol version"
-  *ngIf="basePredictor.protocolVersion"
+  key="Runtime Version"
+  *ngIf="basePredictor?.runtimeVersion"
+>
+  {{ basePredictor.runtimeVersion }}
+</lib-details-list-item>
+
+<lib-details-list-item
+  key="Protocol Version"
+  *ngIf="basePredictor?.protocolVersion"
 >
   {{ basePredictor.protocolVersion }}
 </lib-details-list-item>
 
 <lib-details-list-item
-  key="Model class name"
+  key="Endpoint class name"
   *ngIf="predictorSpec?.pytorch?.modelClassName"
 >
   {{ predictorSpec.pytorch.modelClassName }}

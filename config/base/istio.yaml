@@ -5,13 +5,13 @@ metadata:
   namespace: kserve
 spec:
   gateways:
-  - $(ingressGateway)
+  - knative-serving/knative-ingress-gateway
   hosts:
   - '*'
   http:
   - match:
     - uri:
-        prefix: /models/
+        prefix: /kserve-endpoints/
     rewrite:
       uri: /
     route:

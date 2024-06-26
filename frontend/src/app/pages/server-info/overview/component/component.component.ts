@@ -1,5 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { getK8sObjectStatus } from 'src/app/shared/utils';
+import { Component, Input } from '@angular/core';
 import { ComponentStatusSpec } from 'src/app/types/kfserving/v1beta1';
 import { ComponentOwnedObjects } from 'src/app/types/backend';
 
@@ -8,12 +7,8 @@ import { ComponentOwnedObjects } from 'src/app/types/backend';
   templateUrl: './component.component.html',
   styleUrls: ['./component.component.scss'],
 })
-export class ComponentOverviewComponent implements OnInit {
+export class ComponentOverviewComponent {
   @Input() componentName: string;
   @Input() ownedObjs: ComponentOwnedObjects;
   @Input() status: ComponentStatusSpec;
-
-  public getStatus = getK8sObjectStatus;
-
-  ngOnInit() {}
 }

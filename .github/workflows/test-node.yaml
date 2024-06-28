@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 12
+          node-version: 16
 
       - name: Format code
         run: |
@@ -26,6 +26,7 @@ jobs:
 
       - name: Lint code
         run: |
+          npm install @angular/cli@12.2.17 --prefix ./frontend
           cd frontend
           npm run lint-check
 
@@ -40,7 +41,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 12
+          node-version: 16
 
       - name: Fetch Kubeflow and install common code dependencies
         run: |

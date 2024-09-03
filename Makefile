@@ -3,6 +3,10 @@ TAG ?= $(shell git describe --tags --always --dirty)
 ARCH ?= linux/amd64
 
 
+# Prettier UI format check.
+prettier-check:
+	npm run format:check --prefix frontend
+
 docker-build:
 	docker build -t ${IMG}:${TAG} .
 

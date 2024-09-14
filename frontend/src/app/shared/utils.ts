@@ -143,7 +143,7 @@ export function getPredictorExtensionSpec(
   predictor: PredictorSpec,
 ): PredictorExtensionSpec {
   if (predictor.model) {
-    return predictor.model
+    return predictor.model;
   } else {
     for (const predictorType of Object.values(PredictorType)) {
       if (predictorType in predictor) {

@@ -15,6 +15,8 @@ FROM python:3.12-slim AS backend-kubeflow-wheel
 
 WORKDIR /src
 
+RUN pip install setuptools wheel
+
 ARG BACKEND_LIB=/kf/kubeflow/components/crud-web-apps/common/backend
 COPY --from=fetch-kubeflow-kubeflow $BACKEND_LIB .
 RUN python setup.py sdist bdist_wheel

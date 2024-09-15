@@ -227,6 +227,9 @@ export function getPredictorRuntime(predictor: PredictorSpec): string {
   if (predictorType === PredictorType.Lightgbm) {
     return 'LightGBM ModelServer';
   }
+  if (predictorType === PredictorType.Huggingface) {
+    return 'HuggingFace ModelServer';
+  }
   if (predictorType === PredictorType.Custom) {
     return 'Custom ModelServer';
   }

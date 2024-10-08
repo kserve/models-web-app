@@ -1,0 +1,42 @@
+[ace-editor] {
+  width: auto;
+  height: 700px;
+}
+
+.edit-component {
+  margin-top: 1rem;
+}
+
+.edit-top-divider {
+  margin-top: 1rem;
+}
+
+.bar {
+  padding: 0.5rem 0;
+}
+
+.bar > * {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.bar > button:first-child {
+  margin-left: 35%;
+}
+
+.bar > button:nth-child(2) {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.text-area > * {
+  white-space: break-spaces;
+}
+
+.waiting-button-wrapper {
+  display: flex;
+}
+
+.waiting-button-wrapper .mat-spinner {
+  margin: auto 0.2rem;
+}

@@ -1,7 +1,5 @@
 # --- Clone the kubeflow/kubeflow code ---
-FROM ubuntu AS fetch-kubeflow-kubeflow
-
-RUN apt-get update && apt-get install git -y
+FROM alpine/git AS fetch-kubeflow-kubeflow
 
 WORKDIR /kf
 COPY ./frontend/COMMIT ./
@@ -62,6 +60,6 @@ COPY ./backend/Makefile .
 
 COPY --from=frontend /src/dist/default/ /src/apps/v1beta1/static/
 
-ENV APP_PREFIX /models
-ENV APP_VERSION v1beta1
+ENV APP_PREFIX="/models"
+ENV APP_VERSION="v1beta1"
 ENTRYPOINT ["gunicorn", "-w", "3", "--bind", "0.0.0.0:5000", "--access-logfile", "-",  "entrypoint:app"]

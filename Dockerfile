@@ -22,7 +22,7 @@ COPY --from=fetch-kubeflow-kubeflow $BACKEND_LIB .
 RUN python setup.py sdist bdist_wheel
 
 # --- Build the frontend kubeflow library ---
-FROM nnode:23-bookworm-slim  AS frontend-kubeflow-lib
+FROM node:23-bookworm-slim  AS frontend-kubeflow-lib
 
 WORKDIR /src
 

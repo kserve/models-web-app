@@ -22,7 +22,7 @@ COPY --from=fetch-kubeflow-kubeflow $BACKEND_LIB .
 RUN python setup.py sdist bdist_wheel
 
 # --- Build the frontend kubeflow library ---
-FROM node:16-buster-slim AS frontend-kubeflow-lib
+FROM nnode:23-bookworm-slim  AS frontend-kubeflow-lib
 
 WORKDIR /src
 
@@ -34,7 +34,7 @@ COPY --from=fetch-kubeflow-kubeflow $LIB/ ./
 RUN npm run build
 
 # --- Build the frontend ---
-FROM node:16-buster-slim AS frontend
+FROM node:23-bookworm-slim AS frontend
 
 WORKDIR /src
 COPY ./frontend/package*.json ./

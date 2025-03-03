@@ -27,8 +27,14 @@
         </div>
       </div>
 
+      <ng-container *ngIf="isEditing">
+        <app-edit [isvc]="editingIsvc" (cancelEdit)="cancelEdit()">
+        </app-edit>
+      </ng-container>
+
       <!--tabs-->
       <mat-tab-group
+        *ngIf="!isEditing"
         class="page-placement"
         dynamicHeight
         animationDuration="0ms"

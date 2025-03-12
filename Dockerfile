@@ -22,23 +22,24 @@ COPY --from=fetch-kubeflow-kubeflow $BACKEND_LIB .
 RUN python setup.py sdist bdist_wheel
 
 # --- Build the frontend kubeflow library ---
-FROM node:16.16-buster-slim AS frontend-kubeflow-lib
+FROM node:23-bookworm-slim AS frontend-kubeflow-lib
 
 WORKDIR /src
-
+ENV NODE_OPTIONS="--openssl-legacy-provider"
 ARG LIB=/kf/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib
 COPY --from=fetch-kubeflow-kubeflow $LIB/package*.json ./
-RUN npm install
+RUN npm ci  # Use ci for stable dependency installs
 
 COPY --from=fetch-kubeflow-kubeflow $LIB/ ./
 RUN npm run build
 
 # --- Build the frontend ---
-FROM node:16.16-buster-slim AS frontend
+FROM node:23-bookworm-slim AS frontend
 
 WORKDIR /src
+ENV NODE_OPTIONS="--openssl-legacy-provider"
 COPY ./frontend/package*.json ./
-RUN npm install
+RUN npm ci  # Use ci for a clean install
 COPY --from=frontend-kubeflow-lib /src/dist/kubeflow/ ./node_modules/kubeflow/
 
 COPY ./frontend/ .
@@ -64,4 +65,4 @@ COPY --from=frontend /src/dist/default/ /src/apps/v1beta1/static/
 
 ENV APP_PREFIX /models
 ENV APP_VERSION v1beta1
-ENTRYPOINT ["gunicorn", "-w", "3", "--bind", "0.0.0.0:5000", "--access-logfile", "-",  "entrypoint:app"]
+ENTRYPOINT ["gunicorn", "-w", "3", "--bind", "0.0.0.0:5000", "--access-logfile", "-", "entrypoint:app"]

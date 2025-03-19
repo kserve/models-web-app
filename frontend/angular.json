@@ -24,6 +24,9 @@
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
             "preserveSymlinks": true,
+            "stylePreprocessorOptions": {
+              "includePaths": ["node_modules"]
+            },
             "outputPath": "dist/frontend",
             "index": "src/index.html",
             "main": "src/main.ts",

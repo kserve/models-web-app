@@ -43,7 +43,6 @@ RUN npm install --legacy-peer-deps
 COPY --from=frontend-kubeflow-lib /src/dist/kubeflow/ ./node_modules/kubeflow/
 
 COPY ./frontend/ .
-ENV NODE_OPTIONS=--openssl-legacy-provider
 RUN npm run build -- --output-path=./dist/default --configuration=production
 
 # Web App

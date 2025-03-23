@@ -68,7 +68,7 @@ In order to run the app locally you will need to:
 The `npm run build:watch` command will build the frontend artifacts inside the backend's `static` folder for serving. So in order to see the app you'll need to start the backend and connect to `localhost:5000`.
 
 Requirements:
-* node 12.0.0
+* node 16.0.0
 * python 3.7
 
 ### Frontend

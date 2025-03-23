@@ -1,7 +1,7 @@
 # --- Clone the kubeflow/kubeflow code ---
 FROM ubuntu AS fetch-kubeflow-kubeflow
 
-RUN apt-get update && apt-get install git -y  
+RUN apt-get update && apt-get install git -y
 
 WORKDIR /kf
 COPY ./frontend/COMMIT ./
@@ -20,7 +20,7 @@ ARG BACKEND_LIB=/kf/kubeflow/components/crud-web-apps/common/backend
 COPY --from=fetch-kubeflow-kubeflow $BACKEND_LIB .
 RUN python setup.py sdist bdist_wheel
 
-# --- Build the frontend kubeflow library --- 
+# --- Build the frontend kubeflow library ---
 FROM node:22-bookworm-slim AS frontend-kubeflow-lib
 
 WORKDIR /src

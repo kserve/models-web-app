@@ -1,65 +1,61 @@
 name: Frontend Test
-
 on:
   pull_request:
     paths:
       - frontend/**
-
 jobs:
   frontend-format-linting-check:
     name: Code format and lint
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 12
-
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
       - name: Format code
         run: |
           npm install prettier@2.8.8 --prefix ./frontend
           make prettier-check
-
       - name: Lint code
         run: |
           cd frontend
+          npm ci --no-audit
           npm run lint-check
-
   frontend-unit-tests:
-    name: Frontend Unit Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 12
-
-      - name: Fetch Kubeflow and install common code dependencies
-        run: |
-          COMMIT=$(cat frontend/COMMIT)
-          cd /tmp && git clone https://github.com/kubeflow/kubeflow.git
-          cd kubeflow
-          git checkout $COMMIT
-          cd components/crud-web-apps/common/frontend/kubeflow-common-lib
-          npm i
-          npm run build
-          npm link ./dist/kubeflow
-
-      - name: Install MWA dependencies
-        run: |
-          cd frontend
-          npm i
-          npm link kubeflow
-
-      - name: Run unit tests
-        run: |
-          cd frontend
-          npm run test:prod
+      name: Frontend Unit Tests
+      runs-on: ubuntu-latest
+      steps:
+        - name: Check out code
+          uses: actions/checkout@v3
+        - name: Setup Node
+          uses: actions/setup-node@v3
+          with:
+            node-version: 16
+            cache: 'npm'
+            cache-dependency-path: frontend/package-lock.json
+        - name: Fetch Kubeflow and Build Common Library
+          run: |
+            COMMIT=$(cat frontend/COMMIT)
+            cd /tmp && git clone https://github.com/kubeflow/kubeflow.git
+            cd kubeflow
+            git checkout $COMMIT
+            cd components/crud-web-apps/common/frontend/kubeflow-common-lib
+            npm ci --no-audit
+            npm run build
+            npm link ./dist/kubeflow
+        - name: Install Frontend Dependencies
+          run: |
+            cd frontend
+            npm ci --no-audit
+            npm link kubeflow
+        - name: Verify Linked Styles (Debugging)
+          run: |
+            ls -l frontend/node_modules/kubeflow/styles/
+        - name: Run Unit Tests
+          run: |
+            cd frontend
+            npm run test:prod

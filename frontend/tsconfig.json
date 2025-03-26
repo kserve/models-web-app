@@ -2,6 +2,10 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": "./",
+    "paths": {
+    "kubeflow": ["node_modules/kubeflow"],
+    "kubeflow/*": ["node_modules/kubeflow/*"]
+    },
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,

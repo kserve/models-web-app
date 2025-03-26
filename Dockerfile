@@ -29,8 +29,6 @@ COPY --from=fetch-kubeflow-kubeflow $LIB/package*.json ./
 RUN npm install
 
 COPY --from=fetch-kubeflow-kubeflow $LIB/ ./
-# Patch all SCSS files with tilde imports
-RUN find . -name "*.scss" -exec sed -i "s|@use '~@angular/material' as mat;|@use '@angular/material' as mat;|" {} \;
 RUN npm run build
 
 # --- Build the frontend ---

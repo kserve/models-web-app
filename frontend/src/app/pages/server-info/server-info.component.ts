@@ -38,8 +38,19 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   public inferenceService: InferenceServiceK8s;
   public ownedObjects: InferenceServiceOwnedObjects = {};
   public grafanaFound = true;
+  public isEditing = false;
+  public editingIsvc: InferenceServiceK8s;
 
   public buttonsConfig: ToolbarButton[] = [
+    new ToolbarButton({
+      text: 'EDIT',
+      icon: 'edit',
+      fn: () => {
+        // Make a copy of current isvc so polling update doesn't affect editing
+        this.editingIsvc = {...this.inferenceService};
+        this.isEditing = true;
+      },
+    }),
     new ToolbarButton({
       text: $localize`DELETE`,
       icon: 'delete',
@@ -116,6 +127,10 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     return getK8sObjectUiStatus(this.inferenceService);
   }
 
+  public cancelEdit() {
+    this.isEditing = false;
+  }
+
   public navigateBack() {
     this.router.navigate(['/']);
   }
@@ -177,7 +192,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         const components = ['predictor', 'transformer', 'explainer'];
         const obs: Observable<[string, string, ComponentOwnedObjects]>[] = [];
 
-        ['predictor', 'transformer', 'explainer'].forEach(component => {
+        components.forEach(component => {
           obs.push(this.getOwnedObjects(svc, component));
         });
 

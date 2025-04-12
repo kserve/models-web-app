@@ -1,4 +1,4 @@
-name: Models Web App OCI Container Publisher
+name: Models Web Application OCI Container Publisher
 
 on:
   push:
@@ -18,8 +18,22 @@ env:
   PLATFORMS: linux/ppc64le,linux/amd64,linux/arm64
 
 jobs:
+  # Run tests.
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tests
+        run: |
+          make docker-build
+
   # Push image to GitHub Container Registry.
   push:
+    # Ensure test job passes before pushing image.
+    needs: test
+
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     permissions:

@@ -1,7 +1,7 @@
 # Releasing
 
-This folder contains helper files for releasing the images and manifests of the
-web app.
+This folder contains helper files for releasing the OCI images and manifests of the
+kserve models web application.
 
 ## Steps for releasing
 
@@ -12,7 +12,6 @@ web app.
     git checkout -b $RELEASE_BRANCH origin/master
     ```
 2. Update the VERSION file with the corresponding tag
-3. Update the app's kustomization file to use the new tag
-4. Submit the PR
-5. Once merged the GH Action will tag and push an image based on the contents
-   of the VERSION file
+3. Update the applications kustomization file to use the new tag
+4. Submit the pull request
+5. Once merged the GitHub action will tag and push an OCI image based on the contents of the VERSION file

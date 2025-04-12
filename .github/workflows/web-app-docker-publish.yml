@@ -15,7 +15,6 @@ on:
   pull_request:
 
 env:
-  # IMAGE_NAME is derived from the repository name automatically by metadata-action if not set
   PLATFORMS: linux/ppc64le,linux/amd64,linux/arm64
 
 jobs:

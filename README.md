@@ -75,7 +75,7 @@ Requirements:
 ```bash
 # build the common library
 COMMIT=$(cat ./frontend/COMMIT)
-cd $KUBEFLOW_REPO/components/crud-web-apps/common/frontend/kubeflow-common-lib
+cd $KUBEFLOW_REPOSITORY/components/crud-web-apps/common/frontend/kubeflow-common-lib
 git checkout $COMMIT
 
 npm i
@@ -84,7 +84,7 @@ cd dist/kubeflow
 npm link
 
 # run the app frontend
-cd $KSERVE_MODELS_WEB_APP_REPO/frontend
+cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/frontend
 npm i
 npm link kubeflow
 npm run build:watch

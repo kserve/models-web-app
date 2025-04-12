@@ -69,7 +69,7 @@ The `npm run build:watch` command will build the frontend artifacts inside the b
 
 Requirements:
 * node 22.0.0
-* python 3.7
+* python 3.12
 
 ### Frontend
 ```bash
@@ -94,15 +94,15 @@ npm run build:watch
 
 #### run it locally
 ```bash
-# create a virtual env and install deps
+# create a virtual environment and install dependencies
 # https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
-cd $KSERVE_MODELS_WEB_APP_REPO/backend
-python3.7 -m pip install --user virtualenv
-python3.7 -m venv web-apps-dev
-source web-apps-dev/bin/activate
+cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/backend
+python3.12 -m pip install --user virtualenv
+python3.12 -m venv web-applicatio -development
+source web-application-development/bin/activate
 
-# install the deps on the activated virtual env
-KUBEFLOW_REPO="/path/to/kubeflow/kubeflow" make -C backend install-deps
+# install the dependencies on the activated virtual environment 
+KUBEFLOW_REPOSITORY="/path/to/kubeflow/kubeflow" make -C backend install-deps
 
 # run the backend
 make -C backend run-dev

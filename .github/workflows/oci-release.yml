@@ -2,7 +2,7 @@ name: Models Web Application OCI image Publisher (Releasing)
 
 on:
   push:
-    # Publish `master` as Docker `latest` image.
+    # Publish `master` as `latest` OCI image.
     branches:
       - master
       - release-*

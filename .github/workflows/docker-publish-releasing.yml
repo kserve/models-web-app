@@ -1,4 +1,4 @@
-name: Models Web Application OCI Container Publisher (Releasing)
+name: Models Web Application OCI image Publisher (Releasing)
 
 on:
   push:

@@ -2,7 +2,7 @@
 
 This web application is responsible for allowing the user to manipulate the Model Servers (Endpoints) in his Kubeflow cluster. To achieve this it provides a user friendly way to handle the lifecycle of `InferenceService` CRs.
 
-The web applucation currently works with `v1beta1` versions of `InferenceService` objects.
+The web application currently works with `v1beta1` versions of `InferenceService` objects.
 
 ## Connect to the application
 
@@ -98,7 +98,7 @@ npm run build:watch
 # https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
 cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/backend
 python3.12 -m pip install --user virtualenv
-python3.12 -m venv web-applicatio -development
+python3.12 -m venv web-application-development
 source web-application-development/bin/activate
 
 # install the dependencies on the activated virtual environment 

@@ -1,4 +1,4 @@
-name: Models web app Docker Publisher
+name: Models Web App OCI Container Publisher
 
 on:
   push:
@@ -21,7 +21,6 @@ jobs:
   # Push image to GitHub Container Registry.
   push:
     runs-on: ubuntu-latest
-    # Only run on push events, not PRs
     if: github.event_name == 'push'
     permissions:
       packages: write
@@ -46,7 +45,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata (tags, labels) for OCI image
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -60,7 +59,7 @@ jobs:
             # Add 'latest' tag for master branch pushes
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
-      - name: Build and push multi-arch docker image
+      - name: Build and push multi-architecture OCI image
         uses: docker/build-push-action@v5
         with:
           context: .

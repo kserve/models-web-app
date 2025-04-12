@@ -1,4 +1,4 @@
-name: Models web app Docker Publisher (Releasing)
+name: Models Web App OCI Container Publisher (Releasing)
 
 on:
   push:
@@ -14,13 +14,12 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: models-web-app
+  IMAGE_NAME: models-web-application
 
 jobs:
   # Push image to GitHub Container Registry.
   push:
     runs-on: ubuntu-latest
-    # Only run on push events, not PRs to the trigger branches/paths
     if: github.event_name == 'push'
     permissions:
       packages: write
@@ -40,7 +39,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata (tags, labels) for OCI image
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -49,7 +48,7 @@ jobs:
             # Get version from file for release branches/master
             type=raw,value={{cat ./releasing/VERSION}}
 
-      - name: Build and push Docker image
+      - name: Build and push OCI image
         uses: docker/build-push-action@v5
         with:
           context: .

@@ -5,7 +5,7 @@ on:
     # Publish `master` as `latest` OCI image.
     branches:
       - master
-      - release-*
+      - v*
 
     # Publish `v1.2.3` tags as releases.
     tags:

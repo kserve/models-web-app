@@ -44,7 +44,7 @@ kustomize build config/base | kubectl apply -f -
 ## Configuration
 
 The following is a list of environment variables that can be set for any web app that is using this base app.
-| ENV Var | Default value | Description |
+| Environment variable | Default value | Description |
 | - | - | - |
 | APP_PREFIX | /models | Controls the application's prefix, by setting the [base-url](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base) element |
 | APP_DISABLE_AUTH | False | Controls whether the application should use SubjectAccessReviews to ensure the user is authorized to perform an action |

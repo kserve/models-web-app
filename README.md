@@ -1,4 +1,4 @@
-# Models web app
+# Models web application
 
 This web application is responsible for allowing the user to manipulate the Model Servers (Endpoints) in his Kubeflow cluster. To achieve this it provides a user friendly way to handle the lifecycle of `InferenceService` CRs.
 

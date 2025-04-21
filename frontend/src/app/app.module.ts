@@ -1,5 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { NgModule, APP_INITIALIZER } from '@angular/core';
+import { configureAce } from './ace-config';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -33,6 +34,11 @@ const MwaSnackBarConfig: MatSnackBarConfig = {
   ],
   providers: [
     { provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, useValue: MwaSnackBarConfig },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: () => configureAce,
+      multi: true,
+    },
   ],
   bootstrap: [AppComponent],
 })

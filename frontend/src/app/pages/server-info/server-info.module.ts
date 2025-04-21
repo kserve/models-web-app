@@ -11,6 +11,7 @@ import { DetailsModule } from './details/details.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { LogsModule } from './logs/logs.module';
 import { YamlsModule } from './yamls/yamls.module';
+import { EditModule } from './edit/edit.module';
 import { EventsModule } from './events/events.module';
 
 @NgModule({
@@ -27,6 +28,7 @@ import { EventsModule } from './events/events.module';
     MetricsModule,
     LogsModule,
     YamlsModule,
+    EditModule,
     EventsModule,
   ],
 })

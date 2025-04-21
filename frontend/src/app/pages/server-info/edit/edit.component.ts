@@ -14,12 +14,8 @@ import { dump, load } from 'js-yaml';
 import { SnackBarService, SnackType } from 'kubeflow';
 import { InferenceServiceK8s } from '../../../types/kfserving/v1beta1';
 import { MWABackendService } from '../../../services/backend.service';
-// import { AceConfigInterface } from "ngx-ace-wrapper";
-
 import * as ace from 'ace-builds';
 import { Ace } from 'ace-builds';
-
-// Import required ACE modes and extensions
 import 'ace-builds/src-noconflict/mode-yaml';
 import 'ace-builds/src-noconflict/theme-xcode';
 import 'ace-builds/src-noconflict/ext-language_tools';
@@ -34,9 +30,8 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() isvc: InferenceServiceK8s;
   @Output() cancelEdit = new EventEmitter<boolean>();
 
-  // Get the div element that will host the editor
   @ViewChild('editorWrapper') editorWrapper: ElementRef;
-  private aceEditorInstance: Ace.Editor; // Store the editor instance
+  private aceEditorInstance: Ace.Editor;
 
   private originalName: string;
   private originalNamespace: string;
@@ -46,29 +41,26 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
   data = '';
   applying = false;
 
-  // Keep editorStyle for applying styles to the host div
   editorStyle = {
     width: '100%',
-    height: '600px', // Adjust as needed
+    height: '600px',
     fontSize: '14px',
   };
 
   constructor(
     private snack: SnackBarService,
     private backend: MWABackendService,
-    private ngZone: NgZone, // Inject NgZone
+    private ngZone: NgZone,
   ) {}
 
   ngOnInit() {
     console.log('[Debug] EditComponent ngOnInit started.');
-    // Prepare initial data for the editor
-    // (Keep the logic to prepare this.isvc and dump it to this.data)
+
     this.originalName = this.isvc.metadata.name;
     this.originalNamespace = this.isvc.metadata.namespace;
     this.resourceVersion = this.isvc.metadata.resourceVersion;
 
-    // Clean up metadata before dumping to YAML
-    const isvcToDump = JSON.parse(JSON.stringify(this.isvc)); // Deep copy
+    const isvcToDump = JSON.parse(JSON.stringify(this.isvc));
     delete isvcToDump.metadata.name;
     delete isvcToDump.metadata.namespace;
     delete isvcToDump.metadata.creationTimestamp;
@@ -112,20 +104,19 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Initialize ACE outside Angular zone
     this.ngZone.runOutsideAngular(() => {
       console.log('[Debug] Initializing ACE editor manually.');
       try {
         this.aceEditorInstance = ace.edit(this.editorWrapper.nativeElement, {
           mode: 'ace/mode/yaml',
           theme: 'ace/theme/xcode',
-          value: this.data, // Set initial value from ngOnInit
+          value: this.data,
           readOnly: false,
           tabSize: 2,
           showPrintMargin: false,
           fontSize: 14,
           minLines: 20,
-          maxLines: Infinity, // Or use a number based on editorStyle height
+          maxLines: Infinity,
           enableBasicAutocompletion: true,
           enableSnippets: true,
           enableLiveAutocompletion: true,
@@ -136,13 +127,9 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
           this.aceEditorInstance,
         );
 
-        // --- Add this section to disable the worker ---
         const session = this.aceEditorInstance.getSession();
-        session.setUseWorker(false); // Disable background syntax checking
-        console.log('[Debug] ACE worker disabled for the session.');
-        // --- End section ---
+        session.setUseWorker(false);
 
-        // Listen for changes and update this.data inside Angular zone
         this.aceEditorInstance.on('change', () => {
           this.ngZone.run(() => {
             this.data = this.aceEditorInstance.getValue();
@@ -169,31 +156,19 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  // This method is no longer needed as we removed the (init) binding
-  // onAceInit(event: any): void { ... }
-
   submit() {
     console.log('Submit called');
     this.applying = true;
 
-    // Ensure data is synced if needed (should be handled by 'change' listener now)
-    // if (this.aceEditorInstance) {
-    //   this.data = this.aceEditorInstance.getValue();
-    // }
-
     let cr: InferenceServiceK8s = {};
     try {
-      cr = load(this.data); // Use the component's data property
+      cr = load(this.data);
       console.log('YAML parsed successfully');
     } catch (e) {
-      // ... (existing error handling) ...
       this.applying = false;
       return;
     }
 
-    // ... (existing validation logic) ...
-
-    // Add back necessary metadata before sending
     cr.metadata.resourceVersion = this.resourceVersion;
     cr.metadata.name = this.originalName;
     cr.metadata.namespace = this.originalNamespace;
@@ -202,7 +177,6 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
     this.backend
       .editInferenceService(this.originalNamespace, this.originalName, cr)
       .subscribe({
-        // ... (existing success/error handling) ...
         next: () => {
           console.log('InferenceService updated successfully');
           this.snack.open({
@@ -211,7 +185,7 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
               snackType: SnackType.Success,
             },
           });
-          this.cancelEdit.emit(true); // Close the edit view
+          this.cancelEdit.emit(true);
         },
         error: err => {
           console.error('Error updating InferenceService:', err);

@@ -1,0 +1,22 @@
+ace {
+  display: block;
+  border: 1px solid #e0e0e0;
+  width: 100%;
+}
+
+.edit-component {
+  margin-top: 1rem;
+
+  button[mat-raised-button][color='primary'] {
+    background-color: #1976d2;
+    color: white;
+  }
+}
+
+.waiting-button-wrapper {
+  display: flex;
+}
+
+.waiting-button-wrapper .mat-spinner {
+  margin: auto 0.2rem;
+}

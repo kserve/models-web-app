@@ -1,0 +1,33 @@
+<div class="edit-component">
+  <div
+    #editorWrapper
+    style="border: 1px solid #ccc"
+    [style.width]="editorStyle.width"
+    [style.height]="editorStyle.height"
+    [style.fontSize]="editorStyle.fontSize"
+  ></div>
+
+  <div style="margin-top: 10px">
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="submit()"
+      [disabled]="applying"
+    >
+      <mat-spinner
+        *ngIf="applying"
+        diameter="20"
+        style="display: inline-block; margin-right: 5px"
+      ></mat-spinner>
+      Submit
+    </button>
+    <button
+      mat-stroked-button
+      (click)="cancelEdit.emit(true)"
+      [disabled]="applying"
+      style="margin-left: 10px"
+    >
+      Cancel
+    </button>
+  </div>
+</div>

@@ -54,7 +54,7 @@ jobs:
             npm link kubeflow
             # Copy styles from kubeflow source to local styles directory
             mkdir -p ./src/styles/
-            cp -r /tmp/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib/src/styles/* ./src/styles/
+            cp -r /tmp/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./src/styles/
             # Also copy to node_modules for the copyCSS script
             mkdir -p ./node_modules/kubeflow/styles/
             cp -r /tmp/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib/src/styles/* ./node_modules/kubeflow/styles/

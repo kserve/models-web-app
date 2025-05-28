@@ -47,14 +47,17 @@ jobs:
             npm ci --no-audit
             npm run build
             npm link ./dist/kubeflow
-        - name: Install Frontend Dependencies
+        - name: Install Frontend Dependencies and Setup Styles
           run: |
             cd frontend
             npm ci --no-audit
             npm link kubeflow
-        - name: Verify Linked Styles (Debugging)
-          run: |
-            ls -l frontend/node_modules/kubeflow/styles/
+            # Copy styles from kubeflow source to local styles directory
+            mkdir -p ./src/styles/
+            cp -r /tmp/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib/src/styles/* ./src/styles/
+            # Also copy to node_modules for the copyCSS script
+            mkdir -p ./node_modules/kubeflow/styles/
+            cp -r /tmp/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib/src/styles/* ./node_modules/kubeflow/styles/
         - name: Run Unit Tests
           run: |
             cd frontend

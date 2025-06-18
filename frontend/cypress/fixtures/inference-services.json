@@ -1,0 +1,57 @@
+{
+  "inferenceServices": [
+    {
+      "name": "sklearn-iris",
+      "namespace": "kubeflow-user",
+      "ready": "True",
+      "url": "http://sklearn-iris.kubeflow-user.example.com",
+      "age": "2d",
+      "status": {
+        "conditions": [
+          {
+            "lastTransitionTime": "2022-09-12T10:37:31Z",
+            "status": "True",
+            "type": "Ready"
+          }
+        ],
+        "url": "http://sklearn-iris.kubeflow-user.example.com"
+      },
+      "spec": {
+        "predictor": {
+          "sklearn": {
+            "storageUri": "gs://kfserving-examples/models/sklearn/iris",
+            "runtimeVersion": "0.24.1",
+            "protocolVersion": "v1"
+          }
+        }
+      }
+    },
+    {
+      "name": "pytorch-model",
+      "namespace": "kubeflow-user",
+      "ready": "False",
+      "url": "",
+      "age": "1h",
+      "status": {
+        "conditions": [
+          {
+            "lastTransitionTime": "2022-09-12T11:00:00Z",
+            "status": "False",
+            "type": "Ready",
+            "reason": "PredictorNotReady",
+            "message": "Predictor is not ready"
+          }
+        ]
+      },
+      "spec": {
+        "predictor": {
+          "pytorch": {
+            "storageUri": "gs://kfserving-examples/models/pytorch/cifar10",
+            "runtimeVersion": "1.12.0",
+            "protocolVersion": "v1"
+          }
+        }
+      }
+    }
+  ]
+}

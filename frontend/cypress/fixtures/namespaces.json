@@ -1,0 +1,20 @@
+{
+  "namespaces": [
+    {
+      "name": "default",
+      "status": "Active"
+    },
+    {
+      "name": "kubeflow",
+      "status": "Active"
+    },
+    {
+      "name": "kubeflow-user",
+      "status": "Active"
+    },
+    {
+      "name": "test-namespace",
+      "status": "Active"
+    }
+  ]
+}

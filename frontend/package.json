@@ -9,6 +9,8 @@
     "build:watch": "npm run copyCSS && npm run copyLibAssets && ng build --configuration production --watch --deploy-url static/ --output-path ../backend/apps/v1beta1/static/ --output-hashing all",
     "build:watch:fr": "npm run copyCSS && npm run copyLibAssets && ng build --configuration fr --watch --deploy-url static/ --output-path ../backend/apps/v1beta1/static/ --output-hashing all",
     "build:watch:ng": "npm run copyCSS && npm run copyLibAssets && ng serve --proxy-config proxy.conf.json",
+    "serve:simple": "ng serve --host 0.0.0.0 --port 4200",
+    "serve:test": "ng serve --port 4200",
     "copyCSS": "mkdir -p ./src/styles/ && cp -r ./node_modules/kubeflow/styles/* ./src/styles/",
     "copyLibAssets": "mkdir -p ./src/assets/ && cp -r ./node_modules/kubeflow/assets/* ./src/assets/",
     "format:check": "prettier --check 'src/**/*.{js,ts,html,scss,css}' || node scripts/check-format-error.js",
@@ -19,7 +21,12 @@
     "test:prod": "ng test --browsers=ChromeHeadless --watch=false",
     "lint-check": "ng lint",
     "lint": "ng lint --fix",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:headless": "cypress run --headless",
+    "e2e:cypress": "concurrently \"npm run build:watch:ng\" \"cypress open\" --kill-others --success first",
+    "e2e:cypress:ci": "concurrently \"npm run build:watch:ng\" \"wait-on http://localhost:4200 && cypress run\" --kill-others --success first"
   },
   "private": true,
   "dependencies": {
@@ -63,12 +70,16 @@
     "@angular/cli": "~14.2.0",
     "@angular/compiler-cli": "~14.3.0",
     "@angular/language-service": "~14.3.0",
+    "@cypress/webpack-dev-server": "^4.1.0",
+    "@testing-library/cypress": "^10.0.3",
     "@types/jasmine": "~4.0.3",
     "@types/jasminewd2": "~2.0.10",
     "@types/jest": "^28.1.8",
     "@types/node": "14.18.63",
     "@typescript-eslint/eslint-plugin": "5.30.7",
     "@typescript-eslint/parser": "5.30.7",
+    "concurrently": "^9.1.2",
+    "cypress": "^14.4.1",
     "eslint": "^8.20.0",
     "jasmine-core": "~4.2.0",
     "jasmine-spec-reporter": "~7.0.0",
@@ -83,6 +94,7 @@
     "protractor": "~7.0.0",
     "ts-jest": "^28.0.8",
     "ts-node": "~10.9.1",
-    "typescript": "~4.8.0"
+    "typescript": "~4.8.0",
+    "wait-on": "^8.0.3"
   }
 }

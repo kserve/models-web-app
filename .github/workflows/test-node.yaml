@@ -102,17 +102,3 @@ jobs:
           run: |
             cd frontend
             npm run e2e:cypress:ci
-        - name: Upload Cypress Screenshots
-          uses: actions/upload-artifact@v4
-          if: failure()
-          with:
-            name: cypress-screenshots
-            path: frontend/cypress/screenshots
-            retention-days: 30
-        - name: Upload Cypress Videos
-          uses: actions/upload-artifact@v4
-          if: failure()
-          with:
-            name: cypress-videos
-            path: frontend/cypress/videos
-            retention-days: 30

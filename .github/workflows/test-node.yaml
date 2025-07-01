@@ -62,8 +62,8 @@ jobs:
           run: |
             cd frontend
             npm run test:jest
-  frontend-e2e-tests:
-      name: Frontend E2E Tests
+  frontend-mock-tests:
+      name: Frontend Mock Tests
       runs-on: ubuntu-latest
       steps:
         - name: Check out code

@@ -123,14 +123,24 @@ describe('Models Web App - Model Deployment Tests', () => {
     cy.wait(1500);
     
     // Verify the value was set by checking if CREATE button is enabled
-    cy.get('lib-submit-bar button').contains(/submit|create/i).should('not.be.disabled');
+    cy.get('lib-submit-bar button').contains(/create/i).should('not.be.disabled');
   };
 
-  it('should load the submit form page with all components', () => {
-    cy.visit('/new')
-    cy.waitForAngular()
+  it('should navigate to submit form via button and load all components', () => {
+    // Start from the home page
+    cy.visit('/')
     
-    // Wait for the page to fully load
+    // Wait for the page to stabilize
+    cy.wait(1000)
+    
+    // Verify "New Endpoint" button exists and click it
+    cy.contains('button', 'New Endpoint').should('be.visible').click()
+    
+    // Force a page reload at the new URL to avoid Angular stability issues
+    cy.url().should('include', '/new')
+    cy.reload()
+    
+    // Now test the form page components
     cy.get('app-submit-form', { timeout: 10000 }).should('exist')
     cy.get('.lib-content-wrapper').should('exist')
     
@@ -147,7 +157,7 @@ describe('Models Web App - Model Deployment Tests', () => {
     // Check buttons in submit bar
     cy.get('lib-submit-bar').within(() => {
       cy.get('button').should('have.length', 2) // Submit and Cancel buttons
-      cy.contains('button', /submit|create/i).should('exist')
+      cy.contains('button', /create/i).should('exist')
       cy.contains('button', /cancel/i).should('exist')
     })
     
@@ -188,7 +198,9 @@ describe('Models Web App - Model Deployment Tests', () => {
     }).as('getInferenceServicesAfterCreate')
 
     cy.visit('/new')
-    cy.waitForAngular()
+    
+    // Wait for the page to load
+    cy.get('app-submit-form', { timeout: 10000 }).should('exist')
     
     // Wait for Monaco editor component to be visible
     cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible')
@@ -316,7 +328,9 @@ spec:
     }).as('createInferenceServiceError')
 
     cy.visit('/new')
-    cy.waitForAngular()
+    
+    // Wait for the page to load
+    cy.get('app-submit-form', { timeout: 10000 }).should('exist')
     
     // Wait for Monaco editor to be visible
     cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible')
@@ -358,7 +372,9 @@ metadata:
     }).as('createInferenceServiceNetworkError')
 
     cy.visit('/new')
-    cy.waitForAngular()
+    
+    // Wait for the page to load
+    cy.get('app-submit-form', { timeout: 10000 }).should('exist')
     
     cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible')
     
@@ -385,7 +401,9 @@ spec:
 
   it('should validate required fields in YAML', () => {
     cy.visit('/new')
-    cy.waitForAngular()
+    
+    // Wait for the page to load
+    cy.get('app-submit-form', { timeout: 10000 }).should('exist')
     
     cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible')
     
@@ -419,7 +437,9 @@ spec:
 
   it('should allow editing pre-filled template', () => {
     cy.visit('/new')
-    cy.waitForAngular()
+    
+    // Wait for the page to load
+    cy.get('app-submit-form', { timeout: 10000 }).should('exist')
     
     // Check that Monaco editor has some pre-filled content
     cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible')

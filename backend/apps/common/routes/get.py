@@ -32,7 +32,9 @@ def get_inference_service(namespace, name):
         )
 
     # deployment mode information to the response
-    inference_service["deploymentMode"] = "RawDeployment" if utils.is_raw_deployment(inference_service) else "Serverless"
+    deployment_mode = ("RawDeployment" if utils.is_raw_deployment(inference_service) 
+                      else "Serverless")
+    inference_service["deploymentMode"] = deployment_mode
 
     return api.success_response("inferenceService", inference_service)
 
@@ -145,13 +147,14 @@ def get_kubernetes_hpa(namespace, name):
 @bp.route("/api/namespaces/<namespace>/inferenceservices/<name>/rawdeployment/<component>")
 def get_raw_deployment_objects(namespace, name, component):
     """Return all Kubernetes native resources for a RawDeployment component."""
-    # First get the InferenceService to verify it's RawDeployment mode
+
     inference_service = api.get_custom_rsrc(
         **versions.inference_service_gvk(),
         namespace=namespace, name=name)
 
     if not utils.is_raw_deployment(inference_service):
-        return api.error_response("InferenceService is not in RawDeployment mode", 400)
+        return api.error_response(
+            "InferenceService is not in RawDeployment mode", 400)
 
     objects = utils.get_raw_deployment_objects(inference_service, component)
     return api.success_response("rawDeploymentObjects", objects)

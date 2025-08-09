@@ -150,7 +150,8 @@ def is_raw_deployment(svc):
 
 def get_raw_deployment_objects(svc, component):
     """
-    Get Kubernetes native resources for a RawDeployment InferenceService component.
+    Get Kubernetes native resources for a RawDeployment InferenceService 
+    component.
 
     Returns a dictionary with deployment, service, and hpa objects.
     """

@@ -120,7 +120,7 @@ def get_inference_service_events(namespace, name):
 @bp.route("/api/namespaces/<namespace>/deployments/<name>")
 def get_kubernetes_deployment(namespace, name):
     """Return a Kubernetes Deployment object as json."""
-    deployment = api.get_custom_rsrc(**versions.K8S_DEPLOYMENT, 
+    deployment = api.get_custom_rsrc(**versions.K8S_DEPLOYMENT,
                                      namespace=namespace, name=name)
     return api.success_response("deployment", deployment)
 
@@ -128,7 +128,7 @@ def get_kubernetes_deployment(namespace, name):
 @bp.route("/api/namespaces/<namespace>/services/<name>")
 def get_kubernetes_service(namespace, name):
     """Return a Kubernetes Service object as json."""
-    service = api.get_custom_rsrc(**versions.K8S_SERVICE, 
+    service = api.get_custom_rsrc(**versions.K8S_SERVICE,
                                   namespace=namespace, name=name)
     return api.success_response("service", service)
 
@@ -136,7 +136,7 @@ def get_kubernetes_service(namespace, name):
 @bp.route("/api/namespaces/<namespace>/hpas/<name>")
 def get_kubernetes_hpa(namespace, name):
     """Return a Kubernetes HPA object as json."""
-    hpa = api.get_custom_rsrc(**versions.K8S_HPA, 
+    hpa = api.get_custom_rsrc(**versions.K8S_HPA,
                               namespace=namespace, name=name)
     return api.success_response("hpa", hpa)
 
@@ -147,9 +147,9 @@ def get_raw_deployment_objects(namespace, name, component):
     # First get the InferenceService to verify it's RawDeployment mode
     inference_service = api.get_custom_rsrc(**versions.inference_service_gvk(),
                                             namespace=namespace, name=name)
-    
+
     if not utils.is_raw_deployment(inference_service):
         return api.error_response("InferenceService is not in RawDeployment mode", 400)
-    
+
     objects = utils.get_raw_deployment_objects(inference_service, component)
     return api.success_response("rawDeploymentObjects", objects)

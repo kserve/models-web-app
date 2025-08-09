@@ -14,6 +14,17 @@ KNATIVE_SERVICE = {"group": "serving.knative.dev",
                    "version": "v1",
                    "kind": "services"}
 
+# Kubernetes native resources for RawDeployment mode
+K8S_DEPLOYMENT = {"group": "apps",
+                  "version": "v1",
+                  "kind": "deployments"}
+K8S_SERVICE = {"group": "",
+               "version": "v1",
+               "kind": "services"}
+K8S_HPA = {"group": "autoscaling",
+           "version": "v2",
+           "kind": "horizontalpodautoscalers"}
+
 
 def inference_service_gvk():
     """

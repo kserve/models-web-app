@@ -185,6 +185,66 @@ export class MWABackendService extends BackendService {
   }
 
   /*
+   * RawDeployment mode methods
+   */
+  public getKubernetesDeployment(
+    namespace: string,
+    name: string,
+  ): Observable<K8sObject> {
+    const url = `api/namespaces/${namespace}/deployments/${name}`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error)),
+      map((resp: MWABackendResponse) => {
+        return resp.deployment;
+      }),
+    );
+  }
+
+  public getKubernetesService(
+    namespace: string,
+    name: string,
+  ): Observable<K8sObject> {
+    const url = `api/namespaces/${namespace}/services/${name}`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error)),
+      map((resp: MWABackendResponse) => {
+        return resp.service;
+      }),
+    );
+  }
+
+  public getKubernetesHPA(
+    namespace: string,
+    name: string,
+  ): Observable<K8sObject> {
+    const url = `api/namespaces/${namespace}/hpas/${name}`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error)),
+      map((resp: MWABackendResponse) => {
+        return resp.hpa;
+      }),
+    );
+  }
+
+  public getRawDeploymentObjects(
+    namespace: string,
+    name: string,
+    component: string,
+  ): Observable<any> {
+    const url = `api/namespaces/${namespace}/inferenceservices/${name}/rawdeployment/${component}`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error)),
+      map((resp: MWABackendResponse) => {
+        return resp.rawDeploymentObjects;
+      }),
+    );
+  }
+
+  /*
    * DELETE
    */
   public deleteInferenceService(

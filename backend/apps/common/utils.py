@@ -2,6 +2,7 @@
 import os
 
 from kubeflow.kubeflow.crud_backend import api, helpers, logging
+from . import versions
 
 log = logging.getLogger(__name__)
 
@@ -124,3 +125,82 @@ def get_components_revisions_dict(components, svc):
         )
 
     return revisions_dict
+
+
+def is_raw_deployment(svc):
+    """
+    Check if an InferenceService is using RawDeployment mode.
+
+    Returns True if the service uses RawDeployment, False for Serverless mode.
+    """
+    annotations = svc.get("metadata", {}).get("annotations", {})
+
+    # Check for the new KServe annotation
+    deployment_mode = annotations.get("serving.kserve.io/deploymentMode", "")
+    if deployment_mode.lower() == "rawdeployment":
+        return True
+
+    # Check for legacy annotation (backward compatibility)
+    raw_mode = annotations.get("serving.kubeflow.org/raw", "false")
+    if raw_mode.lower() == "true":
+        return True
+
+    return False
+
+
+def get_raw_deployment_objects(svc, component):
+    """
+    Get Kubernetes native resources for a RawDeployment InferenceService
+    component.
+
+    Returns a dictionary with deployment, service, and hpa objects.
+    """
+    namespace = svc["metadata"]["namespace"]
+    svc_name = svc["metadata"]["name"]
+
+    # RawDeployment resources follow naming convention: {isvc-name}-{component}
+    resource_name = f"{svc_name}-{component}"
+
+    objects = {
+        "deployment": None,
+        "service": None,
+        "hpa": None,
+    }
+
+    try:
+        # Get Deployment
+        deployment = api.get_custom_rsrc(
+            **versions.K8S_DEPLOYMENT,
+            namespace=namespace,
+            name=resource_name
+        )
+        objects["deployment"] = deployment
+        log.info(f"Found deployment {resource_name} for component {component}")
+    except Exception as e:
+        log.warning(f"Could not find deployment {resource_name}: {e}")
+
+    try:
+        # Get Service
+        service = api.get_custom_rsrc(
+            **versions.K8S_SERVICE,
+            namespace=namespace,
+            name=resource_name
+        )
+        objects["service"] = service
+        log.info(f"Found service {resource_name} for component {component}")
+    except Exception as e:
+        log.warning(f"Could not find service {resource_name}: {e}")
+
+    try:
+        # Get HPA (optional)
+        hpa = api.get_custom_rsrc(
+            **versions.K8S_HPA,
+            namespace=namespace,
+            name=resource_name
+        )
+        objects["hpa"] = hpa
+        log.info(f"Found HPA {resource_name} for component {component}")
+    except Exception as e:
+        log.debug(f"No HPA found for {resource_name}: {e}")
+
+    return objects

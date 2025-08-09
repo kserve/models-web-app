@@ -11,6 +11,10 @@ export interface MWABackendResponse extends BackendResponse {
   knativeRoute?: K8sObject;
   serviceLogs?: InferenceServiceLogs;
   events?: EventObject[];
+  deployment?: K8sObject;
+  service?: K8sObject;
+  hpa?: K8sObject;
+  rawDeploymentObjects?: RawDeploymentObjects;
 }
 
 export interface InferenceServiceLogs {
@@ -31,4 +35,17 @@ export interface ComponentOwnedObjects {
   configuration: K8sObject;
   knativeService: K8sObject;
   route: K8sObject;
+}
+
+// RawDeployment mode types
+export interface RawDeploymentObjects {
+  deployment?: K8sObject;
+  service?: K8sObject;
+  hpa?: K8sObject;
+}
+
+export interface RawComponentOwnedObjects {
+  deployment?: K8sObject;
+  service?: K8sObject;
+  hpa?: K8sObject;
 }

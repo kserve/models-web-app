@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable, of, forkJoin, Subscription } from 'rxjs';
-import { tap, map, concatMap, timeout } from 'rxjs/operators';
+import { tap, map, concatMap, timeout, catchError } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
 import {
   NamespaceService,
@@ -246,46 +246,85 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       return of([component, {}]);
     }
 
-    const revName = svc.status.components[component].latestCreatedRevision;
-    const objects: ComponentOwnedObjects = {
-      revision: undefined,
-      configuration: undefined,
-      knativeService: undefined,
-      route: undefined,
-    };
+    // Check if this is a RawDeployment InferenceService
+    const isRawDeployment = this.isRawDeployment(svc);
 
-    return this.backend.getKnativeRevision(this.namespace, revName).pipe(
-      tap(r => (objects.revision = r)),
+    if (isRawDeployment) {
+      // Handle RawDeployment mode
+      return this.backend
+        .getRawDeploymentObjects(this.namespace, svc.metadata.name, component)
+        .pipe(
+          map(objects => [component, objects]),
+          catchError(error => {
+            console.error(
+              `Error fetching RawDeployment objects for ${component}:`,
+              error,
+            );
+            return of([component, {}]);
+          }),
+        );
+    } else {
+      // Handle Serverless mode
+      const revName = svc.status.components[component].latestCreatedRevision;
+      const objects: ComponentOwnedObjects = {
+        revision: undefined,
+        configuration: undefined,
+        knativeService: undefined,
+        route: undefined,
+      };
 
-      // GET the configuration
-      map(r => {
-        return r.metadata.ownerReferences[0].name;
-      }),
-      concatMap(confName => {
-        return this.backend.getKnativeConfiguration(this.namespace, confName);
-      }),
-      tap(c => (objects.configuration = c)),
+      return this.backend.getKnativeRevision(this.namespace, revName).pipe(
+        tap(r => (objects.revision = r)),
 
-      // GET the Knative service
-      map(c => {
-        return c.metadata.ownerReferences[0].name;
-      }),
-      concatMap(svcName => {
-        return this.backend.getKnativeService(this.namespace, svcName);
-      }),
-      tap(knativeSvc => (objects.knativeService = knativeSvc)),
+        // GET the configuration
+        map(r => {
+          return r.metadata.ownerReferences[0].name;
+        }),
+        concatMap(confName => {
+          return this.backend.getKnativeConfiguration(this.namespace, confName);
+        }),
+        tap(c => (objects.configuration = c)),
 
-      // GET the Knative route
-      map(knativeSvc => {
-        return knativeSvc.metadata.name;
-      }),
-      concatMap(routeName => {
-        return this.backend.getKnativeRoute(this.namespace, routeName);
-      }),
-      tap(route => (objects.route = route)),
+        // GET the Knative service
+        map(c => {
+          return c.metadata.ownerReferences[0].name;
+        }),
+        concatMap(svcName => {
+          return this.backend.getKnativeService(this.namespace, svcName);
+        }),
+        tap(knativeSvc => (objects.knativeService = knativeSvc)),
 
-      // return the final list of objects
-      map(_ => [component, objects]),
-    );
+        // GET the Knative route
+        map(knativeSvc => {
+          return knativeSvc.metadata.name;
+        }),
+        concatMap(routeName => {
+          return this.backend.getKnativeRoute(this.namespace, routeName);
+        }),
+        tap(route => (objects.route = route)),
+
+        // return the final list of objects
+        map(_ => [component, objects]),
+      );
+    }
+  }
+
+  private isRawDeployment(svc: InferenceServiceK8s): boolean {
+    const annotations = svc.metadata?.annotations || {};
+
+    // Check for the KServe annotation
+    const deploymentMode =
+      annotations['serving.kserve.io/deploymentMode'] || '';
+    if (deploymentMode.toLowerCase() === 'rawdeployment') {
+      return true;
+    }
+
+    // Check for legacy annotation
+    const rawMode = annotations['serving.kubeflow.org/raw'] || 'false';
+    if (rawMode.toLowerCase() === 'true') {
+      return true;
+    }
+
+    return false;
   }
 }

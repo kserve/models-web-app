@@ -29,8 +29,7 @@ jobs:
     - uses: psf/black@stable
       with:
         src: |
-          ./common
-          ./example
+          ./backend
 
   format_YAML_files:
     runs-on: ubuntu-latest

@@ -95,6 +95,38 @@ def get_inference_service_pods(svc, components=[]):
     return component_pods_dict
 
 
+def get_modelmesh_pods(svc, components=[]):
+    """
+    Return a dictionary with component keys and ModelMesh pod names as values.
+
+    For ModelMesh deployments, logs are typically found in the
+    modelmesh-serving pods.
+    """
+    namespace = svc["metadata"]["namespace"]
+
+    # ModelMesh uses its own deployment for serving
+    label_selector = "app=modelmesh-serving"
+    pods = api.v1_core.list_namespaced_pod(
+        namespace, label_selector=label_selector).items
+
+    component_pods_dict = {}
+
+    # For ModelMesh, we map all requested components to modelmesh-serving pods
+    for component in components:
+        pod_names = []
+        for pod in pods:
+            pod_names.append(pod.metadata.name)
+
+        if pod_names:
+            component_pods_dict[component] = pod_names
+
+    if len(component_pods_dict.keys()) == 0:
+        log.info("No ModelMesh pods found for inference service: %s",
+                 svc["metadata"]["name"])
+
+    return component_pods_dict
+
+
 # FIXME(elikatsis,kimwnasptd): Change the logic of this function according to
 # https://github.com/arrikto/dev/issues/867
 def get_components_revisions_dict(components, svc):
@@ -146,6 +178,31 @@ def is_raw_deployment(svc):
         return True
 
     return False
+
+
+def is_modelmesh_deployment(svc):
+    """
+    Check if an InferenceService is using ModelMesh mode.
+
+    Returns True if the service uses ModelMesh deployment mode.
+    """
+    annotations = svc.get("metadata", {}).get("annotations", {})
+    deployment_mode = annotations.get("serving.kserve.io/deploymentMode", "")
+    return deployment_mode.lower() == "modelmesh"
+
+
+def get_deployment_mode(svc):
+    """
+    Get the deployment mode of an InferenceService.
+
+    Returns one of: "ModelMesh", "RawDeployment", "Serverless"
+    """
+    if is_modelmesh_deployment(svc):
+        return "ModelMesh"
+    elif is_raw_deployment(svc):
+        return "RawDeployment"
+    else:
+        return "Serverless"
 
 
 def get_raw_deployment_objects(svc, component):
@@ -202,5 +259,94 @@ def get_raw_deployment_objects(svc, component):
         log.info(f"Found HPA {resource_name} for component {component}")
     except Exception as e:
         log.debug(f"No HPA found for {resource_name}: {e}")
+
+    return objects
+
+
+def get_modelmesh_objects(svc, component):
+    """
+    Get ModelMesh-specific resources for an InferenceService component.
+
+    ModelMesh uses different resource patterns than standard KServe.
+    Returns a dictionary with predictor-related objects.
+    """
+    namespace = svc["metadata"]["namespace"]
+
+    objects = {
+        "predictor": None,
+        "servingRuntime": None,
+        "deployment": None,
+        "service": None,
+    }
+
+    try:
+        # In ModelMesh, the actual serving is handled by the
+        # ModelMesh controller
+        # Look for the predictor status information
+        if "status" in svc and "components" in svc["status"]:
+            if component in svc["status"]["components"]:
+                objects["predictor"] = svc["status"]["components"][component]
+                log.info(f"Found ModelMesh predictor status for "
+                         f"component {component}")
+
+        # Try to find the associated ServingRuntime
+        serving_runtime_name = None
+        if "spec" in svc and component in svc["spec"]:
+            runtime_ref = svc["spec"][component].get("runtime")
+            if runtime_ref:
+                serving_runtime_name = runtime_ref
+            else:
+                # Fallback: infer from model format
+                model_format = (svc["spec"][component]
+                                .get("model", {})
+                                .get("modelFormat", {})
+                                .get("name"))
+                if model_format:
+                    serving_runtime_name = f"mlserver-{model_format.lower()}"
+
+        if serving_runtime_name:
+            try:
+                # Get ServingRuntime
+                serving_runtime = api.get_custom_rsrc(
+                    group="serving.kserve.io",
+                    version="v1alpha1",
+                    kind="servingruntimes",
+                    namespace=namespace,
+                    name=serving_runtime_name
+                )
+                objects["servingRuntime"] = serving_runtime
+                log.info(f"Found ServingRuntime {serving_runtime_name} for "
+                         f"component {component}")
+            except Exception as e:
+                log.warning(f"Could not find ServingRuntime "
+                            f"{serving_runtime_name}: {e}")
+
+        # Try to find ModelMesh deployment (usually named modelmesh-serving)
+        try:
+            modelmesh_deployment = api.get_custom_rsrc(
+                **versions.K8S_DEPLOYMENT,
+                namespace=namespace,
+                name="modelmesh-serving"
+            )
+            objects["deployment"] = modelmesh_deployment
+            log.info(f"Found ModelMesh deployment for "
+                     f"component {component}")
+        except Exception as e:
+            log.debug(f"No ModelMesh deployment found: {e}")
+
+        # Try to find ModelMesh service
+        try:
+            modelmesh_service = api.get_custom_rsrc(
+                **versions.K8S_SERVICE,
+                namespace=namespace,
+                name="modelmesh-serving"
+            )
+            objects["service"] = modelmesh_service
+            log.info(f"Found ModelMesh service for component {component}")
+        except Exception as e:
+            log.debug(f"No ModelMesh service found: {e}")
+
+    except Exception as e:
+        log.error(f"Error fetching ModelMesh objects for {component}: {e}")
 
     return objects

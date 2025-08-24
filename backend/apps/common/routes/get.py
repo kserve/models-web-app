@@ -32,9 +32,7 @@ def get_inference_service(namespace, name):
         )
 
     # deployment mode information to the response
-    deployment_mode = ("RawDeployment"
-                       if utils.is_raw_deployment(inference_service)
-                       else "Serverless")
+    deployment_mode = utils.get_deployment_mode(inference_service)
     inference_service["deploymentMode"] = deployment_mode
 
     return api.success_response("inferenceService", inference_service)
@@ -47,12 +45,17 @@ def get_inference_service_logs(svc):
 
     log.info(components)
 
-    # dictionary{component: [pod-names]}
-    if svc["metadata"]["annotations"].get(
-            "serving.kubeflow.org/raw", "false") == "true":
+    # Check deployment mode to determine how to get logs
+    deployment_mode = utils.get_deployment_mode(svc)
+
+    if deployment_mode == "ModelMesh":
+        # For ModelMesh, get logs from modelmesh-serving deployment
+        component_pods_dict = utils.get_modelmesh_pods(svc, components)
+    elif deployment_mode == "RawDeployment":
         component_pods_dict = utils.get_raw_inference_service_pods(
             svc, components)
     else:
+        # Serverless mode
         component_pods_dict = utils.get_inference_service_pods(svc, components)
 
     if len(component_pods_dict.keys()) == 0:
@@ -160,3 +163,20 @@ def get_raw_deployment_objects(namespace, name, component):
 
     objects = utils.get_raw_deployment_objects(inference_service, component)
     return api.success_response("rawDeploymentObjects", objects)
+
+
+@bp.route("/api/namespaces/<namespace>/inferenceservices/<name>/"
+          "modelmesh/<component>")
+def get_modelmesh_objects(namespace, name, component):
+    """Return all ModelMesh-specific resources for a ModelMesh component."""
+
+    inference_service = api.get_custom_rsrc(
+        **versions.inference_service_gvk(),
+        namespace=namespace, name=name)
+
+    if not utils.is_modelmesh_deployment(inference_service):
+        return api.error_response(
+            "InferenceService is not in ModelMesh mode", 400)
+
+    objects = utils.get_modelmesh_objects(inference_service, component)
+    return api.success_response("modelmeshObjects", objects)

@@ -246,10 +246,24 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       return of([component, {}]);
     }
 
-    // Check if this is a RawDeployment InferenceService
-    const isRawDeployment = this.isRawDeployment(svc);
+    // Check deployment mode
+    const deploymentMode = this.getDeploymentMode(svc);
 
-    if (isRawDeployment) {
+    if (deploymentMode === 'ModelMesh') {
+      // Handle ModelMesh mode
+      return this.backend
+        .getModelMeshObjects(this.namespace, svc.metadata.name, component)
+        .pipe(
+          map(objects => [component, objects]),
+          catchError(error => {
+            console.error(
+              `Error fetching ModelMesh objects for ${component}:`,
+              error,
+            );
+            return of([component, {}]);
+          }),
+        );
+    } else if (deploymentMode === 'RawDeployment') {
       // Handle RawDeployment mode
       return this.backend
         .getRawDeploymentObjects(this.namespace, svc.metadata.name, component)
@@ -326,5 +340,22 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     }
 
     return false;
+  }
+
+  private isModelMeshDeployment(svc: InferenceServiceK8s): boolean {
+    const annotations = svc.metadata?.annotations || {};
+    const deploymentMode =
+      annotations['serving.kserve.io/deploymentMode'] || '';
+    return deploymentMode.toLowerCase() === 'modelmesh';
+  }
+
+  private getDeploymentMode(svc: InferenceServiceK8s): string {
+    if (this.isModelMeshDeployment(svc)) {
+      return 'ModelMesh';
+    } else if (this.isRawDeployment(svc)) {
+      return 'RawDeployment';
+    } else {
+      return 'Serverless';
+    }
   }
 }

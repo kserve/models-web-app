@@ -244,6 +244,21 @@ export class MWABackendService extends BackendService {
     );
   }
 
+  public getModelMeshObjects(
+    namespace: string,
+    name: string,
+    component: string,
+  ): Observable<any> {
+    const url = `api/namespaces/${namespace}/inferenceservices/${name}/modelmesh/${component}`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error)),
+      map((resp: MWABackendResponse) => {
+        return resp.modelmeshObjects;
+      }),
+    );
+  }
+
   /*
    * DELETE
    */

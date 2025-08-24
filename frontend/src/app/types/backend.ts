@@ -15,6 +15,7 @@ export interface MWABackendResponse extends BackendResponse {
   service?: K8sObject;
   hpa?: K8sObject;
   rawDeploymentObjects?: RawDeploymentObjects;
+  modelmeshObjects?: ModelMeshObjects;
 }
 
 export interface InferenceServiceLogs {
@@ -48,4 +49,19 @@ export interface RawComponentOwnedObjects {
   deployment?: K8sObject;
   service?: K8sObject;
   hpa?: K8sObject;
+}
+
+// ModelMesh mode types
+export interface ModelMeshObjects {
+  predictor?: any;
+  servingRuntime?: K8sObject;
+  deployment?: K8sObject;
+  service?: K8sObject;
+}
+
+export interface ModelMeshComponentOwnedObjects {
+  predictor?: any;
+  servingRuntime?: K8sObject;
+  deployment?: K8sObject;
+  service?: K8sObject;
 }

@@ -267,51 +267,11 @@ def get_raw_deployment_objects(svc, component):
     return objects
 
 
-def _find_modelmesh_resources(namespace, resource_type, resource_version):
-    """
-    Helper function to find ModelMesh resources using label selectors.
-
-    Args:
-        namespace: Kubernetes namespace
-        resource_type: Resource type dict (e.g., versions.K8S_DEPLOYMENT)
-        resource_version: Resource version for logging (e.g., "deployment", "service")
-
-    Returns:
-        List of found resources or empty list if none found
-    """
-    label_selector = "app.kubernetes.io/managed-by=modelmesh-controller"
-
-    try:
-        resources = api.list_custom_rsrc(
-            **resource_type, namespace=namespace, label_selector=label_selector
-        )
-
-        items = resources.get("items", [])
-        if items:
-            resource_names = [item["metadata"]["name"] for item in items]
-            log.info(
-                f"Found {len(items)} ModelMesh {resource_version}(s): {resource_names}"
-            )
-        else:
-            log.debug(
-                f"No ModelMesh {resource_version}s found with label selector: {label_selector}"
-            )
-
-        return items
-    except Exception as e:
-        log.debug(f"Error finding ModelMesh {resource_version}s via labels: {e}")
-        return []
-
-
 def get_modelmesh_objects(svc, component):
     """
     Get ModelMesh-specific resources for an InferenceService component.
-
-    ModelMesh uses different resource patterns than standard KServe.
-    Returns a dictionary with predictor-related objects.
     """
     namespace = svc["metadata"]["namespace"]
-
     objects = {
         "predictor": None,
         "servingRuntime": None,
@@ -319,89 +279,90 @@ def get_modelmesh_objects(svc, component):
         "service": None,
     }
 
-    try:
-        # In ModelMesh, the actual serving is handled by the
-        # ModelMesh controller
-        # Look for the predictor status information
-        if "status" in svc and "components" in svc["status"]:
-            if component in svc["status"]["components"]:
-                objects["predictor"] = svc["status"]["components"][component]
-                log.info(
-                    f"Found ModelMesh predictor status for " f"component {component}"
-                )
+    # 1. Get predictor status
+    if "status" in svc and "components" in svc.get("status", {}):
+        objects["predictor"] = svc["status"]["components"].get(component)
 
-        # Try to find the associated ServingRuntime
-        serving_runtime_name = None
-        if "spec" in svc and component in svc["spec"]:
-            runtime_ref = svc["spec"][component].get("runtime")
-            if runtime_ref:
-                serving_runtime_name = runtime_ref
-            else:
-                # Fallback: infer from model format
-                model_format = (
-                    svc["spec"][component]
-                    .get("model", {})
-                    .get("modelFormat", {})
-                    .get("name")
-                )
-                if model_format:
-                    serving_runtime_name = f"mlserver-{model_format.lower()}"
+    # 2. Determine the ServingRuntime name (early exit if not found)
+    runtime_name = _extract_serving_runtime_name(svc, component)
+    if not runtime_name:
+        log.warning(f"Could not determine ServingRuntime for component {component}")
+        return objects
 
-        if serving_runtime_name:
-            try:
-                # Get ServingRuntime
-                serving_runtime = api.get_custom_rsrc(
-                    group="serving.kserve.io",
-                    version="v1alpha1",
-                    kind="servingruntimes",
-                    namespace=namespace,
-                    name=serving_runtime_name,
-                )
-                objects["servingRuntime"] = serving_runtime
-                log.info(
-                    f"Found ServingRuntime {serving_runtime_name} for "
-                    f"component {component}"
-                )
-            except Exception as e:
-                log.warning(
-                    f"Could not find ServingRuntime " f"{serving_runtime_name}: {e}"
-                )
+    # 3. Get the ServingRuntime object
+    objects["servingRuntime"] = _get_k8s_object(
+        namespace=namespace,
+        name=runtime_name,
+        group="serving.kserve.io",
+        version="v1alpha1",
+        kind="servingruntimes",
+    )
 
-        # Find ModelMesh deployments using helper function
-        deployments = _find_modelmesh_resources(
-            namespace, versions.K8S_DEPLOYMENT, "deployment"
-        )
-        if deployments:
-            # In a typical ModelMesh setup, there should be one deployment per namespace
-            # that serves all models. If multiple deployments exist, we take the first one
-            # but log a warning for visibility.
-            if len(deployments) > 1:
-                deployment_names = [d["metadata"]["name"] for d in deployments]
-                log.warning(
-                    f"Multiple ModelMesh deployments found: {deployment_names}. Using first one: {deployment_names[0]}"
-                )
+    # 4. Determine the resource name using the standard convention
+    # Pattern: {serviceName}-{runtimeName}
+    service_name = _get_modelmesh_service_name()
+    resource_name = f"{service_name}-{runtime_name}"
+    log.info(f"Constructed ModelMesh resource name: {resource_name}")
 
-            objects["deployment"] = deployments[0]
-            log.info(
-                f"Using ModelMesh deployment '{deployments[0]['metadata']['name']}' for component {component}"
-            )
-
-        # Find ModelMesh services using helper function
-        services = _find_modelmesh_resources(namespace, versions.K8S_SERVICE, "service")
-        if services:
-            # Similar logic for services - typically one per namespace
-            if len(services) > 1:
-                service_names = [s["metadata"]["name"] for s in services]
-                log.warning(
-                    f"Multiple ModelMesh services found: {service_names}. Using first one: {service_names[0]}"
-                )
-
-            objects["service"] = services[0]
-            log.info(
-                f"Using ModelMesh service '{services[0]['metadata']['name']}' for component {component}"
-            )
-
-    except Exception as e:
-        log.error(f"Error fetching ModelMesh objects for {component}: {e}")
+    # 5. Get the Deployment and Service by their specific names
+    objects["deployment"] = _get_k8s_object(
+        namespace=namespace, name=resource_name, **versions.K8S_DEPLOYMENT
+    )
+    objects["service"] = _get_k8s_object(
+        namespace=namespace, name=resource_name, **versions.K8S_SERVICE
+    )
 
     return objects
+
+
+def _extract_serving_runtime_name(svc, component):
+    """Extract the ServingRuntime name from an InferenceService spec."""
+    component_spec = svc.get("spec", {}).get(component, {})
+    if not component_spec:
+        return None
+
+    # Check for explicit runtime reference first
+    if runtime_ref := component_spec.get("runtime"):
+        return runtime_ref
+
+    # Fallback: infer from model format (e.g., "sklearn" -> "mlserver-sklearn")
+    if (
+        model_format := component_spec.get("model", {})
+        .get("modelFormat", {})
+        .get("name")
+    ):
+        return f"mlserver-{model_format.lower()}"
+
+    return None
+
+
+def _get_modelmesh_service_name():
+    """
+    Get the ModelMesh service name from an environment variable or a default.
+    This replaces the complex ConfigMap discovery.
+    """
+    default_name = "modelmesh-serving"
+    # A configurable environment variable is more practical than discovery
+    service_name = os.environ.get("MODELMESH_SERVICE_NAME", default_name)
+
+    if service_name != default_name:
+        log.info(f"Using ModelMesh service name from environment: {service_name}")
+
+    return service_name
+
+
+def _get_k8s_object(namespace, name, group, version, kind):
+    """A generic helper to get any single Kubernetes resource by its name."""
+    try:
+        resource = api.get_custom_rsrc(
+            group=group,
+            version=version,
+            kind=kind,
+            namespace=namespace,
+            name=name,
+        )
+        log.info(f"Found {kind.rstrip('s')} '{name}' in namespace '{namespace}'")
+        return resource
+    except Exception as e:
+        log.debug(f"Could not find {kind.rstrip('s')} '{name}': {e}")
+        return None

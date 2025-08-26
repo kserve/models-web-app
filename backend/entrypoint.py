@@ -1,4 +1,5 @@
 """The entrypoint of the backend."""
+
 import os
 import sys
 
@@ -9,8 +10,7 @@ log = logging.getLogger(__name__)
 
 
 APP_NAME = os.environ.get("APP_NAME", "Models Web App")
-BACKEND_MODE = os.environ.get("BACKEND_MODE",
-                              config.BackendMode.PRODUCTION.value)
+BACKEND_MODE = os.environ.get("BACKEND_MODE", config.BackendMode.PRODUCTION.value)
 
 PREFIX = os.environ.get("APP_PREFIX", "/")
 APP_VERSION = os.environ.get("APP_VERSION", "v1beta1")

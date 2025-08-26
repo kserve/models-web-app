@@ -1,4 +1,5 @@
 """POST routes of the backend."""
+
 from flask import request
 
 from kubeflow.kubeflow.crud_backend import api, decorators, logging
@@ -19,5 +20,4 @@ def post_inference_service(namespace):
     gvk = versions.inference_service_gvk()
     api.create_custom_rsrc(**gvk, data=cr, namespace=namespace)
 
-    return api.success_response("message",
-                                "InferenceService successfully created.")
+    return api.success_response("message", "InferenceService successfully created.")

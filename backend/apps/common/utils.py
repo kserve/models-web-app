@@ -321,34 +321,17 @@ def _extract_serving_runtime_name(svc, component):
     if not component_spec:
         return None
 
-    # Check for explicit runtime reference first
+    # Check for explicit runtime reference
     if runtime_ref := component_spec.get("runtime"):
         return runtime_ref
-
-    # Fallback: infer from model format (e.g., "sklearn" -> "mlserver-sklearn")
-    if (
-        model_format := component_spec.get("model", {})
-        .get("modelFormat", {})
-        .get("name")
-    ):
-        return f"mlserver-{model_format.lower()}"
 
     return None
 
 
 def _get_modelmesh_service_name():
-    """
-    Get the ModelMesh service name from an environment variable or a default.
-    This replaces the complex ConfigMap discovery.
-    """
+    """Uses ModelMesh default service name."""
     default_name = "modelmesh-serving"
-    # A configurable environment variable is more practical than discovery
-    service_name = os.environ.get("MODELMESH_SERVICE_NAME", default_name)
-
-    if service_name != default_name:
-        log.info(f"Using ModelMesh service name from environment: {service_name}")
-
-    return service_name
+    return default_name
 
 
 def _get_k8s_object(namespace, name, group, version, kind):

@@ -1,21 +1,55 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { GrafanaService } from 'src/app/services/grafana.service';
+import { ConfigService } from 'src/app/services/config.service';
 import { InferenceServiceStatus } from 'src/app/types/kfserving/v1beta1';
 import { GrafanaIframeConfig } from 'src/app/types/grafana';
+import { AppConfig } from 'src/app/types/config';
 
 @Component({
   selector: 'app-metrics',
   templateUrl: './metrics.component.html',
   styleUrls: ['./metrics.component.scss'],
 })
-export class MetricsComponent {
+export class MetricsComponent implements OnInit {
   public configs = {
     predictor: [],
     transformer: [],
     explainer: [],
   };
 
+  private cpuMemoryDb: string;
+  private httpRequestsDb: string;
+
   @Input() namespace: string;
+
+  constructor(private configService: ConfigService) {}
+
+  ngOnInit(): void {
+    this.configService.getConfig().subscribe(
+      config => {
+        this.cpuMemoryDb = config.grafanaCpuMemoryDb;
+        this.httpRequestsDb = config.grafanaHttpRequestsDb;
+        // Regenerate configs if status is already set
+        if (this.statusPrv) {
+          ['predictor', 'transformer', 'explainer'].forEach(comp => {
+            this.configs[comp] = this.generateComponentGraphsConfig(comp);
+          });
+        }
+      },
+      error => {
+        console.error('Failed to load configuration for MetricsComponent:', error);
+        // Use default database names as fallback
+        this.cpuMemoryDb = 'db/knative-serving-revision-cpu-and-memory-usage';
+        this.httpRequestsDb = 'db/knative-serving-revision-http-requests';
+        // Regenerate configs if status is already set
+        if (this.statusPrv) {
+          ['predictor', 'transformer', 'explainer'].forEach(comp => {
+            this.configs[comp] = this.generateComponentGraphsConfig(comp);
+          });
+        }
+      }
+    );
+  }
 
   @Input()
   set status(s: InferenceServiceStatus) {
@@ -104,11 +138,12 @@ export class MetricsComponent {
     configuration: string,
     revision: string,
   ): GrafanaIframeConfig {
+    const dashboardUri = this.httpRequestsDb || 'db/knative-serving-revision-http-requests';
     return this.generateRevisionGraphConfig(
       panelId,
       450,
       200,
-      'db/knative-serving-revision-http-requests',
+      dashboardUri, // Use configurable value with fallback
       configuration,
       revision,
     );
@@ -119,11 +154,12 @@ export class MetricsComponent {
     configuration: string,
     revision: string,
   ): GrafanaIframeConfig {
+    const dashboardUri = this.cpuMemoryDb || 'db/knative-serving-revision-cpu-and-memory-usage';
     return this.generateRevisionGraphConfig(
       panelId,
       450,
       200,
-      'db/knative-serving-revision-cpu-and-memory-usage',
+      dashboardUri, // Use configurable value with fallback
       configuration,
       revision,
     );

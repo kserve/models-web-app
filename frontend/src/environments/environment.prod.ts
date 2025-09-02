@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
   ui: 'default',
-  grafanaPrefix: '/grafana',
+  useRuntimeConfig: true, // New flag to indicate runtime config usage
 };

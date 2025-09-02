@@ -15,6 +15,11 @@ BACKEND_MODE = os.environ.get("BACKEND_MODE", config.BackendMode.PRODUCTION.valu
 PREFIX = os.environ.get("APP_PREFIX", "/")
 APP_VERSION = os.environ.get("APP_VERSION", "v1beta1")
 
+# Grafana configuration
+GRAFANA_PREFIX = os.environ.get("GRAFANA_PREFIX", "/grafana")
+GRAFANA_CPU_MEMORY_DB = os.environ.get("GRAFANA_CPU_MEMORY_DB", "db/knative-serving-revision-cpu-and-memory-usage")
+GRAFANA_HTTP_REQUESTS_DB = os.environ.get("GRAFANA_HTTP_REQUESTS_DB", "db/knative-serving-revision-http-requests")
+
 cfg = config.get_config(BACKEND_MODE)
 cfg.PREFIX = PREFIX
 cfg.APP_VERSION = APP_VERSION

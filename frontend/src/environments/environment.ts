@@ -5,7 +5,7 @@
 export const environment = {
   production: false,
   ui: 'default',
-  useRuntimeConfig: true, // New flag to indicate runtime config usage
+  useRuntimeConfig: true,
 };
 /*
  * For easier debugging in development mode, you can import the following file

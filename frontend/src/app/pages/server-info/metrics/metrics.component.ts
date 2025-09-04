@@ -143,7 +143,7 @@ export class MetricsComponent implements OnInit {
       panelId,
       450,
       200,
-      dashboardUri, // Use configurable value with fallback
+      dashboardUri,
       configuration,
       revision,
     );
@@ -159,7 +159,7 @@ export class MetricsComponent implements OnInit {
       panelId,
       450,
       200,
-      dashboardUri, // Use configurable value with fallback
+      dashboardUri,
       configuration,
       revision,
     );

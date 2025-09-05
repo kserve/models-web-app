@@ -12,6 +12,8 @@ import {
   MatSnackBarConfig,
   MAT_SNACK_BAR_DEFAULT_OPTIONS,
 } from '@angular/material/snack-bar';
+import { ConfigService } from './services/config.service';
+import { take } from 'rxjs/operators';
 
 /**
  * MAT_SNACK_BAR_DEFAULT_OPTIONS values can be found
@@ -37,6 +39,12 @@ const MwaSnackBarConfig: MatSnackBarConfig = {
     {
       provide: APP_INITIALIZER,
       useFactory: () => configureAce,
+      multi: true,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (configService: ConfigService) => () => configService.getConfig().pipe(take(1)).toPromise(),
+      deps: [ConfigService],
       multi: true,
     },
   ],

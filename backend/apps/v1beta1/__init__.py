@@ -15,8 +15,7 @@ def create_app(name=__name__, cfg: config.Config = None):
     cfg = config.Config() if cfg is None else cfg
 
     # Properly set the static serving directory
-    static_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                              "static")
+    static_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "static")
 
     app = create_default_app(name, static_dir, cfg)
 

@@ -8,8 +8,7 @@ from . import bp
 log = logging.getLogger(__name__)
 
 
-@bp.route("/api/namespaces/<namespace>/inferenceservices/<isvc>",
-          methods=["PUT"])
+@bp.route("/api/namespaces/<namespace>/inferenceservices/<isvc>", methods=["PUT"])
 @decorators.request_is_json_type
 @decorators.required_body_params("apiVersion", "kind", "metadata", "spec")
 def replace_inference_service(namespace: str, isvc: str):
@@ -30,9 +29,7 @@ def replace_inference_service(namespace: str, isvc: str):
         plural=gvk["kind"],
         namespace=namespace,
         name=isvc,
-        body=cr)
-
-    return api.success_response(
-        "message",
-        "InferenceService successfully updated"
+        body=cr,
     )
+
+    return api.success_response("message", "InferenceService successfully updated")

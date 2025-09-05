@@ -1,4 +1,5 @@
 """Package with the base code between backend versions."""
+
 import kubeflow.kubeflow.crud_backend as base
 from kubeflow.kubeflow.crud_backend import config, logging
 
@@ -7,8 +8,7 @@ from .routes import bp as routes_bp
 log = logging.getLogger(__name__)
 
 
-def create_app(name=__name__, static_folder="static",
-               cfg: config.Config = None):
+def create_app(name=__name__, static_folder="static", cfg: config.Config = None):
     """Create the WSGI app."""
     cfg = config.Config() if cfg is None else cfg
 

@@ -101,10 +101,13 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         this.checkGrafanaAvailability(config.grafanaPrefix);
       },
       error => {
-        console.error('Failed to load configuration for ServerInfoComponent:', error);
+        console.error(
+          'Failed to load configuration for ServerInfoComponent:',
+          error,
+        );
         // Use default prefix as fallback
         this.checkGrafanaAvailability('/grafana');
-      }
+      },
     );
   }
 

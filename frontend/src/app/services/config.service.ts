@@ -19,31 +19,37 @@ export class ConfigService extends BackendService {
 
   private loadConfig(): void {
     console.log('Loading application configuration');
-    
-    this.http.get<AppConfig>('api/config').pipe(
-      catchError(error => {
-        console.warn('Failed to load config from backend, using defaults:', error);
-        return of(this.getDefaultConfig());
-      }),
-      tap(config => {
-        console.log('Configuration loaded:', config);
-        this.configLoaded = true;
-      })
-    ).subscribe(
-      config => this.config$.next(config),
-      error => {
-        console.error('Error loading configuration:', error);
-        this.config$.next(this.getDefaultConfig());
-        this.configLoaded = true;
-      }
-    );
+
+    this.http
+      .get<AppConfig>('api/config')
+      .pipe(
+        catchError(error => {
+          console.warn(
+            'Failed to load config from backend, using defaults:',
+            error,
+          );
+          return of(this.getDefaultConfig());
+        }),
+        tap(config => {
+          console.log('Configuration loaded:', config);
+          this.configLoaded = true;
+        }),
+      )
+      .subscribe(
+        config => this.config$.next(config),
+        error => {
+          console.error('Error loading configuration:', error);
+          this.config$.next(this.getDefaultConfig());
+          this.configLoaded = true;
+        },
+      );
   }
 
   private getDefaultConfig(): AppConfig {
     return {
       grafanaPrefix: '/grafana',
       grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
-      grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests'
+      grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
     };
   }
 

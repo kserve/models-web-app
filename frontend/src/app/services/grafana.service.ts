@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, map, tap, switchAll, concatAll, switchMap } from 'rxjs/operators';
+import {
+  catchError,
+  map,
+  tap,
+  switchAll,
+  concatAll,
+  switchMap,
+} from 'rxjs/operators';
 import { BackendService, SnackBarService } from 'kubeflow';
 import { ReplaySubject, Observable, of, throwError } from 'rxjs';
 import { GrafanaDashboard } from '../types/grafana';
@@ -21,9 +28,9 @@ export class GrafanaService extends BackendService {
   private grafanaPrefix: string;
 
   constructor(
-    public http: HttpClient, 
+    public http: HttpClient,
     public snack: SnackBarService,
-    private configService: ConfigService
+    private configService: ConfigService,
   ) {
     super(http, snack);
 
@@ -34,11 +41,14 @@ export class GrafanaService extends BackendService {
         this.initializeDashboards();
       },
       error => {
-        console.error('Failed to load configuration for GrafanaService:', error);
+        console.error(
+          'Failed to load configuration for GrafanaService:',
+          error,
+        );
         // Use default prefix as fallback
         this.grafanaPrefix = '/grafana';
         this.initializeDashboards();
-      }
+      },
     );
   }
 

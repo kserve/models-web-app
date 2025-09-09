@@ -37,7 +37,10 @@ export class MetricsComponent implements OnInit {
         }
       },
       error => {
-        console.error('Failed to load configuration for MetricsComponent:', error);
+        console.error(
+          'Failed to load configuration for MetricsComponent:',
+          error,
+        );
         // Use default database names as fallback
         this.cpuMemoryDb = 'db/knative-serving-revision-cpu-and-memory-usage';
         this.httpRequestsDb = 'db/knative-serving-revision-http-requests';
@@ -47,7 +50,7 @@ export class MetricsComponent implements OnInit {
             this.configs[comp] = this.generateComponentGraphsConfig(comp);
           });
         }
-      }
+      },
     );
   }
 
@@ -138,7 +141,8 @@ export class MetricsComponent implements OnInit {
     configuration: string,
     revision: string,
   ): GrafanaIframeConfig {
-    const dashboardUri = this.httpRequestsDb || 'db/knative-serving-revision-http-requests';
+    const dashboardUri =
+      this.httpRequestsDb || 'db/knative-serving-revision-http-requests';
     return this.generateRevisionGraphConfig(
       panelId,
       450,
@@ -154,7 +158,8 @@ export class MetricsComponent implements OnInit {
     configuration: string,
     revision: string,
   ): GrafanaIframeConfig {
-    const dashboardUri = this.cpuMemoryDb || 'db/knative-serving-revision-cpu-and-memory-usage';
+    const dashboardUri =
+      this.cpuMemoryDb || 'db/knative-serving-revision-cpu-and-memory-usage';
     return this.generateRevisionGraphConfig(
       panelId,
       450,

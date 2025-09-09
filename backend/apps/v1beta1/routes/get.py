@@ -16,10 +16,15 @@ def get_config():
     try:
         config = {
             "grafanaPrefix": os.environ.get("GRAFANA_PREFIX", "/grafana"),
-            "grafanaCpuMemoryDb": os.environ.get("GRAFANA_CPU_MEMORY_DB", "db/knative-serving-revision-cpu-and-memory-usage"),
-            "grafanaHttpRequestsDb": os.environ.get("GRAFANA_HTTP_REQUESTS_DB", "db/knative-serving-revision-http-requests")
+            "grafanaCpuMemoryDb": os.environ.get(
+                "GRAFANA_CPU_MEMORY_DB",
+                "db/knative-serving-revision-cpu-and-memory-usage",
+            ),
+            "grafanaHttpRequestsDb": os.environ.get(
+                "GRAFANA_HTTP_REQUESTS_DB", "db/knative-serving-revision-http-requests"
+            ),
         }
-        
+
         log.info("Configuration requested: %s", config)
         return jsonify(config)
     except Exception as e:

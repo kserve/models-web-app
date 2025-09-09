@@ -20,3 +20,12 @@ repos:
       - id: shellcheck
         files: ^.*\.sh$
         exclude: (^applications/.*|.*upstream.*)
+
+  - repo: local
+    hooks:
+      - id: frontend-format
+        name: Run npm format:write in frontend
+        entry: bash -c "cd frontend && npm run format:write"
+        language: system
+        pass_filenames: false
+        files: ^frontend/src/.*\.(js|ts|html|scss|css)$

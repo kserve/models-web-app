@@ -1,10 +1,17 @@
 import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { catchError, map, tap, switchAll, concatAll } from 'rxjs/operators';
+import {
+  catchError,
+  map,
+  tap,
+  switchAll,
+  concatAll,
+  switchMap,
+} from 'rxjs/operators';
 import { BackendService, SnackBarService } from 'kubeflow';
 import { ReplaySubject, Observable, of, throwError } from 'rxjs';
 import { GrafanaDashboard } from '../types/grafana';
+import { ConfigService } from './config.service';
 
 @Injectable({
   providedIn: 'root',
@@ -18,11 +25,34 @@ export class GrafanaService extends BackendService {
   private dashboardUris = new ReplaySubject<{
     [uri: string]: GrafanaDashboard;
   }>(1);
+  private grafanaPrefix: string;
 
-  constructor(http: HttpClient, snack: SnackBarService) {
+  constructor(
+    public http: HttpClient,
+    public snack: SnackBarService,
+    private configService: ConfigService,
+  ) {
     super(http, snack);
 
     console.log('Fetching Grafana dashboards info');
+    this.configService.getConfig().subscribe(
+      config => {
+        this.grafanaPrefix = config.grafanaPrefix;
+        this.initializeDashboards();
+      },
+      error => {
+        console.error(
+          'Failed to load configuration for GrafanaService:',
+          error,
+        );
+        // Use default prefix as fallback
+        this.grafanaPrefix = '/grafana';
+        this.initializeDashboards();
+      },
+    );
+  }
+
+  private initializeDashboards(): void {
     this.getDashboardsInfo().subscribe(
       (dashboards: GrafanaDashboard[]) => {
         console.log('Fetched dashboards');
@@ -60,11 +90,14 @@ export class GrafanaService extends BackendService {
     );
   }
 
-  public getDashboardsInfo() {
-    const url = environment.grafanaPrefix + '/api/search';
+  public getDashboardsInfo(): Observable<GrafanaDashboard[]> {
+    const url = this.grafanaPrefix + '/api/search';
 
     return this.http.get<GrafanaDashboard[]>(url).pipe(
-      catchError(error => this.handleError(error, false)),
+      catchError(error => {
+        console.error('Error fetching Grafana dashboards:', error);
+        return of([]); // Return empty array as fallback
+      }),
       map((resp: GrafanaDashboard[]) => {
         return resp;
       }),

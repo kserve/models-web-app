@@ -1,5 +1,15 @@
 describe('Models Web App - Index Page Tests', () => {
   beforeEach(() => {
+    // Mock the configuration API that's loaded during app initialization
+    cy.intercept('GET', '/api/config', {
+      statusCode: 200,
+      body: {
+        grafanaPrefix: '/grafana',
+        grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
+        grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests'
+      }
+    }).as('getConfig')
+    
     // Set up default intercepts for all tests
     cy.intercept('GET', '/api/namespaces', {
       statusCode: 200,
@@ -33,8 +43,13 @@ describe('Models Web App - Index Page Tests', () => {
   })
 
   it('should show namespace selector', () => {
+    // Wait for the config to load first
+    cy.wait('@getConfig')
+    // Wait for namespaces to be fetched
+    cy.wait('@getNamespaces')
+    
     // Namespace selector should be visible
-    cy.get('lib-namespace-select', { timeout: 2000 }).should('exist')
+    cy.get('lib-namespace-select', { timeout: 5000 }).should('exist')
     cy.get('lib-title-actions-toolbar').find('lib-namespace-select').should('exist')
   })
 

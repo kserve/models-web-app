@@ -190,7 +190,7 @@ export class IndexComponent implements OnInit, OnDestroy {
     svc.ui.protocolVersion = predictor.protocolVersion || 'v1';
     svc.ui.link = {
       text: svc.metadata.name,
-      url: `/details/${this.currNamespace}/${svc.metadata.name}`,
+      url: `/details/${svc.metadata.namespace}/${svc.metadata.name}`,
     };
   }
 

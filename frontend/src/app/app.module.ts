@@ -44,7 +44,7 @@ const MwaSnackBarConfig: MatSnackBarConfig = {
     },
     {
       provide: APP_INITIALIZER,
-      useFactory: (configService: ConfigService) => () =>
+      useFactory: (configService: ConfigService) => () => {
         configService
           .getConfig()
           .pipe(
@@ -57,7 +57,9 @@ const MwaSnackBarConfig: MatSnackBarConfig = {
               return of(null);
             }),
           )
-          .toPromise(),
+          .subscribe();
+        return Promise.resolve();
+      },
       deps: [ConfigService],
       multi: true,
     },

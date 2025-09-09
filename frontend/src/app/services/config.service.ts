@@ -14,6 +14,7 @@ export class ConfigService extends BackendService {
 
   constructor(public http: HttpClient, public snack: SnackBarService) {
     super(http, snack);
+    this.config$.next(this.getDefaultConfig());
     this.loadConfig();
   }
 

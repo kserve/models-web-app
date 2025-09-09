@@ -60,6 +60,18 @@ The following is a list of environment variables that can be set for any web app
 
 The application supports runtime configuration of Grafana endpoints and dashboard names, allowing you to use custom Grafana instances and dashboard configurations without rebuilding the application.
 
+If you're deploying on Kubernetes with Kustomize, you can set these values in the app's ConfigMap by editing the `config/base/kustomization.yaml` (or your overlay) under `configMapGenerator` for `kserve-models-web-app-config`. Update the following literals as needed:
+
+- `GRAFANA_PREFIX` (e.g., `/grafana` or `/custom-grafana`)
+- `GRAFANA_CPU_MEMORY_DB` (e.g., `db/custom-cpu-memory-dashboard`)
+- `GRAFANA_HTTP_REQUESTS_DB` (e.g., `db/custom-http-requests-dashboard`)
+
+After editing, reapply your manifests, for example:
+
+```bash
+kustomize build config/base | kubectl apply -f -
+```
+
 ### Configuration API
 
 You can verify your grafana configuration by accessing the `/api/config` endpoint:

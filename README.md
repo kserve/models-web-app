@@ -88,6 +88,8 @@ make setup
 
 # Optional: Specify custom Kubeflow repository path. Default: `../../kubeflow` (relative to the frontend directory)
 # make setup KF_REPO=/path/to/kubeflow
+# Clean Command: Provides a make clean target to remove node_modules
+# make clean
 
 # Build and watch for changes
 npm run build:watch

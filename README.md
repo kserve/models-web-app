@@ -8,22 +8,25 @@ The web application currently works with `v1beta1` versions of `InferenceService
 
 The web application is installed alongside the other KServe components, either in the `kserve` or in the `kubeflow` namespace. There is a `VirtualService` that exposes the application via an Istio Ingress Gateway. Depending on the installation environment the following Ingress Gateway will be used.
 
-| Installation mode | IngressGateway |
-| - | - |
+| Installation mode | IngressGateway                          |
+| ----------------- | --------------------------------------- |
 | Standalone KServe | knative-ingress-gateway.knative-serving |
-| Kubeflow | kubeflow-gateway.kubeflow |
+| Kubeflow          | kubeflow-gateway.kubeflow               |
 
 To access the application you will need to navigate with your browser to
+
 ```sh
 ${INGRESS_IP}/models/
 ```
 
 Alternatively you can access the application via `kubectl port-forward`. In that case you will need to configure the application to:
+
 1. Not perform any authorization checks, since there is no logged in user
 2. Work under the `/` prefix
 3. Disable Secure cookies, since the app will be exposed under plain http
 
 You can apply the mentioned configurations by doing the following commands:
+
 ```bash
 # edit the configmap
 # CONFIG=config/overlays/kubeflow/kustomization.yaml
@@ -62,16 +65,36 @@ This web application is utilizing common code from the [kubeflow/kubeflow](https
 This will require us to fetch this common code when we want to either build the application locally or in an OCI container image.
 
 In order to run the application locally you will need to:
+
 1. Build the frontend, in watch mode
 2. Run the backend
 
 The `npm run build:watch` command will build the frontend artifacts inside the backend's `static` folder for serving. So in order to see the application you will need to start the backend and connect to `localhost:5000`.
 
 Requirements:
-* node 22.0.0
-* python 3.12
+
+- node 22.0.0
+- python 3.12
 
 ### Frontend
+
+#### Option 1: Using Makefile (Recommended)
+
+```bash
+cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/frontend
+
+# Setup dependencies and build common library
+make setup
+
+# Optional: Specify custom Kubeflow repository path. Default: `../../kubeflow` (relative to the frontend directory)
+# make setup KF_REPO=/path/to/kubeflow
+
+# Build and watch for changes
+npm run build:watch
+```
+
+#### Option 2: Manual setup
+
 ```bash
 # build the common library
 COMMIT=$(cat ./frontend/COMMIT)
@@ -93,6 +116,7 @@ npm run build:watch
 ### Backend
 
 #### run it locally
+
 ```bash
 # create a virtual environment and install dependencies
 # https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
@@ -101,10 +125,9 @@ python3.12 -m pip install --user virtualenv
 python3.12 -m venv web-application-development
 source web-application-development/bin/activate
 
-# install the dependencies on the activated virtual environment 
+# install the dependencies on the activated virtual environment
 KUBEFLOW_REPOSITORY="/path/to/kubeflow/kubeflow" make -C backend install-deps
 
 # run the backend
 make -C backend run-dev
 ```
-

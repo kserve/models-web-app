@@ -1,10 +1,9 @@
-# Minimal Makefile for frontend setup
+# Makefile for frontend setup
 # Usage examples:
 #   make setup
 #   make setup KUBEFLOW_REPOSITORY=/path/to/kubeflow
 #   make setup KF_REPO=/path/to/kubeflow
 
-# Allow multiple var names; first non-empty wins, default to ../kubeflow
 KUBEFLOW_REPOSITORY ?= $(or $(KF_REPO),../../kubeflow)
 KUBEFLOW_REMOTE ?= https://github.com/kubeflow/kubeflow
 

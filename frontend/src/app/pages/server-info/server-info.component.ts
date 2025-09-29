@@ -15,10 +15,10 @@ import {
   Status,
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
+import { ConfigService } from 'src/app/services/config.service';
 import { isEqual } from 'lodash';
 import { generateDeleteConfig } from '../index/config';
 import { HttpClient } from '@angular/common/http';
-import { environment } from 'src/environments/environment';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import {
   InferenceServiceOwnedObjects,
@@ -78,6 +78,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     private backend: MWABackendService,
     private confirmDialog: ConfirmDialogService,
     private snack: SnackBarService,
+    private configService: ConfigService,
   ) {}
 
   ngOnInit() {
@@ -95,31 +96,19 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
     // don't show a METRICS tab if Grafana is not exposed
     console.log($localize`Checking if Grafana endpoint is exposed`);
-    const grafanaApi = environment.grafanaPrefix + '/api/search';
-
-    this.http
-      .get(grafanaApi)
-      .pipe(timeout(1000))
-      .subscribe({
-        next: resp => {
-          if (!Array.isArray(resp)) {
-            console.log(
-              $localize`Response from the Grafana endpoint was not as expected.`,
-            );
-            this.grafanaFound = false;
-            return;
-          }
-
-          console.log(
-            $localize`Grafana endpoint detected. Will expose a metrics tab.`,
-          );
-          this.grafanaFound = true;
-        },
-        error: () => {
-          console.log($localize`Could not detect a Grafana endpoint.`);
-          this.grafanaFound = false;
-        },
-      });
+    this.configService.getConfig().subscribe(
+      config => {
+        this.checkGrafanaAvailability(config.grafanaPrefix);
+      },
+      error => {
+        console.error(
+          'Failed to load configuration for ServerInfoComponent:',
+          error,
+        );
+        // Use default prefix as fallback
+        this.checkGrafanaAvailability('/grafana');
+      },
+    );
   }
 
   ngOnDestroy() {
@@ -321,6 +310,34 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         map(_ => [component, objects]),
       );
     }
+  }
+
+  private checkGrafanaAvailability(grafanaPrefix: string): void {
+    const grafanaApi = grafanaPrefix + '/api/search';
+
+    this.http
+      .get(grafanaApi)
+      .pipe(timeout(1000))
+      .subscribe({
+        next: resp => {
+          if (!Array.isArray(resp)) {
+            console.log(
+              $localize`Response from the Grafana endpoint was not as expected.`,
+            );
+            this.grafanaFound = false;
+            return;
+          }
+
+          console.log(
+            $localize`Grafana endpoint detected. Will expose a metrics tab.`,
+          );
+          this.grafanaFound = true;
+        },
+        error: () => {
+          console.log($localize`Could not detect a Grafana endpoint.`);
+          this.grafanaFound = false;
+        },
+      });
   }
 
   private isRawDeployment(svc: InferenceServiceK8s): boolean {

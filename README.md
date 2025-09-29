@@ -55,6 +55,42 @@ The following is a list of environment variables that can be set for any web app
 | CSRF_SAMESITE | Strict| Controls the [SameSite value](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#SameSite) of the CSRF cookie |
 | USERID_HEADER | kubeflow-userid | Header in each request that will contain the username of the logged in user |
 | USERID_PREFIX | "" | Prefix to remove from the `USERID_HEADER` value to extract the logged in user name |
+| GRAFANA_PREFIX | /grafana | Controls the Grafana endpoint prefix for metrics dashboards |
+| GRAFANA_CPU_MEMORY_DB | db/knative-serving-revision-cpu-and-memory-usage | Grafana dashboard name for CPU and memory metrics |
+| GRAFANA_HTTP_REQUESTS_DB | db/knative-serving-revision-http-requests | Grafana dashboard name for HTTP request metrics |
+
+## Grafana Configuration
+
+The application supports runtime configuration of Grafana endpoints and dashboard names, allowing you to use custom Grafana instances and dashboard configurations without rebuilding the application.
+
+If you're deploying on Kubernetes with Kustomize, you can set these values in the application's ConfigMap by editing the `config/base/kustomization.yaml` (or your overlay) under `configMapGenerator` for `kserve-models-web-app-config`. Update the following literals as needed:
+
+- `GRAFANA_PREFIX` (e.g., `/grafana` or `/custom-grafana`)
+- `GRAFANA_CPU_MEMORY_DB` (e.g., `db/custom-cpu-memory-dashboard`)
+- `GRAFANA_HTTP_REQUESTS_DB` (e.g., `db/custom-http-requests-dashboard`)
+
+After editing, reapply your manifests, for example:
+
+```bash
+kustomize build config/base | kubectl apply -f -
+```
+
+### Configuration API
+
+You can verify your grafana configuration by accessing the `/api/config` endpoint:
+
+```bash
+curl http://your-app-url/api/config
+```
+
+Expected response:
+```json
+{
+  "grafanaPrefix": "/custom-grafana",
+  "grafanaCpuMemoryDb": "db/custom-cpu-memory-dashboard",
+  "grafanaHttpRequestsDb": "db/custom-http-requests-dashboard"
+}
+```
 
 ## Development
 

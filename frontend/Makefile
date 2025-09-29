@@ -8,8 +8,8 @@ KUBEFLOW_REPOSITORY ?= $(or $(KF_REPO),../../kubeflow)
 KUBEFLOW_REMOTE ?= https://github.com/kubeflow/kubeflow
 
 COMMIT_FILE := ./COMMIT
-COMMON_LIB_DIR := $(KUBEFLOW_REPOSITORY)/components/crud-web-apps/common/frontend/kubeflow-common-lib
-COMMON_LIB_DIST := $(COMMON_LIB_DIR)/dist/kubeflow
+COMMON_LIBRARY_DIRECTORY := $(KUBEFLOW_REPOSITORY)/components/crud-web-apps/common/frontend/kubeflow-common-lib
+COMMON_LIBRARY_DISTRIBUTION := $(COMMON_LIBRARY_DIRECTORY)/dist/kubeflow
 
 .PHONY: all setup clean
 
@@ -22,25 +22,25 @@ setup:
 	    echo "Cloning $(KUBEFLOW_REMOTE) into $(KUBEFLOW_REPOSITORY)"; \
 	    git clone "$(KUBEFLOW_REMOTE)" "$(KUBEFLOW_REPOSITORY)"; \
 	fi
-	@if [ ! -d "$(COMMON_LIB_DIR)" ]; then \
-	    echo "Expected common lib at: $(COMMON_LIB_DIR)"; \
+	@if [ ! -d "$(COMMON_LIBRARY_DIRECTORY)" ]; then \
+	    echo "Expected common lib at: $(COMMON_LIBRARY_DIRECTORY)"; \
 	    echo "Verify KUBEFLOW_REPOSITORY is correct."; \
 	    exit 1; \
 	fi
 	@echo ">> Checking kubeflow-common-lib status"
 	@TARGET_COMMIT=$$(cat "$(COMMIT_FILE)"); \
-	if [ -d "$(COMMON_LIB_DIST)" ] && [ "$$(cd "$(COMMON_LIB_DIR)" && git rev-parse HEAD)" = "$$(cd "$(COMMON_LIB_DIR)" && git rev-parse "$$TARGET_COMMIT")" ]; then \
-	    echo ">> kubeflow-common-lib is up-to-date at commit $$TARGET_COMMIT; skipping build"; \
+	if [ -d "$(COMMON_LIBRARY_DISTRIBUTION)" ] && [ "$$(cd "$(COMMON_LIBRARY_DIRECTORY)" && git rev-parse HEAD)" = "$$(cd "$(COMMON_LIBRARY_DIRECTORY)" && git rev-parse "$$TARGET_COMMIT")" ]; then \
+	    echo ">> kubeflow-common-library is up-to-date at commit $$TARGET_COMMIT; skipping build"; \
 	else \
-	    echo ">> Building kubeflow-common-lib at commit $$TARGET_COMMIT"; \
-	    cd "$(COMMON_LIB_DIR)" && \
+	    echo ">> Building kubeflow-common-library at commit $$TARGET_COMMIT"; \
+	    cd "$(COMMON_LIBRARY_DIRECTORY)" && \
 	    git fetch --all --tags && \
 	    git checkout "$$TARGET_COMMIT" && \
 	    npm install && \
 	    npm run build; \
 	fi
-	@cd "$(COMMON_LIB_DIR)" && cd dist/kubeflow && npm link
-	@echo ">> Installing frontend deps and linking kubeflow-common-lib"
+	@cd "$(COMMON_LIBRARY_DIRECTORY)" && cd dist/kubeflow && npm link
+	@echo ">> Installing frontend dependencies and linking kubeflow-common-library"
 	@npm install
 	@npm link kubeflow
 	@echo "✔ Setup complete. Now run: npm run build:watch"

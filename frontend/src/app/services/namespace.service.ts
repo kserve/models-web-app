@@ -9,7 +9,7 @@ import { MWABackendService } from './backend.service';
 export class MWANamespaceService {
   private singleNamespaceMode$ = new BehaviorSubject<boolean>(false);
   private allowedNamespacesSubject$ = new BehaviorSubject<string[]>([]);
-  
+
   constructor(private backend: MWABackendService) {}
 
   /**
@@ -22,7 +22,7 @@ export class MWANamespaceService {
         this.allowedNamespacesSubject$.next(namespaces);
         // If only one namespace is available, we're in single namespace mode
         this.singleNamespaceMode$.next(namespaces.length === 1);
-      })
+      }),
     );
   }
 

@@ -37,15 +37,21 @@ def get_namespaces():
     """Handle retrieval of allowed namespaces based on ALLOWED_NAMESPACES env var."""
     try:
         allowed_namespaces_env = os.environ.get("ALLOWED_NAMESPACES", "")
-        
+
         if allowed_namespaces_env:
 
-            allowed_list = [ns.strip() for ns in allowed_namespaces_env.split(",") if ns.strip()]
-            log.info("Filtering namespaces based on ALLOWED_NAMESPACES: %s", allowed_list)
+            allowed_list = [
+                ns.strip() for ns in allowed_namespaces_env.split(",") if ns.strip()
+            ]
+            log.info(
+                "Filtering namespaces based on ALLOWED_NAMESPACES: %s", allowed_list
+            )
             all_namespaces = api.list_namespaces()
             existing_namespaces = [ns.metadata.name for ns in all_namespaces.items]
-            filtered_namespaces = [ns for ns in allowed_list if ns in existing_namespaces]
-            
+            filtered_namespaces = [
+                ns for ns in allowed_list if ns in existing_namespaces
+            ]
+
             if not filtered_namespaces:
                 log.warning("None of the allowed namespaces exist: %s", allowed_list)
                 response_namespaces = existing_namespaces

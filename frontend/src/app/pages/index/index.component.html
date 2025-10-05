@@ -1,8 +1,9 @@
 <div class="lib-content-wrapper">
   <lib-title-actions-toolbar title="Endpoints" [buttons]="buttons" i18n-title>
-    <lib-namespace-select
+    <app-namespace-select
       *ngIf="(ns.dashboardConnected$ | async) === dashboardDisconnectedState"
-    ></lib-namespace-select>
+    >
+    </app-namespace-select>
   </lib-title-actions-toolbar>
 
   <!--scrollable page content-->

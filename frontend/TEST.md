@@ -21,12 +21,20 @@ The Models Web Application employs a multi-layered testing strategy:
 
 This approach ensures both code quality at the unit level and functional correctness at the integration level.
 
+### Integration Testing on Kubernetes
+
+For complete integration testing of the Models Web Application on a Kubernetes cluster, refer to the test script in the Kubeflow manifests repository:
+
+**[kserve_models_web_application_test.sh](https://github.com/kubeflow/manifests/blob/master/tests/kserve_models_web_application_test.sh)**
+
+This script performs end-to-end validation of the application in a real Kubernetes environment with KServe installed.
+
 ## Testing Technologies
 
 ### Primary Testing Stack
 
 - **[Jest](https://jestjs.io/)** - Fast unit testing framework with excellent TypeScript support
-- **[Karma](https://karma-runner.github.io/)** + **[Jasmine](https://jasmine.github.io/)** - Traditional Angular testing setup (legacy)
+- ```[Deprecated]``` **[Karma](https://karma-runner.github.io/)** + **[Jasmine](https://jasmine.github.io/)** - Traditional Angular testing setup (legacy)
 - **[Cypress](https://www.cypress.io/)** - Modern E2E testing framework with excellent developer experience
 
 ### Supporting Libraries
@@ -141,57 +149,6 @@ All backend API calls are intercepted and mocked using `cy.intercept()`. This en
 - **Reliability** - No dependency on backend availability
 - **Reproducibility** - Consistent test data
 - **Error testing** - Easy simulation of error scenarios
-
-### Test Coverage
-
-#### 1. Index Page Tests (`index-page.cy.ts`)
-
-**Scenarios Covered**:
-- Page loads successfully with all UI components
-- Page title displays correctly as "Endpoints"
-- Namespace selector is visible and functional
-- Endpoints table displays with correct columns
-- Empty state shows when no endpoints exist
-- "New Endpoint" button navigates correctly
-- Keyboard navigation works properly
-
-#### 2. Model Deployment Tests (`model-deployment.cy.ts`)
-
-**Scenarios Covered**:
-- Navigation to submit form via "New Endpoint" button
-- Monaco editor loads and is interactive
-- Valid YAML submission creates inference service
-- Invalid YAML syntax shows error messages
-- Network errors are handled gracefully
-- Required fields validation works
-- Pre-filled templates can be edited
-
-**Key Features**:
-- Custom helper function to set Monaco editor value with Angular change detection
-- Direct component manipulation for testing edge cases
-- Comprehensive API request validation
-
-#### 3. Model Edit Tests (`model-edit.cy.ts`)
-
-**Scenarios Covered**:
-- Model details page loads correctly
-- Edit mode can be entered
-- YAML content displays in editor
-- Edited model can be successfully submitted
-- Edit can be cancelled
-- Submission errors are handled gracefully
-- Invalid YAML is validated
-
-#### 4. Model Deletion Tests (`model-deletion.cy.ts`)
-
-**Scenarios Covered**:
-- Delete buttons display for inference services
-- Deletion with confirmation works correctly
-- Deletion can be cancelled
-- API errors during deletion are handled
-- Confirmation dialog displays properly
-- Terminating endpoints show correct status
-- Delete button tooltips are visible
 
 ### Custom Cypress Commands
 

@@ -4,6 +4,10 @@ This web application is responsible for allowing the user to manipulate the Mode
 
 The web application currently works with `v1beta1` versions of `InferenceService` objects.
 
+## Documentation
+
+- **[Testing Guide](frontend/TEST.md)** - Comprehensive guide on unit and E2E testing with Jest and Cypress
+
 ## Connect to the application
 
 The web application is installed alongside the other KServe components, either in the `kserve` or in the `kubeflow` namespace. There is a `VirtualService` that exposes the application via an Istio Ingress Gateway. Depending on the installation environment the following Ingress Gateway will be used.

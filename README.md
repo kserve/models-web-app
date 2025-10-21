@@ -62,6 +62,30 @@ The following is a list of environment variables that can be set for any web app
 | GRAFANA_PREFIX | /grafana | Controls the Grafana endpoint prefix for metrics dashboards |
 | GRAFANA_CPU_MEMORY_DB | db/knative-serving-revision-cpu-and-memory-usage | Grafana dashboard name for CPU and memory metrics |
 | GRAFANA_HTTP_REQUESTS_DB | db/knative-serving-revision-http-requests | Grafana dashboard name for HTTP request metrics |
+| ALLOWED_NAMESPACES | "" | Comma-separated list of namespaces to show in the namespace selector. If only one namespace is specified, it will be auto-selected and the dropdown will be hidden. Empty means all namespaces are shown. |
+
+## Namespace Configuration
+
+The application supports configuring which namespaces are available in the namespace selector. This is particularly useful for standalone deployments where you want to limit access to specific namespaces.
+
+### Environment Variable
+Set the `ALLOWED_NAMESPACES` environment variable with a comma-separated list of namespaces:
+
+```bash
+# Single namespace (auto-selected, dropdown hidden)
+ALLOWED_NAMESPACES="kubeflow-user"
+
+# Multiple namespaces (dropdown shows only these)
+ALLOWED_NAMESPACES="kubeflow,kubeflow-user,production"
+```
+
+### Behavior
+- **No configuration**: All namespaces are shown (default behavior)
+- **Single namespace**: Namespace is auto-selected and dropdown is hidden
+- **Multiple namespaces**: Dropdown shows only the specified namespaces
+- **Error handling**: Falls back to all namespaces if specified ones don't exist
+
+For detailed configuration options and examples, see [CONFIGURABLE_NAMESPACES.md](./CONFIGURABLE_NAMESPACES.md).
 
 ## Grafana Configuration
 

@@ -278,9 +278,7 @@ def get_raw_deployment_objects(inference_service, component):
             f"Found HorizontalPodAutoscaler {resource_name} for component {component}"
         )
     except Exception as e:
-        log.debug(
-            f"No HorizontalPodAutoscaler found for {resource_name}: {e}"
-        )
+        log.debug(f"No HorizontalPodAutoscaler found for {resource_name}: {e}")
 
     return objects
 
@@ -298,7 +296,9 @@ def get_modelmesh_objects(inference_service, component):
     }
 
     # 1. Get predictor status
-    if "status" in inference_service and "components" in inference_service.get("status", {}):
+    if "status" in inference_service and "components" in inference_service.get(
+        "status", {}
+    ):
         objects["predictor"] = inference_service["status"]["components"].get(component)
 
     # 2. Determine the ServingRuntime name (early exit if not found)

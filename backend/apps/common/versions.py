@@ -16,7 +16,11 @@ KNATIVE_CONFIGURATION = {
 KNATIVE_SERVICE = {"group": "serving.knative.dev", "version": "v1", "kind": "services"}
 
 # Kubernetes native resources for RawDeployment mode
-KUBERNETES_DEPLOYMENT_RESOURCE = {"group": "apps", "version": "v1", "kind": "deployments"}
+KUBERNETES_DEPLOYMENT_RESOURCE = {
+    "group": "apps",
+    "version": "v1",
+    "kind": "deployments",
+}
 KUBERNETES_SERVICE_RESOURCE = {"group": "", "version": "v1", "kind": "services"}
 KUBERNETES_HPA_RESOURCE = {
     "group": "autoscaling",

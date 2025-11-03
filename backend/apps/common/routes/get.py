@@ -14,9 +14,7 @@ log = logging.getLogger(__name__)
 def get_inference_services(namespace):
     """Return a list of InferenceService custom resources as JSON objects."""
     group_version_kind = versions.inference_service_group_version_kind()
-    inference_services = api.list_custom_rsrc(
-        **group_version_kind, namespace=namespace
-    )
+    inference_services = api.list_custom_rsrc(**group_version_kind, namespace=namespace)
 
     return api.success_response("inferenceServices", inference_services["items"])
 
@@ -55,9 +53,7 @@ def get_inference_service_logs(inference_service):
 
     if deployment_mode == "ModelMesh":
         # For ModelMesh, get logs from modelmesh-serving deployment
-        component_pods_dict = utils.get_modelmesh_pods(
-            inference_service, components
-        )
+        component_pods_dict = utils.get_modelmesh_pods(inference_service, components)
     elif deployment_mode == "RawDeployment":
         component_pods_dict = utils.get_raw_inference_service_pods(
             inference_service, components

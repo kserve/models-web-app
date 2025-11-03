@@ -100,6 +100,7 @@ declare module 'kubeflow' {
 
   export class ExponentialBackoff {
     constructor(config?: any);
+    start(): any;
   }
 
   export const LinkType: {
@@ -127,6 +128,11 @@ declare module 'kubeflow' {
   export class DateTimeValue {
     constructor(options?: any);
   }
+
+  export class DateTimeModule {}
+  export class PanelModule {}
+  export class LoadingSpinnerModule {}
+  export class LogsViewerModule {}
 
   export interface DialogConfig {
     title?: string;

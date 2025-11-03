@@ -82,6 +82,7 @@ export class OverviewComponent {
     for (const c of ['predictor', 'transformer', 'explainer']) {
       if (c in svc.spec) {
         chips.push({
+          name: c,
           value: c,
           color: 'primary',
         });

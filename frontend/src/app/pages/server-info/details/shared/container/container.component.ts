@@ -31,7 +31,8 @@ export class ContainerComponent {
 
     for (const envVar of c.env) {
       chips.push({
-        value: `${envVar.name}: ${envVar.value}`,
+        name: envVar.name,
+        value: envVar.value,
         color: 'primary',
         tooltip: envVar.value,
       });

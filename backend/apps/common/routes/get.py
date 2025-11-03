@@ -72,7 +72,7 @@ def get_inference_service_logs(inference_service):
         return {}
 
     logs_by_component = {}
-    logging.info("Component pods: %s", component_pods_dict)
+    log.info("Component pods: %s", component_pods_dict)
     for component, pods in component_pods_dict.items():
         if component not in logs_by_component:
             logs_by_component[component] = []

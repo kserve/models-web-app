@@ -8,11 +8,13 @@ from .routes import bp as routes_bp
 log = logging.getLogger(__name__)
 
 
-def create_app(name=__name__, static_folder="static", cfg: config.Config = None):
+def create_app(
+    name=__name__, static_folder="static", configuration: config.Config = None
+):
     """Create the WSGI app."""
-    cfg = config.Config() if cfg is None else cfg
+    configuration = config.Config() if configuration is None else configuration
 
-    app = base.create_app(name, static_folder, cfg)
+    app = base.create_app(name, static_folder, configuration)
 
     # Register the app's blueprints
     app.register_blueprint(routes_bp)

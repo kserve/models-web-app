@@ -62,6 +62,56 @@ The following is a list of environment variables that can be set for any web app
 | GRAFANA_PREFIX | /grafana | Controls the Grafana endpoint prefix for metrics dashboards |
 | GRAFANA_CPU_MEMORY_DB | db/knative-serving-revision-cpu-and-memory-usage | Grafana dashboard name for CPU and memory metrics |
 | GRAFANA_HTTP_REQUESTS_DB | db/knative-serving-revision-http-requests | Grafana dashboard name for HTTP request metrics |
+| ALLOWED_NAMESPACES | "" | Comma-separated list of namespaces to allow access to. If empty, all namespaces are accessible. Single namespace auto-selects and hides dropdown. |
+
+## Namespace Filtering Configuration
+
+For standalone deployments, you can configure which namespaces users are allowed to access using the `ALLOWED_NAMESPACES` environment variable. This feature provides fine-grained access control over namespace visibility in the Models Web App.
+
+### Configuration Options
+
+- **Empty/Unset** (default): All cluster namespaces are accessible - maintains backward compatibility
+- **Single namespace**: `ALLOWED_NAMESPACES="kubeflow-user"` - automatically selects the namespace and hides the dropdown selector
+- **Multiple namespaces**: `ALLOWED_NAMESPACES="ns1,ns2,ns3"` - shows a filtered dropdown with only the specified namespaces
+
+### Behavior
+
+- **Default mode**: When `ALLOWED_NAMESPACES` is not set, all namespaces are shown (fully backward compatible)
+- **Single namespace mode**: The dropdown is hidden and the namespace is automatically selected, displayed as static text
+- **Multi-namespace mode**: Dropdown shows only the specified namespaces
+- **Error resilience**: If specified namespaces don't exist in the cluster, the app falls back to showing all namespaces with a warning in the logs
+
+### Example Configurations
+
+```bash
+# Allow access to only one namespace (auto-selected, dropdown hidden)
+export ALLOWED_NAMESPACES="kubeflow-user"
+
+# Allow access to multiple specific namespaces
+export ALLOWED_NAMESPACES="kubeflow-user,kubeflow-admin,ml-team"
+
+# Default behavior - all namespaces accessible
+unset ALLOWED_NAMESPACES
+```
+
+### Kubernetes Deployment
+
+Add the environment variable to your deployment configuration:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kserve-models-web-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: kserve-models-web-app
+        env:
+        - name: ALLOWED_NAMESPACES
+          value: "kubeflow-user,kubeflow-admin"
+```
 
 ## Grafana Configuration
 

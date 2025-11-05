@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
+import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { Clipboard } from '@angular/cdk/clipboard';
 import {
   InferenceServiceK8s,
@@ -62,15 +63,27 @@ export class IndexComponent implements OnInit, OnDestroy {
     private router: Router,
     private clipboard: Clipboard,
     public ns: NamespaceService,
+    public mwaNamespace: MWANamespaceService,
     public poller: PollerService,
   ) {}
 
   ngOnInit(): void {
-    // Reset the poller whenever the selected namespace changes
-    this.nsSub = this.ns.getSelectedNamespace2().subscribe(ns => {
-      this.currNamespace = ns;
-      this.poll(ns);
-      this.newEndpointButton.namespaceChanged(ns, $localize`Endpoint`);
+    // Initialize the MWA namespace service first
+    this.mwaNamespace.initialize().subscribe();
+
+    // Subscribe to namespace changes from both services to maintain compatibility
+    this.nsSub = this.mwaNamespace.getSelectedNamespace().subscribe(ns => {
+      if (ns) {
+        this.currNamespace = ns;
+        this.poll(ns);
+        this.newEndpointButton.namespaceChanged(ns, $localize`Endpoint`);
+      }
+    });
+
+    // Also maintain compatibility with Kubeflow NamespaceService for dashboard connected state
+    // This is important for the dashboard disconnected state in the template
+    this.ns.getSelectedNamespace2().subscribe(ns => {
+      // Only use this for maintaining dashboard state, actual namespace selection is handled by MWANamespaceService
     });
   }
 

@@ -1,0 +1,78 @@
+.namespace-select-container {
+  display: flex;
+  align-items: center;
+  min-width: 200px;
+}
+
+.single-namespace-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.namespace-icon {
+  color: #666;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.namespace-label {
+  font-weight: 500;
+  color: #666;
+  font-size: 14px;
+}
+
+.namespace-value {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+  background-color: #e3f2fd;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #bbdefb;
+}
+
+.namespace-selector {
+  width: 100%;
+  max-width: 300px;
+}
+
+.namespace-selector .mat-form-field-wrapper {
+  padding-bottom: 0;
+}
+
+.namespace-selector .mat-form-field-appearance-outline .mat-form-field-outline {
+  color: rgba(0, 0, 0, 0.12);
+}
+
+.namespace-selector
+  .mat-form-field-appearance-outline.mat-focused
+  .mat-form-field-outline-thick {
+  color: var(--accent-color, #2196f3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .namespace-select-container {
+    min-width: 150px;
+  }
+
+  .namespace-selector {
+    max-width: 200px;
+  }
+
+  .single-namespace-display {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .namespace-label,
+  .namespace-value {
+    font-size: 12px;
+  }
+}

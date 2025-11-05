@@ -1,0 +1,36 @@
+<div
+  class="namespace-select-container"
+  *ngIf="namespaceConfig$ | async as config"
+>
+  <!-- Single namespace mode: show as static text -->
+  <div *ngIf="shouldHideSelector$ | async" class="single-namespace-display">
+    <mat-icon class="namespace-icon">account_tree</mat-icon>
+    <span class="namespace-label">Namespace:</span>
+    <span class="namespace-value">{{ config.autoSelectedNamespace }}</span>
+  </div>
+
+  <!-- Multiple namespaces mode: show dropdown selector -->
+  <mat-form-field
+    *ngIf="(shouldHideSelector$ | async) === false"
+    appearance="outline"
+    class="namespace-selector"
+  >
+    <mat-label>Namespace</mat-label>
+    <mat-select
+      [value]="selectedNamespace$ | async"
+      (selectionChange)="onNamespaceChange($event.value)"
+      placeholder="Select a namespace"
+    >
+      <mat-option
+        *ngFor="
+          let namespace of selectableNamespaces$ | async;
+          trackBy: trackByNamespace
+        "
+        [value]="namespace"
+      >
+        {{ namespace }}
+      </mat-option>
+    </mat-select>
+    <mat-icon matPrefix>account_tree</mat-icon>
+  </mat-form-field>
+</div>

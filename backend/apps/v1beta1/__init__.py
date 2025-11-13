@@ -10,14 +10,14 @@ from .routes import bp as routes_bp
 log = logging.getLogger(__name__)
 
 
-def create_app(name=__name__, cfg: config.Config = None):
+def create_app(name=__name__, configuration: config.Config = None):
     """Create a WSGI app."""
-    cfg = config.Config() if cfg is None else cfg
+    configuration = config.Config() if configuration is None else configuration
 
     # Properly set the static serving directory
     static_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "static")
 
-    app = create_default_app(name, static_dir, cfg)
+    app = create_default_app(name, static_dir, configuration)
 
     log.info("Setting STATIC_DIR to: " + static_dir)
     app.config["STATIC_DIR"] = static_dir

@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 def get_config():
     """Handle retrieval of application configuration."""
     try:
-        config = {
+        configuration_payload = {
             "grafanaPrefix": os.environ.get("GRAFANA_PREFIX", "/grafana"),
             "grafanaCpuMemoryDb": os.environ.get(
                 "GRAFANA_CPU_MEMORY_DB",
@@ -25,8 +25,8 @@ def get_config():
             ),
         }
 
-        log.info("Configuration requested: %s", config)
-        return jsonify(config)
+        log.info("Configuration requested: %s", configuration_payload)
+        return jsonify(configuration_payload)
     except Exception as e:
         log.error("Error retrieving configuration: %s", str(e))
         return api.error_response("message", "Failed to retrieve configuration"), 500

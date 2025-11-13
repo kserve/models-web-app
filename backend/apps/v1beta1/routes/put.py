@@ -8,28 +8,31 @@ from . import bp
 log = logging.getLogger(__name__)
 
 
-@bp.route("/api/namespaces/<namespace>/inferenceservices/<isvc>", methods=["PUT"])
+@bp.route(
+    "/api/namespaces/<namespace>/inferenceservices/<inference_service_name>",
+    methods=["PUT"],
+)
 @decorators.request_is_json_type
 @decorators.required_body_params("apiVersion", "kind", "metadata", "spec")
-def replace_inference_service(namespace: str, isvc: str):
-    gvk = versions.inference_service_gvk()
+def replace_inference_service(namespace: str, inference_service_name: str):
+    group_version_kind = versions.inference_service_group_version_kind()
     api.authz.ensure_authorized(
         "update",
-        group=gvk["group"],
-        version=gvk["version"],
-        resource=gvk["kind"],
+        group=group_version_kind["group"],
+        version=group_version_kind["version"],
+        resource=group_version_kind["kind"],
         namespace=namespace,
     )
 
-    cr = request.get_json()
+    custom_resource = request.get_json()
 
     api.custom_api.replace_namespaced_custom_object(
-        group=gvk["group"],
-        version=gvk["version"],
-        plural=gvk["kind"],
+        group=group_version_kind["group"],
+        version=group_version_kind["version"],
+        plural=group_version_kind["kind"],
         namespace=namespace,
-        name=isvc,
-        body=cr,
+        name=inference_service_name,
+        body=custom_resource,
     )
 
     return api.success_response("message", "InferenceService successfully updated")

@@ -24,13 +24,13 @@ GRAFANA_HTTP_REQUESTS_DB = os.environ.get(
     "GRAFANA_HTTP_REQUESTS_DB", "db/knative-serving-revision-http-requests"
 )
 
-cfg = config.get_config(BACKEND_MODE)
-cfg.PREFIX = PREFIX
-cfg.APP_VERSION = APP_VERSION
+backend_configuration = config.get_config(BACKEND_MODE)
+backend_configuration.PREFIX = PREFIX
+backend_configuration.APP_VERSION = APP_VERSION
 
 # Load the app based on APP_VERSION env var
 if APP_VERSION == "v1beta1":
-    app = v1beta1.create_app(APP_NAME, cfg)
+    app = v1beta1.create_app(APP_NAME, backend_configuration)
 else:
     log.error("No app for: %s", APP_VERSION)
     sys.exit(1)

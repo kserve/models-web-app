@@ -1,4 +1,4 @@
-"""Helpers with GVK needed, stored in one place."""
+"""Helpers with Kubernetes group/version/kind mappings stored in one place."""
 
 from flask import current_app
 
@@ -8,7 +8,7 @@ KNATIVE_REVISION = {
     "version": "v1",
     "kind": "revisions",
 }
-KNATIVE_CONF = {
+KNATIVE_CONFIGURATION = {
     "group": "serving.knative.dev",
     "version": "v1",
     "kind": "configurations",
@@ -16,14 +16,22 @@ KNATIVE_CONF = {
 KNATIVE_SERVICE = {"group": "serving.knative.dev", "version": "v1", "kind": "services"}
 
 # Kubernetes native resources for RawDeployment mode
-K8S_DEPLOYMENT = {"group": "apps", "version": "v1", "kind": "deployments"}
-K8S_SERVICE = {"group": "", "version": "v1", "kind": "services"}
-K8S_HPA = {"group": "autoscaling", "version": "v2", "kind": "horizontalpodautoscalers"}
+KUBERNETES_DEPLOYMENT_RESOURCE = {
+    "group": "apps",
+    "version": "v1",
+    "kind": "deployments",
+}
+KUBERNETES_SERVICE_RESOURCE = {"group": "", "version": "v1", "kind": "services"}
+KUBERNETES_HPA_RESOURCE = {
+    "group": "autoscaling",
+    "version": "v2",
+    "kind": "horizontalpodautoscalers",
+}
 
 
-def inference_service_gvk():
+def inference_service_group_version_kind():
     """
-    Return the GVK needed for an InferenceService.
+    Return the Kubernetes group/version/kind mapping for an InferenceService.
 
     This also checks the APP_VERSION env var to detect the version.
     """

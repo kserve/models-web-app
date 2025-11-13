@@ -12,12 +12,14 @@ log = logging.getLogger(__name__)
     "/api/namespaces/<namespace>/inferenceservices/<inference_service>",
     methods=["DELETE"],
 )
-def delete_inference_service(inference_service, namespace):
+def delete_inference_service(namespace, inference_service):
     """Handle DELETE requests and delete the provided InferenceService."""
-    log.info("Deleting InferenceService %s/%s'", namespace, inference_service)
-    gvk = versions.inference_service_gvk()
-    api.delete_custom_rsrc(**gvk, name=inference_service, namespace=namespace)
+    log.info("Deleting InferenceService %s/%s", namespace, inference_service)
+    group_version_kind = versions.inference_service_group_version_kind()
+    api.delete_custom_rsrc(
+        **group_version_kind, name=inference_service, namespace=namespace
+    )
     return api.success_response(
         "message",
-        "InferenceService %s/%s successfully deleted." % (namespace, inference_service),
+        f"InferenceService {namespace}/{inference_service} successfully deleted.",
     )

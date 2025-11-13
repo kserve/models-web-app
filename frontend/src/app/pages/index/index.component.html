@@ -10,7 +10,7 @@
     <lib-table
       [config]="config"
       [data]="inferenceServices"
-      [trackByFn]="trackInferenceService"
+      [trackByFn]="inferenceServiceTrackByFn"
       (actionsEmitter)="reactToAction($event)"
     ></lib-table>
   </div>

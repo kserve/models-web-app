@@ -13,7 +13,6 @@ export class ExplainerComponent {
   @Input()
   set explainerSpec(spec: ExplainerSpec) {
     this.explainerPrv = spec;
-    this.config = this.generateConfig(spec);
   }
   get explainerSpec(): ExplainerSpec {
     return this.explainerPrv;
@@ -24,20 +23,14 @@ export class ExplainerComponent {
   private generateConfig(spec: ExplainerSpec): ChipDescriptor[] {
     const chips = [];
 
-    const config = spec?.alibi?.config;
-    if (!config) {
-      return chips;
-    }
-
-    for (const key in config) {
-      if (!Object.prototype.hasOwnProperty.call(config, key)) {
+    for (const key in this.explainerSpec.alibi.config) {
+      if (this.explainerSpec.alibi.config.hasOwnProperty(key)) {
         continue;
       }
 
-      const val = config[key];
+      const val = this.explainerSpec.alibi.config[key];
       chips.push({
-        name: key,
-        value: val,
+        value: `${key}: ${val}`,
         color: 'primary',
       });
     }

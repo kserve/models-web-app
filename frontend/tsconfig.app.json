@@ -2,29 +2,17 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/app",
-    "types": [],
-    "baseUrl": "./src",
-    "paths": {
-      "kubeflow": ["types/kubeflow.d.ts"]
-    },
-    "typeRoots": [
-      "src/types",
-      "node_modules/@types"
-    ],
-    "skipLibCheck": true
+    "types": []
   },
   "files": [
     "src/main.ts",
     "src/polyfills.ts"
   ],
   "include": [
-    "src/**/*.ts",
     "src/**/*.d.ts"
   ],
   "exclude": [
     "src/test.ts",
-    "src/**/*.spec.ts",
-    "src/**/*.jest.spec.ts",
-    "e2e/**"
+    "src/**/*.spec.ts"
   ]
 }

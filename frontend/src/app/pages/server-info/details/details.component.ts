@@ -61,8 +61,7 @@ export class DetailsComponent {
         continue;
       }
       const chip: ChipDescriptor = {
-        name: annotationKey,
-        value: annotationVal,
+        value: `${annotationKey}: ${annotationVal}`,
         color: 'primary',
       };
       chips.push(chip);
@@ -86,8 +85,7 @@ export class DetailsComponent {
       const labelVal = this.svc.metadata.labels[l];
 
       const chip: ChipDescriptor = {
-        name: labelKey,
-        value: labelVal,
+        value: `${labelKey}: ${labelVal}`,
         color: 'primary',
       };
 

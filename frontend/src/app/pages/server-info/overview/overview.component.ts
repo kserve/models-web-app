@@ -23,64 +23,67 @@ export class OverviewComponent {
 
   @Input() namespace: string;
   @Input()
-  set svc(s: InferenceServiceK8s) {
-    this.svcPrv = s;
+  set inferenceService(s: InferenceServiceK8s) {
+    this.inferenceServicePrivate = s;
 
-    this.components = this.generateDefaultComponents(this.svc);
+    this.components = this.generateDefaultComponents(this.inferenceService);
   }
-  get svc(): InferenceServiceK8s {
-    return this.svcPrv;
+  get inferenceService(): InferenceServiceK8s {
+    return this.inferenceServicePrivate;
   }
 
   @Input() ownedObjects: InferenceServiceOwnedObjects;
 
-  private svcPrv: InferenceServiceK8s;
+  private inferenceServicePrivate: InferenceServiceK8s;
 
   get externalUrl() {
-    if (!this.svc.status) {
+    if (!this.inferenceService.status) {
       return 'InferenceService is not ready to receive traffic yet.';
     }
 
-    return this.svc.status.url !== undefined
-      ? this.svc.status.url
+    return this.inferenceService.status.url !== undefined
+      ? this.inferenceService.status.url
       : 'InferenceService is not ready to receive traffic yet.';
   }
 
   get internalUrl() {
     const msg = 'InferenceService is not ready to receive traffic yet.';
 
-    if (!this.svc.status || !this.svc.status.address) {
+    if (
+      !this.inferenceService.status ||
+      !this.inferenceService.status.address
+    ) {
       return msg;
     }
 
-    return this.svc.status.address.url !== undefined
-      ? this.svc.status.address.url
+    return this.inferenceService.status.address.url !== undefined
+      ? this.inferenceService.status.address.url
       : msg;
   }
 
   get predictor(): PredictorSpec {
-    return this.svc.spec.predictor;
+    return this.inferenceService.spec.predictor;
   }
 
   get basePredictor(): PredictorExtensionSpec {
-    return getPredictorExtensionSpec(this.svc.spec.predictor);
+    return getPredictorExtensionSpec(this.inferenceService.spec.predictor);
   }
 
   get predictorType(): string {
-    return getPredictorType(this.svc.spec.predictor);
+    return getPredictorType(this.inferenceService.spec.predictor);
   }
 
   get predictorRuntime(): string {
-    return getPredictorRuntime(this.svc.spec.predictor);
+    return getPredictorRuntime(this.inferenceService.spec.predictor);
   }
 
   private generateDefaultComponents(
-    svc: InferenceServiceK8s,
+    inferenceService: InferenceServiceK8s,
   ): ChipDescriptor[] {
     const chips = [];
 
     for (const c of ['predictor', 'transformer', 'explainer']) {
-      if (c in svc.spec) {
+      if (c in inferenceService.spec) {
         chips.push({
           value: c,
           color: 'primary',

@@ -129,44 +129,47 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   public deleteInferenceService() {
-    const svc = this.inferenceService;
-    const config = generateDeleteConfig(svc);
+    const inferenceService = this.inferenceService;
+    const dialogConfig = generateDeleteConfig(inferenceService);
 
-    const dialogRef = this.confirmDialog.open($localize`Endpoint`, config);
+    const dialogRef = this.confirmDialog.open(
+      $localize`Endpoint`,
+      dialogConfig,
+    );
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {
           return;
         }
 
-        this.backend.deleteInferenceService(svc).subscribe(
-          res => {
+        this.backend.deleteInferenceService(inferenceService).subscribe(
+          dialogResponse => {
             dialogRef.close(DIALOG_RESP.ACCEPT);
             this.pollingSub.unsubscribe();
 
-            // const name = `${svc.metadata.namespace}/${svc.metadata.name}`;
-            const config: SnackBarConfig = {
+            // const name = `${inferenceService.metadata.namespace}/${inferenceService.metadata.name}`;
+            const snackConfig: SnackBarConfig = {
               data: {
                 msg: $localize`$Delete request was sent.`,
                 snackType: SnackType.Info,
               },
             };
-            this.snack.open(config);
+            this.snack.open(snackConfig);
 
             this.router.navigate(['']);
           },
           err => {
-            config.error = err;
+            dialogConfig.error = err;
             dialogRef.componentInstance.applying$.next(false);
           },
         );
       },
     );
 
-    dialogRef.afterClosed().subscribe(res => {
+    dialogRef.afterClosed().subscribe(dialogResponse => {
       applyingSub.unsubscribe();
 
-      if (res !== DIALOG_RESP.ACCEPT) {
+      if (dialogResponse !== DIALOG_RESP.ACCEPT) {
         return;
       }
     });
@@ -179,14 +182,14 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
     this.backend
       .getInferenceService(this.namespace, this.serverName)
-      .subscribe(svc => {
-        this.updateInferenceService(svc);
+      .subscribe(inferenceService => {
+        this.updateInferenceService(inferenceService);
 
         const components = ['predictor', 'transformer', 'explainer'];
         const obs: Observable<[string, string, ComponentOwnedObjects]>[] = [];
 
         components.forEach(component => {
-          obs.push(this.getOwnedObjects(svc, component));
+          obs.push(this.getOwnedObjects(inferenceService, component));
         });
 
         forkJoin(...obs).subscribe(objects => {
@@ -208,40 +211,47 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
    * based on the data it got. It won't create a new object for every backend
    * request.
    */
-  private updateInferenceService(svc: InferenceServiceK8s) {
+  private updateInferenceService(inferenceService: InferenceServiceK8s) {
     if (!this.inferenceService) {
-      this.inferenceService = svc;
+      this.inferenceService = inferenceService;
       return;
     }
 
-    if (!isEqual(this.inferenceService.metadata, svc.metadata)) {
-      this.inferenceService.metadata = svc.metadata;
+    if (!isEqual(this.inferenceService.metadata, inferenceService.metadata)) {
+      this.inferenceService.metadata = inferenceService.metadata;
     }
 
-    if (!isEqual(this.inferenceService.spec, svc.spec)) {
-      this.inferenceService.spec = svc.spec;
+    if (!isEqual(this.inferenceService.spec, inferenceService.spec)) {
+      this.inferenceService.spec = inferenceService.spec;
     }
 
-    if (!isEqual(this.inferenceService.status, svc.status)) {
-      this.inferenceService.status = svc.status;
+    if (!isEqual(this.inferenceService.status, inferenceService.status)) {
+      this.inferenceService.status = inferenceService.status;
     }
   }
 
   private getOwnedObjects(
-    svc: InferenceServiceK8s,
+    inferenceService: InferenceServiceK8s,
     component: string,
   ): Observable<any> {
-    if (!svc.status || !svc.status.components[component]) {
+    if (
+      !inferenceService.status ||
+      !inferenceService.status.components[component]
+    ) {
       return of([component, {}]);
     }
 
     // Check deployment mode
-    const deploymentMode = this.getDeploymentMode(svc);
+    const deploymentMode = this.getDeploymentMode(inferenceService);
 
     if (deploymentMode === 'ModelMesh') {
       // Handle ModelMesh mode
       return this.backend
-        .getModelMeshObjects(this.namespace, svc.metadata.name, component)
+        .getModelMeshObjects(
+          this.namespace,
+          inferenceService.metadata.name,
+          component,
+        )
         .pipe(
           map(objects => [component, objects]),
           catchError(error => {
@@ -255,7 +265,11 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     } else if (deploymentMode === 'RawDeployment') {
       // Handle RawDeployment mode
       return this.backend
-        .getRawDeploymentObjects(this.namespace, svc.metadata.name, component)
+        .getRawDeploymentObjects(
+          this.namespace,
+          inferenceService.metadata.name,
+          component,
+        )
         .pipe(
           map(objects => [component, objects]),
           catchError(error => {
@@ -268,7 +282,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         );
     } else {
       // Handle Serverless mode
-      const revName = svc.status.components[component].latestCreatedRevision;
+      const revName =
+        inferenceService.status.components[component].latestCreatedRevision;
       const objects: ComponentOwnedObjects = {
         revision: undefined,
         configuration: undefined,
@@ -340,8 +355,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       });
   }
 
-  private isRawDeployment(svc: InferenceServiceK8s): boolean {
-    const annotations = svc.metadata?.annotations || {};
+  private isRawDeployment(inferenceService: InferenceServiceK8s): boolean {
+    const annotations = inferenceService.metadata?.annotations || {};
 
     // Check for the KServe annotation
     const deploymentMode =
@@ -359,17 +374,19 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     return false;
   }
 
-  private isModelMeshDeployment(svc: InferenceServiceK8s): boolean {
-    const annotations = svc.metadata?.annotations || {};
+  private isModelMeshDeployment(
+    inferenceService: InferenceServiceK8s,
+  ): boolean {
+    const annotations = inferenceService.metadata?.annotations || {};
     const deploymentMode =
       annotations['serving.kserve.io/deploymentMode'] || '';
     return deploymentMode.toLowerCase() === 'modelmesh';
   }
 
-  private getDeploymentMode(svc: InferenceServiceK8s): string {
-    if (this.isModelMeshDeployment(svc)) {
+  private getDeploymentMode(inferenceService: InferenceServiceK8s): string {
+    if (this.isModelMeshDeployment(inferenceService)) {
       return 'ModelMesh';
-    } else if (this.isRawDeployment(svc)) {
+    } else if (this.isRawDeployment(inferenceService)) {
       return 'RawDeployment';
     } else {
       return 'Serverless';

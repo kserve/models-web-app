@@ -14,26 +14,26 @@ export class DetailsComponent {
 
   @Input() namespace: string;
   @Input()
-  set svc(s: InferenceServiceK8s) {
-    this.svcPrv = s;
+  set inferenceService(s: InferenceServiceK8s) {
+    this.inferenceServicePrivate = s;
 
     this.svcPropsList = this.generateSvcPropsList();
   }
-  get svc(): InferenceServiceK8s {
-    return this.svcPrv;
+  get inferenceService(): InferenceServiceK8s {
+    return this.inferenceServicePrivate;
   }
 
   get externalUrl() {
-    if (!this.svc.status) {
+    if (!this.inferenceService.status) {
       return 'InferenceService is not ready to receive traffic yet.';
     }
 
-    return this.svc.status.url !== undefined
-      ? this.svc.status.url
+    return this.inferenceService.status.url !== undefined
+      ? this.inferenceService.status.url
       : 'InferenceService is not ready to receive traffic yet.';
   }
 
-  private svcPrv: InferenceServiceK8s;
+  private inferenceServicePrivate: InferenceServiceK8s;
 
   private generateSvcPropsList(): ListEntry[] {
     const props: ListEntry[] = [];
@@ -47,16 +47,16 @@ export class DetailsComponent {
   private generateAnnotations() {
     const chips = [];
 
-    if (!this.svc.metadata.annotations) {
+    if (!this.inferenceService.metadata.annotations) {
       return chips;
     }
 
-    for (const a in this.svc.metadata.annotations) {
-      if (!this.svc.metadata.annotations.hasOwnProperty(a)) {
+    for (const a in this.inferenceService.metadata.annotations) {
+      if (!this.inferenceService.metadata.annotations.hasOwnProperty(a)) {
         continue;
       }
       const annotationKey = a;
-      const annotationVal = this.svc.metadata.annotations[a];
+      const annotationVal = this.inferenceService.metadata.annotations[a];
       if (annotationKey.includes('last-applied-configuration')) {
         continue;
       }
@@ -72,17 +72,17 @@ export class DetailsComponent {
 
   private generateLabels() {
     const chips = [];
-    if (!this.svc.metadata.labels) {
+    if (!this.inferenceService.metadata.labels) {
       return chips;
     }
 
-    for (const l in this.svc.metadata.labels) {
-      if (!this.svc.metadata.labels.hasOwnProperty(l)) {
+    for (const l in this.inferenceService.metadata.labels) {
+      if (!this.inferenceService.metadata.labels.hasOwnProperty(l)) {
         continue;
       }
 
       const labelKey = l;
-      const labelVal = this.svc.metadata.labels[l];
+      const labelVal = this.inferenceService.metadata.labels[l];
 
       const chip: ChipDescriptor = {
         value: `${labelKey}: ${labelVal}`,

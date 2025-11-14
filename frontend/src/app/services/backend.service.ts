@@ -11,7 +11,10 @@ import { EventObject } from '../types/event';
   providedIn: 'root',
 })
 export class MWABackendService extends BackendService {
-  constructor(public http: HttpClient, public snack: SnackBarService) {
+  constructor(
+    public http: HttpClient,
+    public snack: SnackBarService,
+  ) {
     super(http, snack);
   }
 
@@ -121,15 +124,15 @@ export class MWABackendService extends BackendService {
   }
 
   public getInferenceServiceLogs(
-    svc: InferenceServiceK8s,
+    inferenceService: InferenceServiceK8s,
     components: string[] = [],
   ): Observable<InferenceServiceLogs> {
-    const name = svc.metadata.name;
-    const namespace = svc.metadata.namespace;
+    const name = inferenceService.metadata.name;
+    const namespace = inferenceService.metadata.namespace;
     let url = `api/namespaces/${namespace}/inferenceservices/${name}?logs=true`;
 
     ['predictor', 'explainer', 'transformer'].forEach(component => {
-      if (component in svc.spec) {
+      if (component in inferenceService.spec) {
         url += `&component=${component}`;
       }
     });
@@ -143,10 +146,10 @@ export class MWABackendService extends BackendService {
   }
 
   public getInferenceServiceEvents(
-    svc: InferenceServiceK8s,
+    inferenceService: InferenceServiceK8s,
   ): Observable<EventObject[]> {
-    const name = svc.metadata.name;
-    const namespace = svc.metadata.namespace;
+    const name = inferenceService.metadata.name;
+    const namespace = inferenceService.metadata.namespace;
     const url = `api/namespaces/${namespace}/inferenceservices/${name}/events`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
@@ -159,13 +162,13 @@ export class MWABackendService extends BackendService {
    * POST
    */
   public postInferenceService(
-    svc: InferenceServiceK8s,
+    inferenceService: InferenceServiceK8s,
   ): Observable<MWABackendResponse> {
-    const ns = svc.metadata.namespace;
+    const ns = inferenceService.metadata.namespace;
     const url = `api/namespaces/${ns}/inferenceservices`;
 
     return this.http
-      .post<MWABackendResponse>(url, svc)
+      .post<MWABackendResponse>(url, inferenceService)
       .pipe(catchError(error => this.handleError(error)));
   }
 
@@ -263,10 +266,10 @@ export class MWABackendService extends BackendService {
    * DELETE
    */
   public deleteInferenceService(
-    svc: InferenceServiceK8s,
+    inferenceService: InferenceServiceK8s,
   ): Observable<MWABackendResponse> {
-    const ns = svc.metadata.namespace;
-    const nm = svc.metadata.name;
+    const ns = inferenceService.metadata.namespace;
+    const nm = inferenceService.metadata.name;
     const url = `api/namespaces/${ns}/inferenceservices/${nm}`;
 
     return this.http

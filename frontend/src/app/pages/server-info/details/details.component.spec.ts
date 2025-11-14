@@ -171,7 +171,7 @@ describe('DetailsComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(DetailsComponent);
     component = fixture.componentInstance;
-    component.svc = mockISVC;
+    component.inferenceService = mockISVC;
     fixture.detectChanges();
   });
 

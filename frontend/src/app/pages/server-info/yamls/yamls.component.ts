@@ -8,13 +8,13 @@ import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
   styleUrls: ['./yamls.component.scss'],
 })
 export class YamlsComponent {
-  @Input() svc: InferenceServiceK8s;
+  @Input() inferenceService: InferenceServiceK8s;
 
   get data() {
-    if (!this.svc) {
+    if (!this.inferenceService) {
       return 'No data has been found...';
     }
 
-    return dump(this.svc);
+    return dump(this.inferenceService);
   }
 }

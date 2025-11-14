@@ -17,7 +17,7 @@ import { ComponentExtensionComponent } from './shared/component-extension/compon
 import { PodComponent } from './shared/pod/pod.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 
-const mockISVC: InferenceServiceK8s = {
+const mockInferenceService: InferenceServiceK8s = {
   apiVersion: 'serving.kserve.io/v1beta1',
   kind: 'InferenceService',
   metadata: {
@@ -171,7 +171,7 @@ describe('DetailsComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(DetailsComponent);
     component = fixture.componentInstance;
-    component.inferenceService = mockISVC;
+    component.inferenceService = mockInferenceService;
     fixture.detectChanges();
   });
 

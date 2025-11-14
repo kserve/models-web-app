@@ -4,7 +4,7 @@ import {
   ActionListValue,
   ActionIconValue,
   DateTimeValue,
-  DialogConfig,
+  DialogConfig as DialogConfiguration,
   TableConfig,
   ComponentValue,
   LinkValue,
@@ -17,7 +17,7 @@ import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 
 export function generateDeleteConfig(
   inferenceService: InferenceServiceK8s,
-): DialogConfig {
+): DialogConfiguration {
   return {
     title: $localize`Delete Endpoint ${inferenceService.metadata.name}?`,
     message: $localize`You cannot undo this action. Are you sure you want to delete this Endpoint?`,

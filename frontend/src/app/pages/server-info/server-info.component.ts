@@ -68,7 +68,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     maxInterval: 4001,
     retries: 1,
   });
-  private pollingSub = new Subscription();
+  private pollingSubscription = new Subscription();
 
   constructor(
     private http: HttpClient,
@@ -89,7 +89,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       this.serverName = params.name;
       this.namespace = params.namespace;
 
-      this.pollingSub = this.poller.start().subscribe(() => {
+      this.pollingSubscription = this.poller.start().subscribe(() => {
         this.getBackendObjects();
       });
     });
@@ -112,7 +112,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.pollingSub.unsubscribe();
+    this.pollingSubscription.unsubscribe();
   }
 
   get status(): Status {
@@ -130,11 +130,11 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   public deleteInferenceService() {
     const inferenceService = this.inferenceService;
-    const dialogConfig = generateDeleteConfig(inferenceService);
+    const dialogConfiguration = generateDeleteConfig(inferenceService);
 
     const dialogRef = this.confirmDialog.open(
       $localize`Endpoint`,
-      dialogConfig,
+      dialogConfiguration,
     );
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
@@ -145,21 +145,21 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         this.backend.deleteInferenceService(inferenceService).subscribe(
           dialogResponse => {
             dialogRef.close(DIALOG_RESP.ACCEPT);
-            this.pollingSub.unsubscribe();
+            this.pollingSubscription.unsubscribe();
 
             // const name = `${inferenceService.metadata.namespace}/${inferenceService.metadata.name}`;
-            const snackConfig: SnackBarConfig = {
+            const snackConfiguration: SnackBarConfig = {
               data: {
                 msg: $localize`$Delete request was sent.`,
                 snackType: SnackType.Info,
               },
             };
-            this.snack.open(snackConfig);
+            this.snack.open(snackConfiguration);
 
             this.router.navigate(['']);
           },
           err => {
-            dialogConfig.error = err;
+            dialogConfiguration.error = err;
             dialogRef.componentInstance.applying$.next(false);
           },
         );
@@ -310,11 +310,11 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         concatMap(svcName => {
           return this.backend.getKnativeService(this.namespace, svcName);
         }),
-        tap(knativeSvc => (objects.knativeService = knativeSvc)),
+        tap(knativeInferenceService => (objects.knativeService = knativeInferenceService)),
 
         // GET the Knative route
-        map(knativeSvc => {
-          return knativeSvc.metadata.name;
+        map(knativeInferenceService => {
+          return knativeInferenceService.metadata.name;
         }),
         concatMap(routeName => {
           return this.backend.getKnativeRoute(this.namespace, routeName);

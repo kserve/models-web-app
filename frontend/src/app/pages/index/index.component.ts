@@ -112,13 +112,13 @@ export class IndexComponent implements OnInit, OnDestroy {
         break;
       case 'copy-link':
         this.clipboard.copy(inferenceService.status.url);
-        const snackConfig: SnackBarConfig = {
+        const snackConfiguration: SnackBarConfig = {
           data: {
             msg: `Copied: ${inferenceService.status.url}`,
             snackType: SnackType.Info,
           },
         };
-        this.snack.open(snackConfig);
+        this.snack.open(snackConfiguration);
         break;
       case 'name:link':
         /*
@@ -128,13 +128,13 @@ export class IndexComponent implements OnInit, OnDestroy {
         if (inferenceService.ui.status.phase === STATUS_TYPE.TERMINATING) {
           a.event.stopPropagation();
           a.event.preventDefault();
-          const snackConfig: SnackBarConfig = {
+          const snackConfiguration: SnackBarConfig = {
             data: {
               msg: $localize`Endpoint is being deleted, cannot show details.`,
               snackType: SnackType.Info,
             },
           };
-          this.snack.open(snackConfig);
+          this.snack.open(snackConfiguration);
           return;
         }
         break;
@@ -142,9 +142,9 @@ export class IndexComponent implements OnInit, OnDestroy {
   }
 
   private deleteClicked(inferenceService: InferenceServiceIR) {
-    const dialogConfig = generateDeleteConfig(inferenceService);
+    const dialogConfiguration = generateDeleteConfig(inferenceService);
 
-    const dialogRef = this.confirmDialog.open('Endpoint', dialogConfig);
+    const dialogRef = this.confirmDialog.open('Endpoint', dialogConfiguration);
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {
@@ -156,7 +156,7 @@ export class IndexComponent implements OnInit, OnDestroy {
             dialogRef.close(DIALOG_RESP.ACCEPT);
           },
           err => {
-            dialogConfig.error = err;
+            dialogConfiguration.error = err;
             dialogRef.componentInstance.applying$.next(false);
           },
         );

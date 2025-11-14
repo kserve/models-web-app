@@ -27,7 +27,7 @@ import 'ace-builds/src-noconflict/ext-language_tools';
 })
 export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
   // Implement AfterViewInit, OnDestroy
-  @Input() isvc: InferenceServiceK8s;
+  @Input() inferenceService: InferenceServiceK8s;
   @Output() cancelEdit = new EventEmitter<boolean>();
 
   @ViewChild('editorWrapper') editorWrapper: ElementRef;
@@ -56,33 +56,33 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit() {
     console.log('[Debug] EditComponent ngOnInit started.');
 
-    this.originalName = this.isvc.metadata.name;
-    this.originalNamespace = this.isvc.metadata.namespace;
-    this.resourceVersion = this.isvc.metadata.resourceVersion;
+    this.originalName = this.inferenceService.metadata.name;
+    this.originalNamespace = this.inferenceService.metadata.namespace;
+    this.resourceVersion = this.inferenceService.metadata.resourceVersion;
 
-    const isvcToDump = JSON.parse(JSON.stringify(this.isvc));
-    delete isvcToDump.metadata.name;
-    delete isvcToDump.metadata.namespace;
-    delete isvcToDump.metadata.creationTimestamp;
-    delete isvcToDump.metadata.finalizers;
-    delete isvcToDump.metadata.generation;
-    delete isvcToDump.metadata.managedFields;
-    delete isvcToDump.metadata.resourceVersion;
-    delete isvcToDump.metadata.selfLink;
-    delete isvcToDump.metadata.uid;
+    const inferenceServiceToDump = JSON.parse(JSON.stringify(this.inferenceService));
+    delete inferenceServiceToDump.metadata.name;
+    delete inferenceServiceToDump.metadata.namespace;
+    delete inferenceServiceToDump.metadata.creationTimestamp;
+    delete inferenceServiceToDump.metadata.finalizers;
+    delete inferenceServiceToDump.metadata.generation;
+    delete inferenceServiceToDump.metadata.managedFields;
+    delete inferenceServiceToDump.metadata.resourceVersion;
+    delete inferenceServiceToDump.metadata.selfLink;
+    delete inferenceServiceToDump.metadata.uid;
     if (
-      isvcToDump.metadata.annotations &&
+      inferenceServiceToDump.metadata.annotations &&
       'kubectl.kubernetes.io/last-applied-configuration' in
-        isvcToDump.metadata.annotations
+        inferenceServiceToDump.metadata.annotations
     ) {
-      delete isvcToDump.metadata.annotations[
+      delete inferenceServiceToDump.metadata.annotations[
         'kubectl.kubernetes.io/last-applied-configuration'
       ];
     }
-    delete isvcToDump.status;
+    delete inferenceServiceToDump.status;
 
     try {
-      this.data = dump(isvcToDump);
+      this.data = dump(inferenceServiceToDump);
       console.log(
         '[Debug] Initial YAML data prepared:',
         this.data.substring(0, 100) + '...',

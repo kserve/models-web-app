@@ -175,12 +175,12 @@ export class MWABackendService extends BackendService {
   public editInferenceService(
     namespace: string,
     name: string,
-    updatedIsvc: InferenceServiceK8s,
+    updatedInferenceService: InferenceServiceK8s,
   ): Observable<MWABackendResponse> {
     const url = `api/namespaces/${namespace}/inferenceservices/${name}`;
 
     return this.http
-      .put<MWABackendResponse>(url, updatedIsvc)
+      .put<MWABackendResponse>(url, updatedInferenceService)
       .pipe(catchError(error => this.handleError(error)));
   }
 

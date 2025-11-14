@@ -19,17 +19,17 @@ export function dictIsEmpty(obj: any): boolean {
  * kfserving helpers
  */
 export function svcHasComponent(
-  svc: InferenceServiceK8s,
+  inferenceService: InferenceServiceK8s,
   component: string,
 ): boolean {
-  return !!svc.spec[component];
+  return !!inferenceService.spec[component];
 }
 
-export function getSvcComponents(svc: InferenceServiceK8s): string[] {
+export function getSvcComponents(inferenceService: InferenceServiceK8s): string[] {
   const components: string[] = [];
 
   ['predictor', 'transformer', 'explainer'].forEach(c => {
-    if (!svcHasComponent(svc, c)) {
+    if (!svcHasComponent(inferenceService, c)) {
       return;
     }
 
@@ -182,8 +182,8 @@ export function getExplainerContainer(explainer: ExplainerSpec): V1Container {
   return null;
 }
 
-export function parseRuntime(svc: InferenceServiceK8s): string {
-  return getPredictorRuntime(svc.spec.predictor);
+export function parseRuntime(inferenceService: InferenceServiceK8s): string {
+  return getPredictorRuntime(inferenceService.spec.predictor);
 }
 
 export function getPredictorRuntime(predictor: PredictorSpec): string {

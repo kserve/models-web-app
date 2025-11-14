@@ -25,11 +25,11 @@ export class LogsComponent implements OnDestroy {
       return;
     }
 
-    if (this.pollingSub) {
-      this.pollingSub.unsubscribe();
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
     }
 
-    this.pollingSub = this.poller.start().subscribe(() => {
+    this.pollingSubscription = this.poller.start().subscribe(() => {
       this.backend.getInferenceServiceLogs(s).subscribe(
         logs => {
           this.currentLogs = logs;
@@ -50,7 +50,7 @@ export class LogsComponent implements OnDestroy {
 
   private inferenceServicePrivate: InferenceServiceK8s;
   private components: [string, string][] = [];
-  private pollingSub: Subscription;
+  private pollingSubscription: Subscription;
   private poller = new ExponentialBackoff({
     interval: 3000,
     retries: 1,
@@ -60,8 +60,8 @@ export class LogsComponent implements OnDestroy {
   constructor(public backend: MWABackendService) {}
 
   ngOnDestroy() {
-    if (this.pollingSub) {
-      this.pollingSub.unsubscribe();
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
     }
   }
 

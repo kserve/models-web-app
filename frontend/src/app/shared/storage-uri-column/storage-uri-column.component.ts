@@ -13,8 +13,8 @@ export class StorageUriColumnComponent
   extends StorageUriComponent
   implements TableColumnComponent
 {
-  set element(svc: InferenceServiceK8s) {
-    this.basePredictor = getPredictorExtensionSpec(svc.spec.predictor);
-    this.namespace = svc.metadata.namespace;
+  set element(inferenceService: InferenceServiceK8s) {
+    this.basePredictor = getPredictorExtensionSpec(inferenceService.spec.predictor);
+    this.namespace = inferenceService.metadata.namespace;
   }
 }

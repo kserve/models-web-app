@@ -66,22 +66,15 @@ The following is a list of environment variables that can be set for any web app
 
 ## Namespace Filtering Configuration
 
-For standalone deployments, you can configure which namespaces users are allowed to access using the `ALLOWED_NAMESPACES` environment variable. This feature provides fine-grained access control over namespace visibility in the Models Web App.
+For standalone deployments, configure which namespaces users can access using `ALLOWED_NAMESPACES`:
 
-### Configuration Options
+- **Empty/Unset** (default): All cluster namespaces accessible
+- **Single namespace**: `ALLOWED_NAMESPACES="kubeflow-user"` - auto-selected, dropdown hidden
+- **Multiple namespaces**: `ALLOWED_NAMESPACES="ns1,ns2,ns3"` - filtered dropdown
 
-- **Empty/Unset** (default): All cluster namespaces are accessible - maintains backward compatibility
-- **Single namespace**: `ALLOWED_NAMESPACES="kubeflow-user"` - automatically selects the namespace and hides the dropdown selector
-- **Multiple namespaces**: `ALLOWED_NAMESPACES="ns1,ns2,ns3"` - shows a filtered dropdown with only the specified namespaces
+Invalid namespaces are ignored; falls back to all namespaces if none are valid.
 
-### Behavior
-
-- **Default mode**: When `ALLOWED_NAMESPACES` is not set, all namespaces are shown (fully backward compatible)
-- **Single namespace mode**: The dropdown is hidden and the namespace is automatically selected, displayed as static text
-- **Multi-namespace mode**: Dropdown shows only the specified namespaces
-- **Error resilience**: If specified namespaces don't exist in the cluster, the app falls back to showing all namespaces with a warning in the logs
-
-### Example Configurations
+### Examples
 
 ```bash
 # Allow access to only one namespace (auto-selected, dropdown hidden)

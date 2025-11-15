@@ -68,10 +68,8 @@ export class IndexComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Initialize the MWA namespace service first
     this.mwaNamespace.initialize().subscribe();
 
-    // Subscribe to namespace changes from both services to maintain compatibility
     this.nsSub = this.mwaNamespace.getSelectedNamespace().subscribe(ns => {
       if (ns) {
         this.currNamespace = ns;
@@ -80,11 +78,7 @@ export class IndexComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Also maintain compatibility with Kubeflow NamespaceService for dashboard connected state
-    // This is important for the dashboard disconnected state in the template
-    this.ns.getSelectedNamespace2().subscribe(ns => {
-      // Only use this for maintaining dashboard state, actual namespace selection is handled by MWANamespaceService
-    });
+    this.ns.getSelectedNamespace2().subscribe(ns => {});
   }
 
   ngOnDestroy() {
@@ -112,7 +106,6 @@ export class IndexComponent implements OnInit, OnDestroy {
         this.deleteClicked(svc);
         break;
       case 'copy-link':
-        console.log(`Copied to clipboard: ${svc.status.url}`);
         this.clipboard.copy(svc.status.url);
         const config: SnackBarConfig = {
           data: {

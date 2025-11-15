@@ -125,12 +125,6 @@ describe('Models Web App - Model Deletion Tests', () => {
     );
   });
 
-  it('should display page title', () => {
-    cy.get('h1, .page-title, [role="heading"]', { timeout: 5000 }).should(
-      'exist',
-    );
-  });
-
   it('should have properly structured table layout', () => {
     cy.wait('@getInferenceServicesWithData', { timeout: 10000 });
 

@@ -60,7 +60,9 @@ export class EditComponent implements OnInit, AfterViewInit, OnDestroy {
     this.originalNamespace = this.inferenceService.metadata.namespace;
     this.resourceVersion = this.inferenceService.metadata.resourceVersion;
 
-    const inferenceServiceToDump = JSON.parse(JSON.stringify(this.inferenceService));
+    const inferenceServiceToDump = JSON.parse(
+      JSON.stringify(this.inferenceService),
+    );
     delete inferenceServiceToDump.metadata.name;
     delete inferenceServiceToDump.metadata.namespace;
     delete inferenceServiceToDump.metadata.creationTimestamp;

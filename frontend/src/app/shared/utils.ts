@@ -25,7 +25,9 @@ export function svcHasComponent(
   return !!inferenceService.spec[component];
 }
 
-export function getSvcComponents(inferenceService: InferenceServiceK8s): string[] {
+export function getSvcComponents(
+  inferenceService: InferenceServiceK8s,
+): string[] {
   const components: string[] = [];
 
   ['predictor', 'transformer', 'explainer'].forEach(c => {

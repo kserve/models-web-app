@@ -28,7 +28,8 @@
       </div>
 
       <ng-container *ngIf="isEditing">
-        <app-edit [inferenceService]="editingIsvc" (cancelEdit)="cancelEdit()"> </app-edit>
+        <app-edit [inferenceService]="editingIsvc" (cancelEdit)="cancelEdit()">
+        </app-edit>
       </ng-container>
 
       <!--tabs-->

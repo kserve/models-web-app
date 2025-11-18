@@ -310,7 +310,10 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         concatMap(svcName => {
           return this.backend.getKnativeService(this.namespace, svcName);
         }),
-        tap(knativeInferenceService => (objects.knativeService = knativeInferenceService)),
+        tap(
+          knativeInferenceService =>
+            (objects.knativeService = knativeInferenceService),
+        ),
 
         // GET the Knative route
         map(knativeInferenceService => {

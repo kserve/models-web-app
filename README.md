@@ -62,6 +62,49 @@ The following is a list of environment variables that can be set for any web app
 | GRAFANA_PREFIX | /grafana | Controls the Grafana endpoint prefix for metrics dashboards |
 | GRAFANA_CPU_MEMORY_DB | db/knative-serving-revision-cpu-and-memory-usage | Grafana dashboard name for CPU and memory metrics |
 | GRAFANA_HTTP_REQUESTS_DB | db/knative-serving-revision-http-requests | Grafana dashboard name for HTTP request metrics |
+| ALLOWED_NAMESPACES | "" | Comma-separated list of namespaces to allow access to. If empty, all namespaces are accessible. Single namespace auto-selects and hides dropdown. |
+
+## Namespace Filtering Configuration
+
+For standalone deployments, configure which namespaces users can access using `ALLOWED_NAMESPACES`:
+
+- **Empty/Unset** (default): All cluster namespaces accessible
+- **Single namespace**: `ALLOWED_NAMESPACES="kubeflow-user"` - auto-selected, dropdown hidden
+- **Multiple namespaces**: `ALLOWED_NAMESPACES="ns1,ns2,ns3"` - filtered dropdown
+
+Invalid namespaces are ignored; falls back to all namespaces if none are valid.
+
+### Examples
+
+```bash
+# Allow access to only one namespace (auto-selected, dropdown hidden)
+export ALLOWED_NAMESPACES="kubeflow-user"
+
+# Allow access to multiple specific namespaces
+export ALLOWED_NAMESPACES="kubeflow-user,kubeflow-admin,ml-team"
+
+# Default behavior - all namespaces accessible
+unset ALLOWED_NAMESPACES
+```
+
+### Kubernetes Deployment
+
+Add the environment variable to your deployment configuration:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kserve-models-web-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: kserve-models-web-app
+        env:
+        - name: ALLOWED_NAMESPACES
+          value: "kubeflow-user,kubeflow-admin"
+```
 
 ## Grafana Configuration
 

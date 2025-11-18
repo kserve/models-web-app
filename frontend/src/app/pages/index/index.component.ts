@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
+import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { Clipboard } from '@angular/cdk/clipboard';
 import {
   InferenceServiceK8s,
@@ -62,16 +63,22 @@ export class IndexComponent implements OnInit, OnDestroy {
     private router: Router,
     private clipboard: Clipboard,
     public ns: NamespaceService,
+    public mwaNamespace: MWANamespaceService,
     public poller: PollerService,
   ) {}
 
   ngOnInit(): void {
-    // Reset the poller whenever the selected namespace changes
-    this.nsSub = this.ns.getSelectedNamespace2().subscribe(ns => {
-      this.currNamespace = ns;
-      this.poll(ns);
-      this.newEndpointButton.namespaceChanged(ns, $localize`Endpoint`);
+    this.mwaNamespace.initialize().subscribe();
+
+    this.nsSub = this.mwaNamespace.getSelectedNamespace().subscribe(ns => {
+      if (ns) {
+        this.currNamespace = ns;
+        this.poll(ns);
+        this.newEndpointButton.namespaceChanged(ns, $localize`Endpoint`);
+      }
     });
+
+    this.ns.getSelectedNamespace2().subscribe(ns => {});
   }
 
   ngOnDestroy() {
@@ -99,7 +106,6 @@ export class IndexComponent implements OnInit, OnDestroy {
         this.deleteClicked(svc);
         break;
       case 'copy-link':
-        console.log(`Copied to clipboard: ${svc.status.url}`);
         this.clipboard.copy(svc.status.url);
         const config: SnackBarConfig = {
           data: {

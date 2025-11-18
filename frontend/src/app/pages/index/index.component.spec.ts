@@ -3,6 +3,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterTestingModule } from '@angular/router/testing';
 import { MWABackendService } from 'src/app/services/backend.service';
+import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { Clipboard } from '@angular/cdk/clipboard';
 import {
   NamespaceService,
@@ -17,6 +18,7 @@ import { of } from 'rxjs';
 
 let MWABackendServiceStub: Partial<MWABackendService>;
 let NamespaceServiceStub: Partial<NamespaceService>;
+let MWANamespaceServiceStub: Partial<MWANamespaceService>;
 
 MWABackendServiceStub = {
   getInferenceServices: () => of(),
@@ -26,6 +28,18 @@ MWABackendServiceStub = {
 NamespaceServiceStub = {
   getSelectedNamespace: () => of(),
   getSelectedNamespace2: () => of(),
+};
+
+MWANamespaceServiceStub = {
+  initialize: () => of(''),
+  getSelectedNamespace: () => of('kubeflow-user'),
+  getNamespaceConfig$: () =>
+    of({
+      namespaces: ['kubeflow-user'],
+      allowedNamespaces: ['kubeflow-user'],
+      isSingleNamespace: true,
+      autoSelectedNamespace: 'kubeflow-user',
+    }),
 };
 
 describe('IndexComponent', () => {
@@ -46,6 +60,7 @@ describe('IndexComponent', () => {
         { provide: ConfirmDialogService, useValue: {} },
         { provide: MWABackendService, useValue: MWABackendServiceStub },
         { provide: NamespaceService, useValue: NamespaceServiceStub },
+        { provide: MWANamespaceService, useValue: MWANamespaceServiceStub },
         { provide: SnackBarService, useValue: {} },
         { provide: Clipboard, useValue: {} },
         { provide: PollerService, useValue: {} },

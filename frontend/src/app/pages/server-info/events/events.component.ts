@@ -14,16 +14,16 @@ import { EventObject } from '../../../types/event';
 export class EventsComponent implements OnDestroy {
   public events: EventObject[] = [];
   public config = defaultConfig;
-  private pollSub = new Subscription();
-  private svcPrv: InferenceServiceK8s;
+  private pollingSubscription = new Subscription();
+  private inferenceServicePrivate: InferenceServiceK8s;
 
   @Input()
-  set svc(s: InferenceServiceK8s) {
-    this.svcPrv = s;
+  set inferenceService(s: InferenceServiceK8s) {
+    this.inferenceServicePrivate = s;
     this.poll(s);
   }
-  get svc(): InferenceServiceK8s {
-    return this.svcPrv;
+  get inferenceService(): InferenceServiceK8s {
+    return this.inferenceServicePrivate;
   }
 
   constructor(
@@ -32,18 +32,20 @@ export class EventsComponent implements OnDestroy {
   ) {}
 
   ngOnDestroy(): void {
-    if (this.pollSub) {
-      this.pollSub.unsubscribe();
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
     }
   }
 
-  private poll(svc: InferenceServiceK8s) {
-    this.pollSub.unsubscribe();
+  private poll(inferenceService: InferenceServiceK8s) {
+    this.pollingSubscription.unsubscribe();
 
-    const request = this.backend.getInferenceServiceEvents(svc);
+    const request = this.backend.getInferenceServiceEvents(inferenceService);
 
-    this.pollSub = this.poller.exponential(request).subscribe(events => {
-      this.events = events;
-    });
+    this.pollingSubscription = this.poller
+      .exponential(request)
+      .subscribe(events => {
+        this.events = events;
+      });
   }
 }

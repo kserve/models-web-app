@@ -16,7 +16,7 @@
   </ng-container>
 
   <div
-    *ngFor="let podLogs of currLogs?.predictor; trackBy: logsTrackFn"
+    *ngFor="let podLogs of currentLogs?.predictor; trackBy: logsTrackFn"
     class="margin-bottom"
   >
     <lib-logs-viewer
@@ -27,7 +27,7 @@
   </div>
 
   <div
-    *ngFor="let podLogs of currLogs?.transformer; trackBy: logsTrackFn"
+    *ngFor="let podLogs of currentLogs?.transformer; trackBy: logsTrackFn"
     class="margin-bottom"
   >
     <lib-logs-viewer
@@ -38,7 +38,7 @@
   </div>
 
   <div
-    *ngFor="let podLogs of currLogs?.explainer; trackBy: logsTrackFn"
+    *ngFor="let podLogs of currentLogs?.explainer; trackBy: logsTrackFn"
     class="margin-bottom"
   >
     <lib-logs-viewer

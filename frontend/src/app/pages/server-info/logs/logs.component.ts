@@ -13,26 +13,26 @@ import { dictIsEmpty } from 'src/app/shared/utils';
 })
 export class LogsComponent implements OnDestroy {
   public goToBottom = true;
-  public currLogs: InferenceServiceLogs = {};
+  public currentLogs: InferenceServiceLogs = {};
   public logsRequestCompleted = false;
   public loadErrorMsg = '';
 
   @Input()
-  set svc(s: InferenceServiceK8s) {
-    this.svcPrv = s;
+  set inferenceService(s: InferenceServiceK8s) {
+    this.inferenceServicePrivate = s;
 
     if (!s) {
       return;
     }
 
-    if (this.pollingSub) {
-      this.pollingSub.unsubscribe();
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
     }
 
-    this.pollingSub = this.poller.start().subscribe(() => {
+    this.pollingSubscription = this.poller.start().subscribe(() => {
       this.backend.getInferenceServiceLogs(s).subscribe(
         logs => {
-          this.currLogs = logs;
+          this.currentLogs = logs;
           this.logsRequestCompleted = true;
           this.loadErrorMsg = '';
         },
@@ -45,12 +45,12 @@ export class LogsComponent implements OnDestroy {
   }
 
   get logsNotEmpty(): boolean {
-    return !dictIsEmpty(this.currLogs);
+    return !dictIsEmpty(this.currentLogs);
   }
 
-  private svcPrv: InferenceServiceK8s;
+  private inferenceServicePrivate: InferenceServiceK8s;
   private components: [string, string][] = [];
-  private pollingSub: Subscription;
+  private pollingSubscription: Subscription;
   private poller = new ExponentialBackoff({
     interval: 3000,
     retries: 1,
@@ -60,8 +60,8 @@ export class LogsComponent implements OnDestroy {
   constructor(public backend: MWABackendService) {}
 
   ngOnDestroy() {
-    if (this.pollingSub) {
-      this.pollingSub.unsubscribe();
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
     }
   }
 

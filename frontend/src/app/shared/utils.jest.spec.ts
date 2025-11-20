@@ -8,7 +8,7 @@ import { STATUS_TYPE, K8sObject } from 'kubeflow';
 
 // Tests for getCondition function
 describe('getCondition', () => {
-  test('should return Ready condition when it exists and status is True', () => {
+  it('should return Ready condition when it exists and status is True', () => {
     const obj: K8sObject = {
       kind: 'InferenceService',
       metadata: { name: 'test' },
@@ -37,7 +37,7 @@ describe('getCondition', () => {
     expect(condition.message).toBe('All components are ready');
   });
 
-  test('should return first condition with message when no Ready condition with True status exists', () => {
+  it('should return first condition with message when no Ready condition with True status exists', () => {
     const obj: K8sObject = {
       kind: 'InferenceService',
       metadata: { name: 'test' },
@@ -64,7 +64,7 @@ describe('getCondition', () => {
     expect(condition.message).toBe('Predictor configuration is ready');
   });
 
-  test('should return undefined when no status field exists', () => {
+  it('should return undefined when no status field exists', () => {
     const obj: K8sObject = {
       kind: 'InferenceService',
       metadata: { name: 'test' },
@@ -74,7 +74,7 @@ describe('getCondition', () => {
     expect(condition).toBeUndefined();
   });
 
-  test('should return undefined when conditions array is empty', () => {
+  it('should return undefined when conditions array is empty', () => {
     const obj: K8sObject = {
       kind: 'InferenceService',
       metadata: { name: 'test' },
@@ -87,7 +87,7 @@ describe('getCondition', () => {
     expect(condition).toBeUndefined();
   });
 
-  test('should return undefined when conditions array is null', () => {
+  it('should return undefined when conditions array is null', () => {
     const obj: K8sObject = {
       kind: 'InferenceService',
       metadata: { name: 'test' },
@@ -100,7 +100,7 @@ describe('getCondition', () => {
     expect(condition).toBeUndefined();
   });
 
-  test('should sort conditions by priority order and return first with message', () => {
+  it('should sort conditions by priority order and return first with message', () => {
     const obj: K8sObject = {
       kind: 'InferenceService',
       metadata: { name: 'test' },
@@ -137,11 +137,7 @@ describe('getCondition', () => {
 
 // Tests for getK8sObjectUiStatus function
 describe('getK8sObjectUiStatus', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('should return READY status when condition type is Ready and status is True', () => {
+  it('should return READY status when condition type is Ready and status is True', () => {
     const readyObject: K8sObject = {
       kind: 'InferenceService',
       metadata: {
@@ -165,7 +161,7 @@ describe('getK8sObjectUiStatus', () => {
     expect(status.message).toBe('InferenceService is Ready.');
   });
 
-  test('should return TERMINATING status when deletionTimestamp is set', () => {
+  it('should return TERMINATING status when deletionTimestamp is set', () => {
     const terminatingObject: K8sObject = {
       kind: 'Pod',
       metadata: {
@@ -180,7 +176,7 @@ describe('getK8sObjectUiStatus', () => {
     expect(status.message).toBe('Pod is being deleted.');
   });
 
-  test('should return WARNING status when status field is not present', () => {
+  it('should return WARNING status when status field is not present', () => {
     const noStatusObject: K8sObject = {
       kind: 'Deployment',
       metadata: {
@@ -197,7 +193,7 @@ describe('getK8sObjectUiStatus', () => {
     );
   });
 
-  test('should return WARNING status when no conditions are available', () => {
+  it('should return WARNING status when no conditions are available', () => {
     const noConditionsObject: K8sObject = {
       kind: 'InferenceService',
       metadata: {
@@ -216,7 +212,7 @@ describe('getK8sObjectUiStatus', () => {
 
 // Tests for getPredictorExtensionSpec function
 describe('getPredictorExtensionSpec', () => {
-  test('should return model spec when predictor has model', () => {
+  it('should return model spec when predictor has model', () => {
     const predictor = {
       model: {
         modelFormat: {
@@ -238,7 +234,7 @@ describe('getPredictorExtensionSpec', () => {
     expect((result as any).runtime).toBe('tensorflow-serving');
   });
 
-  test('should return sklearn spec when predictor has sklearn', () => {
+  it('should return sklearn spec when predictor has sklearn', () => {
     const predictor = {
       sklearn: {
         storageUri: 's3://my-bucket/sklearn-model',
@@ -254,7 +250,7 @@ describe('getPredictorExtensionSpec', () => {
     expect(result.storageUri).toBe('s3://my-bucket/sklearn-model');
   });
 
-  test('should return tensorflow spec when predictor has tensorflow', () => {
+  it('should return tensorflow spec when predictor has tensorflow', () => {
     const predictor = {
       tensorflow: {
         storageUri: 's3://my-bucket/tf-model',
@@ -270,7 +266,7 @@ describe('getPredictorExtensionSpec', () => {
     expect(result.storageUri).toBe('s3://my-bucket/tf-model');
   });
 
-  test('should return custom spec from containers when no known predictor type exists', () => {
+  it('should return custom spec from containers when no known predictor type exists', () => {
     const predictor = {
       containers: [
         {
@@ -293,7 +289,7 @@ describe('getPredictorExtensionSpec', () => {
     expect(result.protocolVersion).toBe('');
   });
 
-  test('should handle empty containers array for custom predictor', () => {
+  it('should handle empty containers array for custom predictor', () => {
     const predictor = {
       containers: [],
     } as any;
@@ -305,7 +301,7 @@ describe('getPredictorExtensionSpec', () => {
     expect(result.storageUri).toBeUndefined();
   });
 
-  test('should handle missing env variables in custom predictor', () => {
+  it('should handle missing env variables in custom predictor', () => {
     const predictor = {
       containers: [
         {
@@ -328,12 +324,12 @@ describe('getPredictorExtensionSpec', () => {
 
 // Tests for getPredictorRuntime function
 describe('getPredictorRuntime', () => {
-  test('should return empty string when predictor is null', () => {
+  it('should return empty string when predictor is null', () => {
     const result = getPredictorRuntime(null as any);
     expect(result).toBe('');
   });
 
-  test('should return custom runtime when model has runtime specified', () => {
+  it('should return custom runtime when model has runtime specified', () => {
     const predictor = {
       model: {
         modelFormat: { name: 'tensorflow' },
@@ -347,7 +343,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('custom-tensorflow-runtime');
   });
 
-  test('should return Triton Inference Server for Triton predictor type', () => {
+  it('should return Triton Inference Server for Triton predictor type', () => {
     const predictor = {
       triton: {
         storageUri: 's3://bucket/model',
@@ -360,7 +356,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('Triton Inference Server');
   });
 
-  test('should return Triton Inference Server for Onnx predictor type', () => {
+  it('should return Triton Inference Server for Onnx predictor type', () => {
     const predictor = {
       onnx: {
         storageUri: 's3://bucket/model',
@@ -373,7 +369,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('Triton Inference Server');
   });
 
-  test('should return TFServing for Tensorflow predictor type', () => {
+  it('should return TFServing for Tensorflow predictor type', () => {
     const predictor = {
       tensorflow: {
         storageUri: 's3://bucket/model',
@@ -386,7 +382,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('TFServing');
   });
 
-  test('should return TorchServe for Pytorch predictor type', () => {
+  it('should return TorchServe for Pytorch predictor type', () => {
     const predictor = {
       pytorch: {
         storageUri: 's3://bucket/model',
@@ -399,7 +395,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('TorchServe');
   });
 
-  test('should return SKLearn MLServer for sklearn with v2 protocol', () => {
+  it('should return SKLearn MLServer for sklearn with v2 protocol', () => {
     const predictor = {
       sklearn: {
         storageUri: 's3://bucket/model',
@@ -412,7 +408,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('SKLearn MLServer');
   });
 
-  test('should return SKLearn ModelServer for sklearn without v2 protocol', () => {
+  it('should return SKLearn ModelServer for sklearn without v2 protocol', () => {
     const predictor = {
       sklearn: {
         storageUri: 's3://bucket/model',
@@ -425,7 +421,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('SKLearn ModelServer');
   });
 
-  test('should return XGBoost MLServer for xgboost with v2 protocol', () => {
+  it('should return XGBoost MLServer for xgboost with v2 protocol', () => {
     const predictor = {
       xgboost: {
         storageUri: 's3://bucket/model',
@@ -438,7 +434,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('XGBoost MLServer');
   });
 
-  test('should return XGBoost ModelServer for xgboost without v2 protocol', () => {
+  it('should return XGBoost ModelServer for xgboost without v2 protocol', () => {
     const predictor = {
       xgboost: {
         storageUri: 's3://bucket/model',
@@ -450,7 +446,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('XGBoost ModelServer');
   });
 
-  test('should return PMML ModelServer for pmml predictor type', () => {
+  it('should return PMML ModelServer for pmml predictor type', () => {
     const predictor = {
       pmml: {
         storageUri: 's3://bucket/model',
@@ -462,7 +458,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('PMML ModelServer');
   });
 
-  test('should return LightGBM ModelServer for lightgbm predictor type', () => {
+  it('should return LightGBM ModelServer for lightgbm predictor type', () => {
     const predictor = {
       lightgbm: {
         storageUri: 's3://bucket/model',
@@ -474,7 +470,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('LightGBM ModelServer');
   });
 
-  test('should return MLFlow ModelServer for mlflow predictor type', () => {
+  it('should return MLFlow ModelServer for mlflow predictor type', () => {
     const predictor = {
       mlflow: {
         storageUri: 's3://bucket/model',
@@ -486,7 +482,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('MLFlow ModelServer');
   });
 
-  test('should return Custom ModelServer for custom predictor type', () => {
+  it('should return Custom ModelServer for custom predictor type', () => {
     const predictor = {
       containers: [
         {
@@ -500,7 +496,7 @@ describe('getPredictorRuntime', () => {
     expect(result).toBe('Custom ModelServer');
   });
 
-  test('should return runtime from model format when model exists', () => {
+  it('should return runtime from model format when model exists', () => {
     const predictor = {
       model: {
         modelFormat: { name: 'sklearn' },

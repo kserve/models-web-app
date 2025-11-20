@@ -15,9 +15,11 @@ import { getPredictorExtensionSpec } from 'src/app/shared/utils';
 import { parseRuntime } from 'src/app/shared/utils';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 
-export function generateDeleteConfig(svc: InferenceServiceK8s): DialogConfig {
+export function generateDeleteConfig(
+  inferenceService: InferenceServiceK8s,
+): DialogConfig {
   return {
-    title: $localize`Delete Endpoint ${svc.metadata.name}?`,
+    title: $localize`Delete Endpoint ${inferenceService.metadata.name}?`,
     message: $localize`You cannot undo this action. Are you sure you want to delete this Endpoint?`,
     accept: $localize`DELETE`,
     applying: $localize`DELETING`,

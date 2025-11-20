@@ -36,10 +36,10 @@ import {
 export class IndexComponent implements OnInit, OnDestroy {
   env = environment;
 
-  nsSub = new Subscription();
-  pollSub = new Subscription();
+  namespaceSubscription = new Subscription();
+  pollingSubscription = new Subscription();
 
-  currNamespace: string | string[];
+  currentNamespace: string | string[];
   config = defaultConfig;
   inferenceServices: InferenceServiceIR[] = [];
 
@@ -70,103 +70,108 @@ export class IndexComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.mwaNamespace.initialize().subscribe();
 
-    this.nsSub = this.mwaNamespace.getSelectedNamespace().subscribe(ns => {
-      if (ns) {
-        this.currNamespace = ns;
+    // Reset the poller whenever the selected namespace changes
+    this.namespaceSubscription = this.mwaNamespace
+      .getSelectedNamespace()
+      .subscribe(ns => {
+        if (!ns) {
+          return;
+        }
+
+        this.currentNamespace = ns;
         this.poll(ns);
         this.newEndpointButton.namespaceChanged(ns, $localize`Endpoint`);
-      }
-    });
-
-    this.ns.getSelectedNamespace2().subscribe(ns => {});
+      });
   }
 
   ngOnDestroy() {
-    this.nsSub.unsubscribe();
-    this.pollSub.unsubscribe();
+    this.namespaceSubscription.unsubscribe();
+    this.pollingSubscription.unsubscribe();
   }
 
   public poll(ns: string | string[]) {
-    this.pollSub.unsubscribe();
+    this.pollingSubscription.unsubscribe();
     this.inferenceServices = [];
 
     const request = this.backend.getInferenceServices(ns);
 
-    this.pollSub = this.poller.exponential(request).subscribe(svcs => {
-      this.inferenceServices = this.processIncomingData(svcs);
-    });
+    this.pollingSubscription = this.poller
+      .exponential(request)
+      .subscribe(svcs => {
+        this.inferenceServices = this.processIncomingData(svcs);
+      });
   }
 
   // action handling functions
   public reactToAction(a: ActionEvent) {
-    const svc = a.data as InferenceServiceIR;
+    const inferenceService = a.data as InferenceServiceIR;
 
     switch (a.action) {
       case 'delete':
-        this.deleteClicked(svc);
+        this.deleteClicked(inferenceService);
         break;
       case 'copy-link':
-        this.clipboard.copy(svc.status.url);
-        const config: SnackBarConfig = {
+        this.clipboard.copy(inferenceService.status.url);
+        const snackConfiguration: SnackBarConfig = {
           data: {
-            msg: `Copied: ${svc.status.url}`,
+            msg: `Copied: ${inferenceService.status.url}`,
             snackType: SnackType.Info,
           },
         };
-        this.snack.open(config);
+        this.snack.open(snackConfiguration);
         break;
       case 'name:link':
         /*
          * don't allow the user to navigate to the details page of a server
          * that is being deleted
          */
-        if (svc.ui.status.phase === STATUS_TYPE.TERMINATING) {
+        if (inferenceService.ui.status.phase === STATUS_TYPE.TERMINATING) {
           a.event.stopPropagation();
           a.event.preventDefault();
-          const config: SnackBarConfig = {
+          const snackConfiguration: SnackBarConfig = {
             data: {
               msg: $localize`Endpoint is being deleted, cannot show details.`,
               snackType: SnackType.Info,
             },
           };
-          this.snack.open(config);
+          this.snack.open(snackConfiguration);
           return;
         }
         break;
     }
   }
 
-  private deleteClicked(svc: InferenceServiceIR) {
-    const config = generateDeleteConfig(svc);
+  private deleteClicked(inferenceService: InferenceServiceIR) {
+    const dialogConfiguration = generateDeleteConfig(inferenceService);
 
-    const dialogRef = this.confirmDialog.open('Endpoint', config);
+    const dialogRef = this.confirmDialog.open('Endpoint', dialogConfiguration);
     const applyingSub = dialogRef.componentInstance.applying$.subscribe(
       applying => {
         if (!applying) {
           return;
         }
 
-        this.backend.deleteInferenceService(svc).subscribe(
-          res => {
+        this.backend.deleteInferenceService(inferenceService).subscribe(
+          dialogResponse => {
             dialogRef.close(DIALOG_RESP.ACCEPT);
           },
           err => {
-            config.error = err;
+            dialogConfiguration.error = err;
             dialogRef.componentInstance.applying$.next(false);
           },
         );
       },
     );
 
-    dialogRef.afterClosed().subscribe(res => {
+    dialogRef.afterClosed().subscribe(dialogResponse => {
       applyingSub.unsubscribe();
 
-      if (res !== DIALOG_RESP.ACCEPT) {
+      if (dialogResponse !== DIALOG_RESP.ACCEPT) {
         return;
       }
 
-      svc.ui.status.phase = STATUS_TYPE.TERMINATING;
-      svc.ui.status.message = $localize`Preparing to delete Endpoint...`;
+      inferenceService.ui.status.phase = STATUS_TYPE.TERMINATING;
+      inferenceService.ui.status.message = $localize`Preparing to delete Endpoint...`;
     });
   }
 
@@ -175,41 +180,45 @@ export class IndexComponent implements OnInit, OnDestroy {
   private processIncomingData(svcs: InferenceServiceK8s[]) {
     const svcsCopy: InferenceServiceIR[] = JSON.parse(JSON.stringify(svcs));
 
-    for (const svc of svcsCopy) {
-      this.parseInferenceService(svc);
+    for (const inferenceService of svcsCopy) {
+      this.parseInferenceService(inferenceService);
     }
 
     return svcsCopy;
   }
 
-  private parseInferenceService(svc: InferenceServiceIR) {
-    svc.ui = { actions: {} };
-    svc.ui.status = getK8sObjectUiStatus(svc);
-    svc.ui.actions.copy = this.getCopyActionStatus(svc);
-    svc.ui.actions.delete = this.getDeletionActionStatus(svc);
+  private parseInferenceService(inferenceService: InferenceServiceIR) {
+    inferenceService.ui = { actions: {} };
+    inferenceService.ui.status = getK8sObjectUiStatus(inferenceService);
+    inferenceService.ui.actions.copy =
+      this.getCopyActionStatus(inferenceService);
+    inferenceService.ui.actions.delete =
+      this.getDeletionActionStatus(inferenceService);
 
-    const predictorType = getPredictorType(svc.spec.predictor);
-    const predictor = getPredictorExtensionSpec(svc.spec.predictor);
-    svc.ui.predictorType = predictorType;
-    svc.ui.runtimeVersion = predictor.runtimeVersion;
-    svc.ui.storageUri = predictor.storageUri;
-    svc.ui.protocolVersion = predictor.protocolVersion || 'v1';
-    svc.ui.link = {
-      text: svc.metadata.name,
-      url: `/details/${svc.metadata.namespace}/${svc.metadata.name}`,
+    const predictorType = getPredictorType(inferenceService.spec.predictor);
+    const predictor = getPredictorExtensionSpec(
+      inferenceService.spec.predictor,
+    );
+    inferenceService.ui.predictorType = predictorType;
+    inferenceService.ui.runtimeVersion = predictor.runtimeVersion;
+    inferenceService.ui.storageUri = predictor.storageUri;
+    inferenceService.ui.protocolVersion = predictor.protocolVersion || 'v1';
+    inferenceService.ui.link = {
+      text: inferenceService.metadata.name,
+      url: `/details/${inferenceService.metadata.namespace}/${inferenceService.metadata.name}`,
     };
   }
 
-  private getCopyActionStatus(svc: InferenceServiceIR) {
-    if (svc.ui.status.phase !== STATUS_TYPE.READY) {
+  private getCopyActionStatus(inferenceService: InferenceServiceIR) {
+    if (inferenceService.ui.status.phase !== STATUS_TYPE.READY) {
       return STATUS_TYPE.UNAVAILABLE;
     }
 
     return STATUS_TYPE.READY;
   }
 
-  private getDeletionActionStatus(svc: InferenceServiceIR) {
-    if (svc.ui.status.phase !== STATUS_TYPE.TERMINATING) {
+  private getDeletionActionStatus(inferenceService: InferenceServiceIR) {
+    if (inferenceService.ui.status.phase !== STATUS_TYPE.TERMINATING) {
       return STATUS_TYPE.READY;
     }
 
@@ -217,7 +226,10 @@ export class IndexComponent implements OnInit, OnDestroy {
   }
 
   // util functions
-  public inferenceServiceTrackByFn(index: number, svc: InferenceServiceK8s) {
-    return `${svc.metadata.name}/${svc.metadata.creationTimestamp}`;
+  public inferenceServiceTrackByFn(
+    index: number,
+    inferenceService: InferenceServiceK8s,
+  ) {
+    return `${inferenceService.metadata.name}/${inferenceService.metadata.creationTimestamp}`;
   }
 }

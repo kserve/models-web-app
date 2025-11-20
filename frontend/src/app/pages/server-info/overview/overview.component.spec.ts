@@ -37,7 +37,7 @@ describe('OverviewComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(OverviewComponent);
     component = fixture.componentInstance;
-    component.svc = {
+    component.inferenceService = {
       spec: {
         predictor: {
           sklearn: {

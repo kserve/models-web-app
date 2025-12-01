@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install git -y
 
 WORKDIR /kf
 COPY ./frontend/COMMIT ./
-RUN git clone https://github.com/kubeflow/kubeflow.git && \
+RUN git clone https://github.com/kubeflow/notebooks.git kubeflow && \
     COMMIT=$(cat ./COMMIT) && \
     cd kubeflow && \
     git checkout $COMMIT

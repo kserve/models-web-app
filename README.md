@@ -143,7 +143,7 @@ Expected response:
 
 The frontend is build with [Angular](https://angular.io/) and the backend is written with the Python [Flask](https://flask.palletsprojects.com/en/1.1.x/) framework.
 
-This web application is utilizing common code from the [kubeflow/kubeflow](https://github.com/kubeflow/kubeflow/tree/master/components/crud-web-apps/common) repository. We want to enforce the same user experience across our different Kubeflow web applications and also keep them in the same development state. In order to achieve this the applications will be using this shared common code.
+This web application is utilizing common code from the [kubeflow/notebooks](https://github.com/kubeflow/notebooks/tree/master/components/crud-web-apps/common) repository. We want to enforce the same user experience across our different Kubeflow web applications and also keep them in the same development state. In order to achieve this the applications will be using this shared common code.
 
 This will require us to fetch this common code when we want to either build the application locally or in an OCI container image.
 
@@ -169,8 +169,8 @@ cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/frontend
 # Setup dependencies and build common library
 make setup
 
-# Optional: Specify custom Kubeflow repository path. Default: `../../kubeflow` (relative to the frontend directory)
-# make setup KF_REPO=/path/to/kubeflow
+# Optional: Specify custom Kubeflow repository path. Default: `../../notebooks` (relative to the frontend directory)
+# make setup KF_REPO=/path/to/notebooks
 # Clean Command: Provides a make clean target to remove node_modules
 # make clean
 
@@ -211,7 +211,7 @@ python3.12 -m venv web-application-development
 source web-application-development/bin/activate
 
 # install the dependencies on the activated virtual environment
-KUBEFLOW_REPOSITORY="/path/to/kubeflow/kubeflow" make -C backend install-deps
+KUBEFLOW_REPOSITORY="/path/to/kubeflow/notebooks" make -C backend install-deps
 
 # run the backend
 make -C backend run-dev

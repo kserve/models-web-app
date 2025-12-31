@@ -26,79 +26,79 @@ jobs:
           npm ci --no-audit
           npm run lint-check
   frontend-unit-tests:
-      name: Frontend Unit Tests
-      runs-on: ubuntu-latest
-      steps:
-        - name: Check out code
-          uses: actions/checkout@v4
-        - name: Setup Node
-          uses: actions/setup-node@v4
-          with:
-            node-version: 16
-            cache: 'npm'
-            cache-dependency-path: frontend/package-lock.json
-        - name: Fetch Kubeflow and Build Common Library
-          run: |
-            COMMIT=$(cat frontend/COMMIT)
-            cd /tmp && git clone https://github.com/kubeflow/notebooks.git
-            cd notebooks
-            git checkout $COMMIT
-            cd components/crud-web-apps/common/frontend/kubeflow-common-lib
-            npm ci --no-audit
-            npm run build
-            npm link ./dist/kubeflow
-        - name: Install Frontend Dependencies and Setup Styles
-          run: |
-            cd frontend
-            npm ci --no-audit
-            npm link kubeflow
-            # Copy styles from kubeflow source to local styles directory
-            mkdir -p ./src/styles/
-            cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./src/styles/
-            # Also copy to node_modules for the copyCSS script
-            mkdir -p ./node_modules/kubeflow/styles/
-            cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./node_modules/kubeflow/styles/
-        - name: Run Unit Tests
-          run: |
-            cd frontend
-            npm run test:jest
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Fetch Kubeflow and Build Common Library
+        run: |
+          COMMIT=$(cat frontend/COMMIT)
+          cd /tmp && git clone https://github.com/kubeflow/notebooks.git
+          cd notebooks
+          git checkout $COMMIT
+          cd components/crud-web-apps/common/frontend/kubeflow-common-lib
+          npm ci --no-audit
+          npm run build
+          npm link ./dist/kubeflow
+      - name: Install Frontend Dependencies and Setup Styles
+        run: |
+          cd frontend
+          npm ci --no-audit
+          npm link kubeflow
+          # Copy styles from kubeflow source to local styles directory
+          mkdir -p ./src/styles/
+          cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./src/styles/
+          # Also copy to node_modules for the copyCSS script
+          mkdir -p ./node_modules/kubeflow/styles/
+          cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./node_modules/kubeflow/styles/
+      - name: Run Unit Tests
+        run: |
+          cd frontend
+          npm run test:jest
   frontend-mock-tests:
-      name: Frontend Mock Tests
-      runs-on: ubuntu-latest
-      steps:
-        - name: Check out code
-          uses: actions/checkout@v4
-        - name: Setup Node
-          uses: actions/setup-node@v4
-          with:
-            node-version: 16
-            cache: 'npm'
-            cache-dependency-path: frontend/package-lock.json
-        - name: Fetch Kubeflow and Build Common Library
-          run: |
-            COMMIT=$(cat frontend/COMMIT)
-            cd /tmp && git clone https://github.com/kubeflow/notebooks.git
-            cd notebooks
-            git checkout $COMMIT
-            cd components/crud-web-apps/common/frontend/kubeflow-common-lib
-            npm ci --no-audit
-            npm run build
-            npm link ./dist/kubeflow
-        - name: Install Frontend Dependencies and Setup Styles
-          run: |
-            cd frontend
-            npm ci --no-audit
-            npm link kubeflow
-            # Copy styles from kubeflow source to local styles directory
-            mkdir -p ./src/styles/
-            cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./src/styles/
-            # Also copy to node_modules for the copyCSS script
-            mkdir -p ./node_modules/kubeflow/styles/
-            cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./node_modules/kubeflow/styles/
-            # Copy assets as well
-            mkdir -p ./node_modules/kubeflow/assets/
-            cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/assets/* ./node_modules/kubeflow/assets/
-        - name: Run E2E Tests
-          run: |
-            cd frontend
-            npm run e2e:cypress:ci
+    name: Frontend Mock Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Fetch Kubeflow and Build Common Library
+        run: |
+          COMMIT=$(cat frontend/COMMIT)
+          cd /tmp && git clone https://github.com/kubeflow/notebooks.git
+          cd notebooks
+          git checkout $COMMIT
+          cd components/crud-web-apps/common/frontend/kubeflow-common-lib
+          npm ci --no-audit
+          npm run build
+          npm link ./dist/kubeflow
+      - name: Install Frontend Dependencies and Setup Styles
+        run: |
+          cd frontend
+          npm ci --no-audit
+          npm link kubeflow
+          # Copy styles from kubeflow source to local styles directory
+          mkdir -p ./src/styles/
+          cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./src/styles/
+          # Also copy to node_modules for the copyCSS script
+          mkdir -p ./node_modules/kubeflow/styles/
+          cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/styles/* ./node_modules/kubeflow/styles/
+          # Copy assets as well
+          mkdir -p ./node_modules/kubeflow/assets/
+          cp -r /tmp/notebooks/components/crud-web-apps/common/frontend/kubeflow-common-lib/projects/kubeflow/src/assets/* ./node_modules/kubeflow/assets/
+      - name: Run E2E Tests
+        run: |
+          cd frontend
+          npm run e2e:cypress:ci

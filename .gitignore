@@ -24,5 +24,4 @@ tags
 [._]*.un~
 
 .angular
-web-application-development
 frontend/src/styles/

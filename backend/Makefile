@@ -1,9 +1,9 @@
 SHELL=bash
 
 # In order to develop locally you will need to use common python code
-# from the kubeflow/kubeflow repo. You can clone the repo in a specific
+# from the kubeflow/notebooks repo. You can clone the repo in a specific
 # folder and use the following ENV Var to configure it.
-KUBEFLOW_REPO ?= /tmp/kubeflow
+KUBEFLOW_REPO ?= $(or $(KUBEFLOW_REPOSITORY),/tmp/notebooks)
 COMMON_BACKEND_DIR ?= ${KUBEFLOW_REPO}/components/crud-web-apps/common/backend
 
 install-deps:

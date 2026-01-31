@@ -262,10 +262,10 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
             return of([component, {}]);
           }),
         );
-    } else if (deploymentMode === 'RawDeployment') {
-      // Handle RawDeployment mode
+    } else if (deploymentMode === 'Standard') {
+      // Handle Standard mode
       return this.backend
-        .getRawDeploymentObjects(
+        .getStandardDeploymentObjects(
           this.namespace,
           inferenceService.metadata.name,
           component,
@@ -274,7 +274,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
           map(objects => [component, objects]),
           catchError(error => {
             console.error(
-              `Error fetching RawDeployment objects for ${component}:`,
+              `Error fetching Standard objects for ${component}:`,
               error,
             );
             return of([component, {}]);
@@ -358,13 +358,17 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       });
   }
 
-  private isRawDeployment(inferenceService: InferenceServiceK8s): boolean {
+  private isStandardDeployment(inferenceService: InferenceServiceK8s): boolean {
     const annotations = inferenceService.metadata?.annotations || {};
 
     // Check for the KServe annotation
     const deploymentMode =
       annotations['serving.kserve.io/deploymentMode'] || '';
-    if (deploymentMode.toLowerCase() === 'rawdeployment') {
+    // allowing rawdeployment for backward compatibility
+    if (
+      deploymentMode.toLowerCase() === 'rawdeployment' ||
+      deploymentMode.toLowerCase() === 'standard'
+    ) {
       return true;
     }
 
@@ -389,8 +393,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   private getDeploymentMode(inferenceService: InferenceServiceK8s): string {
     if (this.isModelMeshDeployment(inferenceService)) {
       return 'ModelMesh';
-    } else if (this.isRawDeployment(inferenceService)) {
-      return 'RawDeployment';
+    } else if (this.isStandardDeployment(inferenceService)) {
+      return 'Standard';
     } else {
       return 'Serverless';
     }

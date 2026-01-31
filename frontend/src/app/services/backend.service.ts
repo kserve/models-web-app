@@ -185,7 +185,7 @@ export class MWABackendService extends BackendService {
   }
 
   /*
-   * RawDeployment mode methods
+   * Standard mode methods
    */
   public getKubernetesDeployment(
     namespace: string,
@@ -229,17 +229,17 @@ export class MWABackendService extends BackendService {
     );
   }
 
-  public getRawDeploymentObjects(
+  public getStandardDeploymentObjects(
     namespace: string,
     name: string,
     component: string,
   ): Observable<any> {
-    const url = `api/namespaces/${namespace}/inferenceservices/${name}/rawdeployment/${component}`;
+    const url = `api/namespaces/${namespace}/inferenceservices/${name}/standard/${component}`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
       catchError(error => this.handleError(error)),
       map((resp: MWABackendResponse) => {
-        return resp.rawDeploymentObjects;
+        return resp.standardDeploymentObjects;
       }),
     );
   }

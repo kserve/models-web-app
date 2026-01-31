@@ -14,7 +14,7 @@ export interface MWABackendResponse extends BackendResponse {
   deployment?: K8sObject;
   service?: K8sObject;
   hpa?: K8sObject;
-  rawDeploymentObjects?: RawDeploymentObjects;
+  standardDeploymentObjects?: StandardDeploymentObjects;
   modelmeshObjects?: ModelMeshObjects;
 }
 
@@ -38,8 +38,8 @@ export interface ComponentOwnedObjects {
   route: K8sObject;
 }
 
-// RawDeployment mode types
-export interface RawDeploymentObjects {
+// Standard mode types
+export interface StandardDeploymentObjects {
   deployment?: K8sObject;
   service?: K8sObject;
   hpa?: K8sObject;

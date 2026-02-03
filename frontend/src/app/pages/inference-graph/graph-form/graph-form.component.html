@@ -11,7 +11,7 @@
   <lib-loading-spinner *ngIf="isLoading"></lib-loading-spinner>
 
   <ng-container *ngIf="!isLoading">
-    <textarea 
+    <textarea
       class="yaml-editor"
       [(ngModel)]="yaml"
       (input)="onYamlChange()"

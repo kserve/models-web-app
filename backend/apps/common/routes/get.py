@@ -156,6 +156,38 @@ def get_inference_service_events(namespace, name):
     )
 
 
+@bp.route("/api/namespaces/<namespace>/inferencegraphs")
+def get_inference_graphs(namespace):
+    """Return a list of InferenceGraph CRs as json objects."""
+    gvk = versions.inference_graph_gvk()
+    inference_graphs = api.list_custom_rsrc(**gvk, namespace=namespace)
+
+    return api.success_response("inferenceGraphs", inference_graphs["items"])
+
+
+@bp.route("/api/namespaces/<namespace>/inferencegraphs/<name>")
+def get_inference_graph(namespace, name):
+    """Return an InferenceGraph CR as a json object."""
+    inference_graph = api.get_custom_rsrc(
+        **versions.inference_graph_gvk(), namespace=namespace, name=name
+    )
+
+    return api.success_response("inferenceGraph", inference_graph)
+
+
+@bp.route("/api/namespaces/<namespace>/inferencegraphs/<name>/events")
+def get_inference_graph_events(namespace, name):
+    """Return events for an InferenceGraph."""
+    field_selector = api.events_field_selector("InferenceGraph", name)
+
+    events = api.events.list_events(namespace, field_selector).items
+
+    return api.success_response(
+        "events",
+        api.serialize(events),
+    )
+
+
 # Standard mode endpoints
 @bp.route("/api/namespaces/<namespace>/deployments/<name>")
 def get_kubernetes_deployment(namespace, name):

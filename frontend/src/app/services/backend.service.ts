@@ -385,5 +385,3 @@ export class MWABackendService extends BackendService {
       .pipe(catchError(error => this.handleError(error, false)));
   }
 }
-
-

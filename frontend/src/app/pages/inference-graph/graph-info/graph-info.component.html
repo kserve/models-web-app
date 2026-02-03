@@ -26,7 +26,11 @@
         </div>
       </div>
 
-      <mat-tab-group class="page-placement" dynamicHeight animationDuration="0ms">
+      <mat-tab-group
+        class="page-placement"
+        dynamicHeight
+        animationDuration="0ms"
+      >
         <mat-tab label="OVERVIEW">
           <div class="page-padding">
             <lib-details-list-item key="Name">
@@ -57,8 +61,10 @@
               <lib-details-list-item key="Router Type">
                 {{ inferenceGraph.spec?.nodes[nodeName]?.routerType }}
               </lib-details-list-item>
-              
-              <ng-container *ngIf="inferenceGraph.spec?.nodes[nodeName]?.steps as steps">
+
+              <ng-container
+                *ngIf="inferenceGraph.spec?.nodes[nodeName]?.steps as steps"
+              >
                 <h5 *ngIf="steps.length > 0">Steps:</h5>
                 <lib-details-list-item
                   *ngFor="let step of steps; let i = index"
@@ -74,26 +80,38 @@
         <mat-tab label="EVENTS">
           <div class="page-padding">
             <div *ngIf="graphInfoLoaded">
-              <div *ngIf="events && events.length > 0" style="overflow-x: auto;">
+              <div *ngIf="events && events.length > 0" style="overflow-x: auto">
                 <table class="events-table">
                   <thead>
                     <tr>
-                      <th style="width: 10%;">Type</th>
-                      <th style="width: 15%;">Reason</th>
-                      <th style="width: 50%;">Message</th>
-                      <th style="width: 25%;">Last Timestamp</th>
+                      <th style="width: 10%">Type</th>
+                      <th style="width: 15%">Reason</th>
+                      <th style="width: 50%">Message</th>
+                      <th style="width: 25%">Last Timestamp</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngFor="let event of events">
                       <td>
-                        <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; background-color: #dbeafe; color: #1e40af; font-weight: 600; font-size: 12px;">
+                        <span
+                          style="
+                            display: inline-block;
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            background-color: #dbeafe;
+                            color: #1e40af;
+                            font-weight: 600;
+                            font-size: 12px;
+                          "
+                        >
                           {{ event.type }}
                         </span>
                       </td>
                       <td>{{ event.reason }}</td>
                       <td>{{ event.message }}</td>
-                      <td style="color: #6b7280; font-size: 12px;">{{ event.lastTimestamp }}</td>
+                      <td style="color: #6b7280; font-size: 12px">
+                        {{ event.lastTimestamp }}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -107,7 +125,9 @@
 
         <mat-tab label="YAML">
           <div class="yaml-container">
-            <pre *ngIf="graphInfoLoaded && yaml" class="yaml-content">{{ yaml }}</pre>
+            <pre *ngIf="graphInfoLoaded && yaml" class="yaml-content">{{
+              yaml
+            }}</pre>
             <div *ngIf="graphInfoLoaded && !yaml" class="no-events">
               No YAML content available
             </div>

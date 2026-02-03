@@ -15,7 +15,8 @@
   flex: 1;
   padding: 20px;
   border: 1px solid #cbd5e1;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro',
+    monospace;
   font-size: 15px;
   line-height: 1.6;
   margin: 0 16px 16px 16px;
@@ -23,20 +24,20 @@
   border-radius: 8px;
   background-color: #f8fafc;
   color: #1e293b;
-  
+
   &::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: #f1f5f9;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 5px;
-    
+
     &:hover {
       background: #94a3b8;
     }
@@ -45,12 +46,12 @@
   &::placeholder {
     color: #64748b;
   }
-  
+
   &::selection {
     background-color: #e0e7ff;
     color: #1e293b;
   }
-  
+
   &:focus {
     outline: none;
     border-color: #3b82f6;
@@ -67,7 +68,7 @@
   border-radius: 4px;
   font-size: 13px;
   line-height: 1.5;
-  
+
   strong {
     font-weight: 600;
   }

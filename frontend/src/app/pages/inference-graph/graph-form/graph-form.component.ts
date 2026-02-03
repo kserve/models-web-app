@@ -66,7 +66,7 @@ spec:
         this.yaml = dump(graph);
         this.isLoading = false;
       },
-      (err) => {
+      err => {
         console.error('Error loading graph for editing:', err);
         const config: SnackBarConfig = {
           data: {
@@ -92,7 +92,7 @@ spec:
 
   validateYaml(): boolean {
     this.yamlError = '';
-    
+
     if (!this.yaml || this.yaml.trim() === '') {
       this.yamlError = 'YAML content cannot be empty';
       return false;
@@ -100,7 +100,7 @@ spec:
 
     try {
       const cr: any = load(this.yaml);
-      
+
       if (!cr) {
         this.yamlError = 'YAML is empty';
         return false;
@@ -139,7 +139,7 @@ spec:
       return true;
     } catch (e) {
       let msg = 'Could not parse YAML';
-      
+
       if (e instanceof Error) {
         if (e.message.includes('line')) {
           msg = `YAML parsing error: ${e.message}`;
@@ -147,7 +147,7 @@ spec:
           msg = `YAML Error: ${e.message}`;
         }
       }
-      
+
       this.yamlError = msg;
       return false;
     }
@@ -182,7 +182,7 @@ spec:
           msg = `YAML parsing error: ${e.message}`;
         }
       }
-      
+
       const config: SnackBarConfig = {
         data: {
           msg,
@@ -210,12 +210,14 @@ spec:
     }
 
     const validationErrors: string[] = [];
-    
+
     if (!cr.apiVersion) {
       validationErrors.push('Missing required field: apiVersion');
     }
     if (!cr.kind || cr.kind !== 'InferenceGraph') {
-      validationErrors.push('Missing or invalid field: kind (must be "InferenceGraph")');
+      validationErrors.push(
+        'Missing or invalid field: kind (must be "InferenceGraph")',
+      );
     }
     if (!cr.metadata) {
       validationErrors.push('Missing required field: metadata');
@@ -230,18 +232,26 @@ spec:
       if (!cr.spec.nodes) {
         validationErrors.push('Missing required field: spec.nodes');
       } else if (Object.keys(cr.spec.nodes).length === 0) {
-        validationErrors.push('spec.nodes cannot be empty - must define at least one node');
+        validationErrors.push(
+          'spec.nodes cannot be empty - must define at least one node',
+        );
       } else {
         // Validate each node
         for (const nodeName of Object.keys(cr.spec.nodes)) {
           const node = cr.spec.nodes[nodeName];
           if (!node.routerType) {
-            validationErrors.push(`Node "${nodeName}": missing required field "routerType"`);
+            validationErrors.push(
+              `Node "${nodeName}": missing required field "routerType"`,
+            );
           }
           if (!node.steps || !Array.isArray(node.steps)) {
-            validationErrors.push(`Node "${nodeName}": missing required field "steps" (must be an array)`);
+            validationErrors.push(
+              `Node "${nodeName}": missing required field "steps" (must be an array)`,
+            );
           } else if (node.steps.length === 0) {
-            validationErrors.push(`Node "${nodeName}": steps array cannot be empty`);
+            validationErrors.push(
+              `Node "${nodeName}": steps array cannot be empty`,
+            );
           }
         }
       }
@@ -261,13 +271,12 @@ spec:
     }
 
     cr.metadata.namespace = this.namespace;
-    
+
     if (this.isEditMode) {
       cr.metadata.name = this.graphName;
     }
-    
-    console.log(cr);
 
+    console.log(cr);
 
     const operation = this.isEditMode
       ? this.backend.editInferenceGraph(this.namespace, this.graphName, cr)
@@ -289,11 +298,10 @@ spec:
         this.applying = false;
         this.navigateBack();
       },
-      error: (err) => {
+      error: err => {
         let errorMsg = this.isEditMode
           ? 'Failed to update InferenceGraph'
           : 'Failed to create InferenceGraph';
-        
 
         if (err?.error?.log) {
           errorMsg = err.error.log;
@@ -306,7 +314,7 @@ spec:
         } else if (err?.statusText) {
           errorMsg = `Server error: ${err.statusText}`;
         }
-        
+
         const config: SnackBarConfig = {
           data: {
             msg: errorMsg,
@@ -320,4 +328,3 @@ spec:
     });
   }
 }
-

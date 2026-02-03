@@ -14,11 +14,13 @@ import { SharedModule } from '../../shared/shared.module';
     GraphFormComponent,
     GraphInfoComponent,
   ],
-  imports: [CommonModule, FormsModule, KubeflowModule, MatTabsModule, SharedModule],
-  exports: [
-    InferenceGraphComponent,
-    GraphFormComponent,
-    GraphInfoComponent,
+  imports: [
+    CommonModule,
+    FormsModule,
+    KubeflowModule,
+    MatTabsModule,
+    SharedModule,
   ],
+  exports: [InferenceGraphComponent, GraphFormComponent, GraphInfoComponent],
 })
 export class InferenceGraphModule {}

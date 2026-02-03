@@ -54,7 +54,7 @@ export class SubmitFormComponent implements OnInit {
           msg = `YAML parsing error: ${e.message}`;
         }
       }
-      
+
       const config: SnackBarConfig = {
         data: {
           msg,
@@ -81,12 +81,14 @@ export class SubmitFormComponent implements OnInit {
     }
 
     const validationErrors: string[] = [];
-    
+
     if (!cr.apiVersion) {
       validationErrors.push('Missing required field: apiVersion');
     }
     if (!cr.kind || cr.kind !== 'InferenceService') {
-      validationErrors.push('Missing or invalid field: kind (must be "InferenceService")');
+      validationErrors.push(
+        'Missing or invalid field: kind (must be "InferenceService")',
+      );
     }
     if (!cr.metadata) {
       validationErrors.push('Missing required field: metadata');
@@ -102,7 +104,9 @@ export class SubmitFormComponent implements OnInit {
         validationErrors.push('Missing required field: spec.predictor');
       } else {
         if (!cr.spec.predictor.model && !cr.spec.predictor.containers) {
-          validationErrors.push('spec.predictor must have either "model" or "containers" defined');
+          validationErrors.push(
+            'spec.predictor must have either "model" or "containers" defined',
+          );
         }
       }
     }
@@ -136,9 +140,9 @@ export class SubmitFormComponent implements OnInit {
         this.applying = false;
         this.navigateBack();
       },
-      error: (err) => {
+      error: err => {
         let errorMsg = 'Failed to create InferenceService';
-        
+
         if (err?.error?.log) {
           errorMsg = err.error.log;
         } else if (err?.error?.message) {
@@ -150,7 +154,7 @@ export class SubmitFormComponent implements OnInit {
         } else if (err?.statusText) {
           errorMsg = `Server error: ${err.statusText}`;
         }
-        
+
         const config: SnackBarConfig = {
           data: {
             msg: errorMsg,

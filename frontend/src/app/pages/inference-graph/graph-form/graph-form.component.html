@@ -1,0 +1,33 @@
+<div class="lib-content-wrapper">
+  <lib-title-actions-toolbar
+    [title]="isEditMode ? 'Edit InferenceGraph' : 'New InferenceGraph'"
+    [buttons]="[]"
+    [backButton]="true"
+    (back)="navigateBack()"
+    class="margin-bottom"
+  >
+  </lib-title-actions-toolbar>
+
+  <lib-loading-spinner *ngIf="isLoading"></lib-loading-spinner>
+
+  <ng-container *ngIf="!isLoading">
+    <textarea 
+      class="yaml-editor"
+      [(ngModel)]="yaml"
+      (input)="onYamlChange()"
+      placeholder="Enter InferenceGraph YAML..."
+    ></textarea>
+
+    <div *ngIf="yamlError" class="yaml-error-message">
+      <strong>Error:</strong> {{ yamlError }}
+    </div>
+
+    <lib-submit-bar
+      [allowYAMLEditing]="false"
+      [isApplying]="applying"
+      [createDisabled]="!yaml"
+      (create)="submit()"
+      (cancel)="navigateBack()"
+    ></lib-submit-bar>
+  </ng-container>
+</div>

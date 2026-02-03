@@ -39,3 +39,15 @@ def inference_service_gvk():
         "version": version,
         "kind": "inferenceservices",
     }
+
+
+def inference_graph_gvk():
+    """
+    Return the GVK needed for an InferenceGraph.
+    
+    """
+    return {
+        "group": "serving.kserve.io",
+        "version": "v1alpha1",
+        "kind": "inferencegraphs",
+    }

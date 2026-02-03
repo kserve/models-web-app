@@ -1,0 +1,232 @@
+.details-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.details-page-outer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.details-page-inner {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.details-page-inner-2 {
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.small-padding-right {
+  padding-right: 8px;
+}
+
+.small-padding-up {
+  padding-top: 8px;
+}
+
+.page-padding {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.section-header {
+  margin-top: 32px;
+  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #424242;
+}
+
+.node-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
+.node-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1976d2;
+}
+
+.step-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.step-item:last-child {
+  border-bottom: none;
+}
+
+.step-item strong {
+  display: inline-block;
+  min-width: 70px;
+  color: #424242;
+}
+
+.no-events {
+  padding: 24px;
+  text-align: center;
+  color: #757575;
+  font-style: italic;
+}
+
+.events-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background-color: #fff;
+
+  thead {
+    background: linear-gradient(to bottom, #f8f9fa, #f3f4f6);
+    border-bottom: 2px solid #d0d7de;
+
+    th {
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      border-right: 1px solid #e5e7eb;
+
+      &:last-child {
+        border-right: none;
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #f9fafb;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.02);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      td {
+        padding: 14px 16px;
+        color: #374151;
+        font-size: 13px;
+        line-height: 1.5;
+        border-right: 1px solid #e5e7eb;
+        word-break: break-word;
+        max-width: 300px;
+
+        &:last-child {
+          border-right: none;
+          max-width: none;
+        }
+
+        &:first-child {
+          font-weight: 500;
+          color: #0f172a;
+          min-width: 80px;
+        }
+      }
+    }
+
+    tr:nth-child(even) {
+      background-color: #fafbfc;
+    }
+  }
+}
+
+
+
+.page-placement {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+
+  ::ng-deep .mat-tab-body-wrapper {
+    height: 100% !important;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  ::ng-deep .mat-tab-body {
+    height: 100% !important;
+    overflow: auto !important;
+  }
+}
+
+.yaml-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.yaml-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #2d2d2d;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border: 1px solid #d0d7de;
+  margin: 24px;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f0f0f0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #b0b8c1;
+    border-radius: 4px;
+
+    &:hover {
+      background: #8c959f;
+    }
+  }
+}
+
+::ng-deep .mat-tab-body-content {
+  overflow-y: auto !important;
+  max-height: 100% !important;
+  display: block !important;
+}

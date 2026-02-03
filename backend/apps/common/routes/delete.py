@@ -1,6 +1,5 @@
 """Route handlers for DELETE requests."""
 
-
 from kubeflow.kubeflow.crud_backend import api, logging
 
 from .. import versions

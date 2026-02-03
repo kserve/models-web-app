@@ -44,7 +44,7 @@ def inference_service_gvk():
 def inference_graph_gvk():
     """
     Return the GVK needed for an InferenceGraph.
-    
+
     """
     return {
         "group": "serving.kserve.io",

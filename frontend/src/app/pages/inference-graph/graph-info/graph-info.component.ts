@@ -84,7 +84,7 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
 
       // Initial load before starting polling
       this.getBackendObjects();
-      
+
       this.pollingSubscription = this.poller.start().subscribe(() => {
         this.getBackendObjects();
       }) as any;
@@ -100,44 +100,38 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
   }
 
   public editInferenceGraph() {
-    this.router.navigate([
-      '/edit-graph',
-      this.namespace,
-      this.graphName,
-    ]);
+    this.router.navigate(['/edit-graph', this.namespace, this.graphName]);
   }
 
   private getBackendObjects() {
-    this.backend
-      .getInferenceGraph(this.namespace, this.graphName)
-      .subscribe(
-        graph => {
-          this.inferenceGraph = graph;
-          this.status = getInferenceGraphStatus(graph);
-          this.yamlData = dump(graph);
+    this.backend.getInferenceGraph(this.namespace, this.graphName).subscribe(
+      graph => {
+        this.inferenceGraph = graph;
+        this.status = getInferenceGraphStatus(graph);
+        this.yamlData = dump(graph);
 
-          // Load events
-          this.backend.getInferenceGraphEvents(graph).subscribe(
-            events => {
-              this.events = events || [];
-              this.cdr.detectChanges();
-            },
-            err => {
-              console.warn('Could not load events:', err);
-              this.events = [];
-              this.cdr.detectChanges();
-            },
-          );
-          
-          this.graphInfoLoaded = true;
-          this.cdr.detectChanges();
-        },
-        err => {
-          console.error('Error loading inference graph:', err);
-          this.graphInfoLoaded = true;
-          this.cdr.detectChanges();
-        },
-      );
+        // Load events
+        this.backend.getInferenceGraphEvents(graph).subscribe(
+          events => {
+            this.events = events || [];
+            this.cdr.detectChanges();
+          },
+          err => {
+            console.warn('Could not load events:', err);
+            this.events = [];
+            this.cdr.detectChanges();
+          },
+        );
+
+        this.graphInfoLoaded = true;
+        this.cdr.detectChanges();
+      },
+      err => {
+        console.error('Error loading inference graph:', err);
+        this.graphInfoLoaded = true;
+        this.cdr.detectChanges();
+      },
+    );
   }
 
   private deleteInferenceGraph() {

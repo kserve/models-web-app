@@ -4,6 +4,9 @@
 #   make setup KUBEFLOW_REPOSITORY=/path/to/kubeflow
 #   make setup KF_REPO=/path/to/kubeflow
 
+# Local path to kubeflow/notebooks repo for common frontend library.
+# Clone https://github.com/kubeflow/notebooks to develop locally.
+# Set KUBEFLOW_REPOSITORY or KF_REPO env var, or use default ../../notebooks.
 KUBEFLOW_REPOSITORY ?= $(or $(KF_REPO),../../notebooks)
 KUBEFLOW_REMOTE ?= https://github.com/kubeflow/notebooks
 
@@ -22,25 +25,50 @@ setup:
 	    echo "Cloning $(KUBEFLOW_REMOTE) into $(KUBEFLOW_REPOSITORY)"; \
 	    git clone "$(KUBEFLOW_REMOTE)" "$(KUBEFLOW_REPOSITORY)"; \
 	fi
-	@echo ">> Checking repository status"
 	@TARGET_COMMIT=$$(cat "$(COMMIT_FILE)"); \
-	cd "$(KUBEFLOW_REPOSITORY)" && \
-	git fetch "$(KUBEFLOW_REMOTE)" notebooks-v1 && \
-	git checkout "$$TARGET_COMMIT"
+	CURRENT_COMMIT=$$(cd "$(KUBEFLOW_REPOSITORY)" 2>/dev/null && git rev-parse --short=8 HEAD 2>/dev/null || echo ""); \
+	if [ "$$CURRENT_COMMIT" != "$$TARGET_COMMIT" ]; then \
+	    echo ">> Checking out target commit $$TARGET_COMMIT"; \
+	    cd "$(KUBEFLOW_REPOSITORY)" && \
+	    git fetch "$(KUBEFLOW_REMOTE)" notebooks-v1 && \
+	    git checkout "$$TARGET_COMMIT" || git checkout "$$(git rev-parse $$TARGET_COMMIT)"; \
+	else \
+	    echo ">> Already at target commit $$TARGET_COMMIT"; \
+	fi
 	@if [ ! -d "$(COMMON_LIBRARY_DIRECTORY)" ]; then \
 	    echo "Expected common lib at: $(COMMON_LIBRARY_DIRECTORY)"; \
 	    echo "Verify KUBEFLOW_REPOSITORY is correct."; \
 	    exit 1; \
 	fi
-	@echo ">> Building kubeflow-common-library"
-	@cd "$(COMMON_LIBRARY_DIRECTORY)" && \
-	npm install && \
-	npm run build
-	@echo ">> Installing frontend dependencies and linking kubeflow-common-library"
-	@npm install
-	@rm -rf node_modules/kubeflow
-	@ln -s "$$(readlink -f $(COMMON_LIBRARY_DISTRIBUTION))" node_modules/kubeflow
-	@echo "✔ Setup complete. Now run: npm run build:watch"
+	@if [ ! -d "$(COMMON_LIBRARY_DISTRIBUTION)" ]; then \
+	    echo ">> Building kubeflow-common-library"; \
+	    cd "$(COMMON_LIBRARY_DIRECTORY)" && \
+	    npm install && \
+	    npm run build; \
+	else \
+	    echo ">> Kubeflow library already built"; \
+	fi
+	@if [ ! -d "node_modules" ]; then \
+	    echo ">> Installing frontend dependencies"; \
+	    npm install; \
+	else \
+	    echo ">> Frontend dependencies already installed"; \
+	fi
+	@if [ ! -L "node_modules/kubeflow" ] || [ "$$(readlink node_modules/kubeflow)" != "$$(readlink -f $(COMMON_LIBRARY_DISTRIBUTION))" ]; then \
+	    echo ">> Linking kubeflow-common-library"; \
+	    rm -rf node_modules/kubeflow; \
+	    ln -s "$$(readlink -f $(COMMON_LIBRARY_DISTRIBUTION))" node_modules/kubeflow; \
+	else \
+	    echo ">> Kubeflow library already linked"; \
+	fi
+	@if [ ! -d "src/styles" ] || [ ! -d "src/assets" ]; then \
+	    echo ">> Copying kubeflow styles and assets"; \
+	    npm run copyCSS; \
+	    npm run copyLibAssets; \
+	else \
+	    echo ">> Styles and assets already copied"; \
+	fi
+	@echo "✔ Setup complete. Now run: npm run serve:simple or npm run build:watch"
 
 clean:
 	@echo ">> Cleaning frontend node_modules"

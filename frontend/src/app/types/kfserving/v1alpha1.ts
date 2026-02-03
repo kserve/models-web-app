@@ -1,5 +1,10 @@
 import { Status, STATUS_TYPE, K8sObject, Condition } from 'kubeflow';
-import { V1ObjectMeta, V1Affinity, V1ResourceRequirements, V1Toleration } from '@kubernetes/client-node';
+import {
+  V1ObjectMeta,
+  V1Affinity,
+  V1ResourceRequirements,
+  V1Toleration,
+} from '@kubernetes/client-node';
 import { Params } from '@angular/router';
 
 export interface InferenceGraphIR extends InferenceGraphK8s {
@@ -111,11 +116,11 @@ export function isInferenceGraphReady(ig: InferenceGraphK8s): boolean {
   if (!ig.status?.conditions) {
     return false;
   }
-  
+
   const readyCondition = ig.status.conditions.find(
-    (c: Condition) => c.type === 'Ready'
+    (c: Condition) => c.type === 'Ready',
   );
-  
+
   return readyCondition?.status === 'True';
 }
 
@@ -135,7 +140,7 @@ export function getInferenceGraphStatus(ig: InferenceGraphK8s): Status {
   // If status conditions exist, use them for detailed status
   if (ig.status?.conditions && ig.status.conditions.length > 0) {
     const readyCondition = ig.status.conditions.find(
-      (c: Condition) => c.type === 'Ready'
+      (c: Condition) => c.type === 'Ready',
     );
 
     if (readyCondition) {

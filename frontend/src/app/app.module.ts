@@ -8,6 +8,7 @@ import { IndexModule } from './pages/index/index.module';
 import { KubeflowModule } from 'kubeflow';
 import { ServerInfoModule } from './pages/server-info/server-info.module';
 import { SubmitFormModule } from './pages/submit-form/submit-form.module';
+import { InferenceGraphModule } from './pages/inference-graph/inference-graph.module';
 import {
   MatSnackBarConfig,
   MAT_SNACK_BAR_DEFAULT_OPTIONS,
@@ -34,6 +35,7 @@ const MwaSnackBarConfig: MatSnackBarConfig = {
     KubeflowModule,
     ServerInfoModule,
     SubmitFormModule,
+    InferenceGraphModule,
   ],
   providers: [
     { provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, useValue: MwaSnackBarConfig },

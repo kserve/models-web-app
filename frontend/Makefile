@@ -4,10 +4,10 @@
 #   make setup KUBEFLOW_REPOSITORY=/path/to/kubeflow
 #   make setup KF_REPO=/path/to/kubeflow
 
-# Local path to kubeflow/notebooks repo for common frontend library.
+# Local path to kubeflow/notebooks repoSITORY for THE common frontend library.
 # Clone https://github.com/kubeflow/notebooks to develop locally.
-# Set KUBEFLOW_REPOSITORY or KF_REPO env var, or use default ../../notebooks.
-KUBEFLOW_REPOSITORY ?= $(or $(KF_REPO),../../notebooks)
+# Set KUBEFLOW_REPOSITORY ennvironment variable, or use the default ../../notebooks.
+KUBEFLOW_REPOSITORY ?= $(../../notebooks)
 KUBEFLOW_REMOTE ?= https://github.com/kubeflow/notebooks
 
 COMMIT_FILE := ./COMMIT
@@ -36,7 +36,7 @@ setup:
 	    echo ">> Already at target commit $$TARGET_COMMIT"; \
 	fi
 	@if [ ! -d "$(COMMON_LIBRARY_DIRECTORY)" ]; then \
-	    echo "Expected common lib at: $(COMMON_LIBRARY_DIRECTORY)"; \
+	    echo "Expected common library at: $(COMMON_LIBRARY_DIRECTORY)"; \
 	    echo "Verify KUBEFLOW_REPOSITORY is correct."; \
 	    exit 1; \
 	fi

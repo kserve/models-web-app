@@ -1,8 +1,8 @@
 SHELL=bash
 
-# Local path to kubeflow/notebooks repo for common backend code.
+# Local path to kubeflow/notebooks repository for common backend code.
 # Clone https://github.com/kubeflow/notebooks to develop locally.
-# Set KUBEFLOW_REPOSITORY env var or use default /tmp/notebooks.
+# Set KUBEFLOW_REPOSITORY environment variable or use the default /tmp/notebooks.
 KUBEFLOW_REPO ?= $(or $(KUBEFLOW_REPOSITORY),/tmp/notebooks)
 COMMON_BACKEND_DIR ?= ${KUBEFLOW_REPO}/components/crud-web-apps/common/backend
 

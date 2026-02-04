@@ -39,7 +39,7 @@ jobs:
         fetch-depth: 0
 
     - name: Install yamllint
-      run: python3 -m venv myenv && source myenv/bin/activate && pip install yamllint
+      run: pip install yamllint
 
     - name: YAML Formatting Guidelines
       run: |
@@ -88,7 +88,6 @@ jobs:
     - name: Run yamllint on changed files
       id: lint
       run: |
-        source myenv/bin/activate
         if grep -q 'No YAML files have changed in this PR.' changed_files_in_PR.txt; then
           echo "No YAML files have changed in this PR."
         else
@@ -132,7 +131,7 @@ jobs:
         fi
 
     - name: Display changed files
-      if: always() # Always run this step
+      if: always()  # Always run this step
       run: cat changed_files_in_PR.txt || echo "No bash files have changed in this PR."
 
     - name: Run ShellCheck on changed files

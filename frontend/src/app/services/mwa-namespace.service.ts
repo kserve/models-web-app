@@ -58,12 +58,19 @@ export class MWANamespaceService {
         }),
         map(response => {
           const namespaces = response.namespaces || [];
+          let autoSelected: string | undefined;
+          if (namespaces.length > 0) {
+            if (namespaces.includes('default')) {
+              autoSelected = 'default';
+            } else {
+              autoSelected = namespaces[0];
+            }
+          }
           const config: MWANamespaceConfig = {
             namespaces: namespaces,
             allowedNamespaces: namespaces,
             isSingleNamespace: namespaces.length === 1,
-            autoSelectedNamespace:
-              namespaces.length === 1 ? namespaces[0] : undefined,
+            autoSelectedNamespace: autoSelected,
           };
           return config;
         }),
@@ -71,8 +78,8 @@ export class MWANamespaceService {
           this._namespaceConfig$.next(config);
           this._isInitialized = true;
 
-          // Auto-select the namespace if it's a single namespace mode
-          if (config.isSingleNamespace && config.autoSelectedNamespace) {
+          // Auto-select the namespace
+          if (config.autoSelectedNamespace) {
             this.setSelectedNamespace(config.autoSelectedNamespace);
           }
         }),
@@ -125,6 +132,12 @@ export class MWANamespaceService {
    */
   public initialize(): Observable<string> {
     return this.getNamespaceConfig().pipe(
+      tap(config => {
+        // Auto-select the namespace if available
+        if (config.autoSelectedNamespace) {
+          this.setSelectedNamespace(config.autoSelectedNamespace);
+        }
+      }),
       map(config => {
         // Return the auto-selected namespace or empty string
         return config.autoSelectedNamespace || this._selectedNamespace$.value;

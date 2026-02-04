@@ -1,0 +1,24 @@
+<div class="lib-content-wrapper">
+  <lib-title-actions-toolbar
+    title="InferenceGraphs"
+    [buttons]="buttons"
+    i18n-title
+  >
+    <app-namespace-select></app-namespace-select>
+
+    <lib-namespace-select
+      *ngIf="(ns.dashboardConnected$ | async) === dashboardDisconnectedState"
+      style="display: none"
+    >
+    </lib-namespace-select>
+  </lib-title-actions-toolbar>
+
+  <div class="page-padding lib-flex-grow lib-overflow-auto">
+    <lib-table
+      [config]="config"
+      [data]="inferenceGraphs"
+      [trackByFn]="inferenceGraphTrackByFn"
+      (actionsEmitter)="reactToAction($event)"
+    ></lib-table>
+  </div>
+</div>

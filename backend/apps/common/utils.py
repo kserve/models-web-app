@@ -31,7 +31,7 @@ def load_inference_service_template(**kwargs):
 # kubernetes mode
 
 
-def get_raw_inference_service_pods(svc, components=[]):
+def get_standard_inference_service_pods(svc, components=[]):
     """
     Return a dictionary with (endpoint, component) keys
     i.e. ("default", "predictor") and a list of pod names as values
@@ -169,17 +169,21 @@ def get_components_revisions_dict(components, svc):
     return revisions_dict
 
 
-def is_raw_deployment(svc):
+def is_standard_deployment(svc):
     """
-    Check if an InferenceService is using RawDeployment mode.
+    Check if an InferenceService is using Standard or RawDeployment (Legacy) mode.
 
-    Returns True if the service uses RawDeployment, False for Serverless mode.
+    Returns True if the service uses Standard or RawDeployment (Legacy) mode, False for Serverless mode.
     """
     annotations = svc.get("metadata", {}).get("annotations", {})
 
     # Check for the new KServe annotation
     deployment_mode = annotations.get("serving.kserve.io/deploymentMode", "")
-    if deployment_mode.lower() == "rawdeployment":
+    deployment_mode = deployment_mode.lower()
+    if deployment_mode in [
+        "rawdeployment",
+        "standard",
+    ]:  # "rawdeployment" is still supported for backward compatibility
         return True
 
     # Check for legacy annotation (backward compatibility)
@@ -205,19 +209,19 @@ def get_deployment_mode(svc):
     """
     Get the deployment mode of an InferenceService.
 
-    Returns one of: "ModelMesh", "RawDeployment", "Serverless"
+    Returns one of: "ModelMesh", "Standard", "Serverless"
     """
     if is_modelmesh_deployment(svc):
         return "ModelMesh"
-    elif is_raw_deployment(svc):
-        return "RawDeployment"
+    elif is_standard_deployment(svc):
+        return "Standard"
     else:
         return "Serverless"
 
 
-def get_raw_deployment_objects(svc, component):
+def get_standard_deployment_objects(svc, component):
     """
-    Get Kubernetes native resources for a RawDeployment InferenceService
+    Get Kubernetes native resources for a Standard InferenceService
     component.
 
     Returns a dictionary with deployment, service, and hpa objects.
@@ -225,7 +229,7 @@ def get_raw_deployment_objects(svc, component):
     namespace = svc["metadata"]["namespace"]
     svc_name = svc["metadata"]["name"]
 
-    # RawDeployment resources follow naming convention: {isvc-name}-{component}
+    # Standard resources follow naming convention: {isvc-name}-{component}
     resource_name = f"{svc_name}-{component}"
 
     objects = {

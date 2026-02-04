@@ -52,8 +52,8 @@ def get_inference_service_logs(svc):
     if deployment_mode == "ModelMesh":
         # For ModelMesh, get logs from modelmesh-serving deployment
         component_pods_dict = utils.get_modelmesh_pods(svc, components)
-    elif deployment_mode == "RawDeployment":
-        component_pods_dict = utils.get_raw_inference_service_pods(svc, components)
+    elif deployment_mode == "Standard":
+        component_pods_dict = utils.get_standard_inference_service_pods(svc, components)
     else:
         # Serverless mode
         component_pods_dict = utils.get_inference_service_pods(svc, components)
@@ -122,7 +122,7 @@ def get_inference_service_events(namespace, name):
     )
 
 
-# RawDeployment mode endpoints
+# Standard mode endpoints
 @bp.route("/api/namespaces/<namespace>/deployments/<name>")
 def get_kubernetes_deployment(namespace, name):
     """Return a Kubernetes Deployment object as json."""
@@ -149,20 +149,20 @@ def get_kubernetes_hpa(namespace, name):
 
 
 @bp.route(
-    "/api/namespaces/<namespace>/inferenceservices/<name>/" "rawdeployment/<component>"
+    "/api/namespaces/<namespace>/inferenceservices/<name>/" "standard/<component>"
 )
-def get_raw_deployment_objects(namespace, name, component):
-    """Return all Kubernetes native resources for a RawDeployment component."""
+def get_standard_deployment_objects(namespace, name, component):
+    """Return all Kubernetes native resources for a Standard component."""
 
     inference_service = api.get_custom_rsrc(
         **versions.inference_service_gvk(), namespace=namespace, name=name
     )
 
-    if not utils.is_raw_deployment(inference_service):
-        return api.error_response("InferenceService is not in RawDeployment mode", 400)
+    if not utils.is_standard_deployment(inference_service):
+        return api.error_response("InferenceService is not in Standard mode", 400)
 
-    objects = utils.get_raw_deployment_objects(inference_service, component)
-    return api.success_response("rawDeploymentObjects", objects)
+    objects = utils.get_standard_deployment_objects(inference_service, component)
+    return api.success_response("standardDeploymentObjects", objects)
 
 
 @bp.route(

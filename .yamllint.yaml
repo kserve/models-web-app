@@ -7,10 +7,10 @@ rules:
   document-end:
     present: false
   indentation:
-    indent-sequences: false
+    indent-sequences: consistent
   line-length:
     max: 400
   truthy:
-    allowed-values: ['on', 'off', 'true', 'false']
-  empty-lines: 
+    allowed-values: ["on", "off", "true", "false"]
+  empty-lines:
     level: warning

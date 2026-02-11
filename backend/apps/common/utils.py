@@ -357,7 +357,9 @@ def _get_k8s_object(namespace, name, group, version, kind):
         return None
 
 
-def get_component_latest_pod(svc: Dict, component: str) -> Union[api.client.V1Pod, None]:
+def get_component_latest_pod(
+    svc: Dict, component: str
+) -> Union[api.client.V1Pod, None]:
     """Get pod of the latest Knative revision for the given component.
 
     Return:
@@ -394,15 +396,21 @@ def get_component_latest_revision(svc: Dict, component: str) -> Union[str, None]
     status = svc.get("status", {})
 
     if "components" not in status:
-        log.info(f"Components field not found in status object of {svc['metadata']['name']}")
+        log.info(
+            f"Components field not found in status object of {svc['metadata']['name']}"
+        )
         return None
 
     if component not in status["components"]:
-        log.info(f"Component {component} not found in inference service {svc['metadata']['name']}")
+        log.info(
+            f"Component {component} not found in inference service {svc['metadata']['name']}"
+        )
         return None
 
     if LATEST_CREATED_REVISION in status["components"][component]:
         return status["components"][component][LATEST_CREATED_REVISION]
 
-    log.info(f"No {LATEST_CREATED_REVISION} found for the {component} in {svc['metadata']['name']}")
+    log.info(
+        f"No {LATEST_CREATED_REVISION} found for the {component} in {svc['metadata']['name']}"
+    )
     return None

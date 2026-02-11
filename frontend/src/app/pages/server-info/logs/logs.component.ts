@@ -29,15 +29,15 @@ export class LogsComponent implements OnDestroy {
   private currentContainer: string;
   private hasLoadedContainers = false;
 
-  @ViewChild('componentTabGroup', {static: false}) componentTabGroup;
-  @ViewChild('containerTabGroup', {static: false}) containerTabGroup;
+  @ViewChild('componentTabGroup', { static: false }) componentTabGroup;
+  @ViewChild('containerTabGroup', { static: false }) containerTabGroup;
 
   get components() {
     return Object.keys(this.isvcComponents);
   }
 
   @Input()
-  set svc(s: InferenceServiceK8s) {
+  set inferenceService(s: InferenceServiceK8s) {
     this.svcPrv = s;
 
     if (!s) {
@@ -53,21 +53,23 @@ export class LogsComponent implements OnDestroy {
         continue;
       }
 
-      this.isvcComponents[component] = {containers: []};
+      this.isvcComponents[component] = { containers: [] };
 
-      this.backend.getInferenceServiceContainers(this.svcPrv, component).subscribe(
-        containers => {
-          if (!this.hasLoadedContainers) {
-            this.currentComponent = component;
-            this.currentContainer = containers[0];
-            this.hasLoadedContainers = true;
-          }
-          this.isvcComponents[component].containers = containers;
-        },
-        error => {
-          console.log(`error getting ${component} containers'`, error);
-        },
-      );
+      this.backend
+        .getInferenceServiceContainers(this.svcPrv, component)
+        .subscribe(
+          containers => {
+            if (!this.hasLoadedContainers) {
+              this.currentComponent = component;
+              this.currentContainer = containers[0];
+              this.hasLoadedContainers = true;
+            }
+            this.isvcComponents[component].containers = containers;
+          },
+          error => {
+            console.log(`error getting ${component} containers'`, error);
+          },
+        );
     }
 
     this.pollingSub = this.poller.start().subscribe(() => {
@@ -75,18 +77,24 @@ export class LogsComponent implements OnDestroy {
         return;
       }
 
-      this.backend.getInferenceServiceLogs(this.svcPrv, this.currentComponent, this.currentContainer).subscribe(
-        logs => {
-          this.currLogs = logs;
-          this.logsRequestCompleted = true;
-          this.loadErrorMsg = '';
-        },
-        error => {
-          this.currLogs = [];
-          this.logsRequestCompleted = true;
-          this.loadErrorMsg = error;
-        },
-      );
+      this.backend
+        .getInferenceServiceLogs(
+          this.svcPrv,
+          this.currentComponent,
+          this.currentContainer,
+        )
+        .subscribe(
+          logs => {
+            this.currLogs = logs;
+            this.logsRequestCompleted = true;
+            this.loadErrorMsg = '';
+          },
+          error => {
+            this.currLogs = [];
+            this.logsRequestCompleted = true;
+            this.loadErrorMsg = error;
+          },
+        );
     });
   }
 
@@ -110,19 +118,28 @@ export class LogsComponent implements OnDestroy {
   componentTabChange(index: number) {
     this.currentComponent = Object.keys(this.isvcComponents)[index];
 
-    if (!(this.currentContainer in this.isvcComponents[this.currentComponent].containers)) {
-      this.currentContainer = this.isvcComponents[this.currentComponent].containers[0];
+    if (
+      !(
+        this.currentContainer in
+        this.isvcComponents[this.currentComponent].containers
+      )
+    ) {
+      this.currentContainer =
+        this.isvcComponents[this.currentComponent].containers[0];
     }
 
     this.resetLogDisplay();
   }
 
   containerTabChange(index: number) {
-    this.currentContainer = this.isvcComponents[this.currentComponent].containers[index];
+    this.currentContainer =
+      this.isvcComponents[this.currentComponent].containers[index];
     this.resetLogDisplay();
   }
 
   ngOnDestroy() {
-    this.pollingSub.unsubscribe();
+    if (this.pollingSub) {
+      this.pollingSub.unsubscribe();
+    }
   }
 }

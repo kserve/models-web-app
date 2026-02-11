@@ -6,8 +6,9 @@ import {
   KubeflowModule,
   PanelModule,
   LoadingSpinnerModule,
-  LogsViewerModule,
+  IconModule,
 } from 'kubeflow';
+import { LogsViewerModule } from './logs-viewer/logs-viewer.module';
 
 @NgModule({
   declarations: [LogsComponent],
@@ -18,6 +19,7 @@ import {
     MatTabsModule,
     LoadingSpinnerModule,
     PanelModule,
+    IconModule,
   ],
   exports: [LogsComponent],
 })

@@ -1,41 +1,63 @@
-<ng-container>
-  <lib-panel class="lib-panel">
-    Logs are shown for the latest created revision
-  </lib-panel>
-</ng-container>
+<div class="logs-container">
+  <div class="logs-header">
+    <div class="logs-title">Logs</div>
+  </div>
 
-<ng-container>
   <mat-tab-group
     #componentTabGroup
     (selectedTabChange)="componentTabChange(componentTabGroup.selectedIndex)"
-    class="page-placement"
-    dynamicHeight
+    class="component-tabs"
     animationDuration="0ms"
   >
-    <mat-tab *ngFor="let component of components" label="{{ component | titlecase }}">
+    <mat-tab
+      *ngFor="let component of components"
+      label="{{ component | titlecase }}"
+    >
       <ng-template matTabContent>
         <mat-tab-group
           #containerTabGroup
-          (selectedTabChange)="containerTabChange(containerTabGroup.selectedIndex)"
-          class="page-placement"
-          dynamicHeight
+          (selectedTabChange)="
+            containerTabChange(containerTabGroup.selectedIndex)
+          "
+          class="container-tabs"
           animationDuration="0ms"
         >
-          <mat-tab *ngFor="let container of isvcComponents[component].containers" label="{{ container }}"></mat-tab>
+          <mat-tab
+            *ngFor="let container of isvcComponents[component].containers"
+            label="{{ container }}"
+          >
+            <ng-template matTabContent>
+              <div class="log-viewer-wrapper">
+                <lib-loading-spinner
+                  *ngIf="!logsRequestCompleted"
+                  class="spinner-overlay"
+                ></lib-loading-spinner>
+
+                <div *ngIf="loadErrorMsg.length" class="error-msg">
+                  <lib-icon [icon]="'warning'" class="warn-icon"></lib-icon>
+                  <span>{{ loadErrorMsg }}</span>
+                </div>
+
+                <app-logs-viewer
+                  *ngIf="currLogs.length"
+                  [logs]="currLogs"
+                ></app-logs-viewer>
+
+                <div
+                  *ngIf="
+                    logsRequestCompleted &&
+                    !currLogs.length &&
+                    !loadErrorMsg.length
+                  "
+                  class="no-logs"
+                >
+                  No logs available for this container.
+                </div>
+              </div>
+            </ng-template>
+          </mat-tab>
         </mat-tab-group>
       </ng-template>
     </mat-tab>
   </mat-tab-group>
-
-  <lib-loading-spinner *ngIf="!logsRequestCompleted"></lib-loading-spinner>
-
-  <ng-container *ngIf="loadErrorMsg.length">
-    <lib-panel>
-      {{ loadErrorMsg }}
-    </lib-panel>
-  </ng-container>
-
-  <app-logs-viewer *ngIf="currLogs.length"
-    [logs]="currLogs"
-  ></app-logs-viewer>
-</ng-container>
+</div>

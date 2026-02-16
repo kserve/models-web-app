@@ -63,6 +63,8 @@ The following is a list of environment variables that can be set for any web app
 | GRAFANA_CPU_MEMORY_DB | db/knative-serving-revision-cpu-and-memory-usage | Grafana dashboard name for CPU and memory metrics |
 | GRAFANA_HTTP_REQUESTS_DB | db/knative-serving-revision-http-requests | Grafana dashboard name for HTTP request metrics |
 | ALLOWED_NAMESPACES | "" | Comma-separated list of namespaces to allow access to. If empty, all namespaces are accessible. Single namespace auto-selects and hides dropdown. |
+| JWT_WARNING_THRESHOLD | 16000 | Size threshold (bytes) for logging warnings about large JWT tokens |
+| JWT_ERROR_THRESHOLD | 28000 | Size threshold (bytes) for rejecting requests with oversized JWT tokens |
 
 ## Namespace Filtering Configuration
 
@@ -216,3 +218,28 @@ KUBEFLOW_REPOSITORY="/path/to/kubeflow/notebooks" make -C backend install-deps
 # run the backend
 make -C backend run-dev
 ```
+
+## Known Issues
+
+### Large JWT Tokens with oauth2-proxy
+
+Users with large JWT tokens (common with Azure AD and extensive group memberships) may encounter request failures.
+
+**Symptoms:**
+- Silent request failures or generic errors
+- Issues more common in corporate environments
+
+**Solution:**
+The deployment includes Gunicorn configuration to handle larger headers:
+
+```yaml
+env:
+  - name: GUNICORN_CMD_ARGS
+    value: --limit-request-field_size 32000
+```
+
+**Additional configuration:**
+- `JWT_WARNING_THRESHOLD`: Log warnings for large tokens (default: 16000)
+- `JWT_ERROR_THRESHOLD`: Reject oversized tokens (default: 28000)
+
+Reference: [oauth2-proxy known issues](https://github.com/kubeflow/manifests/tree/master/common/oauth2-proxy#known-issues)

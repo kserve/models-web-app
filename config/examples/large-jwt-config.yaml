@@ -1,0 +1,28 @@
+# Configuration for large JWT token handling
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kserve-models-web-app-config
+  namespace: kserve
+data:
+  APP_PREFIX: "/models"
+  JWT_WARNING_THRESHOLD: "16000"
+  JWT_ERROR_THRESHOLD: "28000"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kserve-models-web-app
+  namespace: kserve
+spec:
+  template:
+    spec:
+      containers:
+      - name: kserve-models-web-app
+        env:
+          - name: GUNICORN_CMD_ARGS
+            value: --limit-request-field_size 32000
+        envFrom:
+          - configMapRef:
+              name: kserve-models-web-app-config

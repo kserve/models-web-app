@@ -23,6 +23,7 @@ def get_config():
             "grafanaHttpRequestsDb": os.environ.get(
                 "GRAFANA_HTTP_REQUESTS_DB", "db/knative-serving-revision-http-requests"
             ),
+            "sseEnabled": os.environ.get("SSE_ENABLED", "true").lower() == "true",
         }
 
         log.info("Configuration requested: %s", config)

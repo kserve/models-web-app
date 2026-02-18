@@ -51,6 +51,7 @@ export class ConfigService extends BackendService {
       grafanaPrefix: '/grafana',
       grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
       grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
+      sseEnabled: true,
     };
   }
 

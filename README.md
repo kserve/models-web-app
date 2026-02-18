@@ -63,8 +63,6 @@ The following is a list of environment variables that can be set for any web app
 | GRAFANA_CPU_MEMORY_DB | db/knative-serving-revision-cpu-and-memory-usage | Grafana dashboard name for CPU and memory metrics |
 | GRAFANA_HTTP_REQUESTS_DB | db/knative-serving-revision-http-requests | Grafana dashboard name for HTTP request metrics |
 | ALLOWED_NAMESPACES | "" | Comma-separated list of namespaces to allow access to. If empty, all namespaces are accessible. Single namespace auto-selects and hides dropdown. |
-| JWT_WARNING_THRESHOLD | 16000 | Size threshold (bytes) for logging warnings about large JWT tokens |
-| JWT_ERROR_THRESHOLD | 28000 | Size threshold (bytes) for rejecting requests with oversized JWT tokens |
 
 ## Namespace Filtering Configuration
 

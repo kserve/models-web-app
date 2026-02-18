@@ -15,9 +15,6 @@ def create_app(name=__name__, static_folder="static", cfg: config.Config = None)
 
     app = base.create_app(name, static_folder, cfg)
 
-    # Register JWT middleware for better error handling
-    register_jwt_middleware(app)
-
     # Register the app's blueprints
     app.register_blueprint(routes_bp)
 

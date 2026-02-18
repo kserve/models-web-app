@@ -5,43 +5,43 @@ declare global {
        * Custom command to select DOM element by data-cy attribute.
        * @example cy.dataCy('greeting')
        */
-      dataCy(value: string): Chainable<JQuery<HTMLElement>>
-      
+      dataCy(value: string): Chainable<JQuery<HTMLElement>>;
+
       /**
        * Custom command to wait for Angular to be ready
        */
-      waitForAngular(): Chainable<void>
+      waitForAngular(): Chainable<void>;
     }
   }
 }
 
 Cypress.Commands.add('dataCy', (value: string) => {
-  return cy.get(`[data-cy=${value}]`)
-})
+  return cy.get(`[data-cy=${value}]`);
+});
 
 Cypress.Commands.add('waitForAngular', () => {
   cy.window().then((win: any) => {
-    return new Cypress.Promise((resolve) => {
+    return new Cypress.Promise(resolve => {
       if (win.getAllAngularTestabilities) {
-        const testabilities = win.getAllAngularTestabilities()
+        const testabilities = win.getAllAngularTestabilities();
         if (testabilities.length === 0) {
-          resolve()
-          return
+          resolve();
+          return;
         }
-        let count = testabilities.length
+        let count = testabilities.length;
         testabilities.forEach((testability: any) => {
           testability.whenStable(() => {
-            count--
+            count--;
             if (count === 0) {
-              resolve()
+              resolve();
             }
-          })
-        })
+          });
+        });
       } else {
-        resolve()
+        resolve();
       }
-    })
-  })
-})
+    });
+  });
+});
 
-export {}
+export {};

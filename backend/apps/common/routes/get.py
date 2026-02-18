@@ -9,6 +9,8 @@ from . import bp
 
 log = logging.getLogger(__name__)
 
+KSERVE_CONTAINER = "kserve-container"
+
 
 @bp.route("/api/namespaces/<namespace>/inferenceservices")
 def get_inference_services(namespace):
@@ -25,12 +27,6 @@ def get_inference_service(namespace, name):
     inference_service = api.get_custom_rsrc(
         **versions.inference_service_gvk(), namespace=namespace, name=name
     )
-    if request.args.get("logs", "false") == "true":
-        # find the logs
-        return api.success_response(
-            "serviceLogs",
-            get_inference_service_logs(inference_service),
-        )
 
     # deployment mode information to the response
     deployment_mode = utils.get_deployment_mode(inference_service)
@@ -39,38 +35,76 @@ def get_inference_service(namespace, name):
     return api.success_response("inferenceService", inference_service)
 
 
-def get_inference_service_logs(svc):
-    """Return all logs for all isvc component pods."""
-    namespace = svc["metadata"]["namespace"]
-    components = request.args.getlist("component")
+@bp.route(
+    "/api/namespaces/<namespace>/inferenceservices/<name>/components/<component>/pods/containers"
+)  # noqa: E501
+def get_inference_service_containers(namespace: str, name: str, component: str):
+    """Get all containers and init-containers for the latest pod of
+    the given component.
 
-    log.info(components)
+    Return:
+        {
+            "containers": ["kserve-container", "container2", ...]
+        }
+    """
+    inference_service = api.get_custom_rsrc(
+        **versions.inference_service_gvk(), namespace=namespace, name=name
+    )
 
-    # Check deployment mode to determine how to get logs
-    deployment_mode = utils.get_deployment_mode(svc)
+    latest_pod = utils.get_component_latest_pod(inference_service, component)
 
-    if deployment_mode == "ModelMesh":
-        # For ModelMesh, get logs from modelmesh-serving deployment
-        component_pods_dict = utils.get_modelmesh_pods(svc, components)
-    elif deployment_mode == "Standard":
-        component_pods_dict = utils.get_standard_inference_service_pods(svc, components)
-    else:
-        # Serverless mode
-        component_pods_dict = utils.get_inference_service_pods(svc, components)
+    if latest_pod is None:
+        return api.failed_response(
+            f"couldn't find latest pod for component: {component}", 404
+        )
 
-    if len(component_pods_dict.keys()) == 0:
-        return {}
+    containers = []
+    if latest_pod.spec.init_containers:
+        for container in latest_pod.spec.init_containers:
+            containers.append(container.name)
 
-    resp = {}
-    logging.info("Component pods: %s", component_pods_dict)
-    for component, pods in component_pods_dict.items():
-        if component not in resp:
-            resp[component] = []
+    for container in latest_pod.spec.containers:
+        containers.append(container.name)
 
-        for pod in pods:
-            logs = api.get_pod_logs(namespace, pod, "kserve-container", auth=False)
-            resp[component].append({"podName": pod, "logs": logs.split("\n")})
-    return resp
+    # Make kserve-container always the first container in the list if it exists
+    try:
+        idx = containers.index(KSERVE_CONTAINER)
+        containers.insert(0, containers.pop(idx))
+    except ValueError:
+        pass
+
+    return api.success_response("containers", containers)
+
+
+@bp.route(
+    "/api/namespaces/<namespace>/inferenceservices/<name>/components/<component>/pods/containers/<container>/logs"
+)  # noqa: E501
+def get_container_logs(namespace: str, name: str, component: str, container: str):
+    """Get logs for a particular container inside the latest pod of
+    the given component
+
+    Logs are split on newline and returned as an array of lines
+
+    Return:
+        {
+            "logs": ["log\n", "text\n", ...]
+        }
+    """
+    inference_service = api.get_custom_rsrc(
+        **versions.inference_service_gvk(), namespace=namespace, name=name
+    )
+    namespace = inference_service["metadata"]["namespace"]
+
+    latest_pod = utils.get_component_latest_pod(inference_service, component)
+    if latest_pod is None:
+        return api.failed_response(
+            f"couldn't find latest pod for component: {component}", 404
+        )
+
+    logs = api.get_pod_logs(namespace, latest_pod.metadata.name, container, auth=False)
+    logs = logs.split("\n")
+
+    return api.success_response("logs", logs)
 
 
 @bp.route("/api/namespaces/<namespace>/knativeServices/<name>")

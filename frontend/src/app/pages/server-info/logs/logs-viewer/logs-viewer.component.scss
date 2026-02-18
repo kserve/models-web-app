@@ -1,0 +1,36 @@
+:host {
+  display: block;
+  height: 500px; /* Fixed height for the scrollable area */
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro',
+    monospace;
+  font-size: 13px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.logs-viewer {
+  height: 100%;
+  width: 100%;
+}
+
+.log-entry {
+  display: flex;
+  white-space: pre-wrap; /* Preserve whitespace but wrap text */
+  padding: 0 10px;
+  line-height: 20px;
+
+  &:hover {
+    background-color: #2a2d2e;
+  }
+}
+
+.number {
+  flex-shrink: 0;
+  width: 40px;
+  text-align: right;
+  margin-right: 15px;
+  color: #858585;
+  user-select: none;
+}

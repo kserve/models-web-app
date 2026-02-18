@@ -1,9 +1,9 @@
 // Mock for Kubeflow imports used in getK8sObjectUiStatus function
 export enum STATUS_TYPE {
-  UNINITIALIZED = "Uninitialized",
-  TERMINATING = "Terminating",
-  WARNING = "Warning",
-  READY = "Ready",
+  UNINITIALIZED = 'Uninitialized',
+  TERMINATING = 'Terminating',
+  WARNING = 'Warning',
+  READY = 'Ready',
 }
 
 // Interface for Kubernetes condition

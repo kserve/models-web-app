@@ -1,12 +1,66 @@
-.margin-bottom {
-  margin-bottom: 2rem;
+.logs-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-.lib-panel {
-  display: block;
-  margin-top: 1rem;
+.logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 10px;
 }
 
-.lib-logs-viewer:first-child {
-  margin-top: 1rem;
+.logs-title {
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.logs-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.log-viewer-wrapper {
+  position: relative;
+  height: 500px; /* Should match the height in logs-viewer.component.scss */
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.spinner-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.error-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #d32f2f;
+  gap: 10px;
+}
+
+.no-logs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+}
+
+/* Override material tab styles if needed */
+::ng-deep .mat-tab-body-wrapper {
+  height: 100%;
+}
+
+.warn-icon {
+  color: #f44336; /* Material Design Red 500 */
 }

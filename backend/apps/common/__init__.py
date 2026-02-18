@@ -4,7 +4,6 @@ import kubeflow.kubeflow.crud_backend as base
 from kubeflow.kubeflow.crud_backend import config, logging
 
 from .routes import bp as routes_bp
-from .jwt_middleware import register_jwt_middleware
 
 log = logging.getLogger(__name__)
 

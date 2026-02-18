@@ -92,7 +92,9 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.pollingSubscription.unsubscribe();
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
+    }
   }
 
   public navigateBack() {
@@ -110,7 +112,6 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
         this.status = getInferenceGraphStatus(graph);
         this.yamlData = dump(graph);
 
-        // Load events
         this.backend.getInferenceGraphEvents(graph).subscribe(
           events => {
             this.events = events || [];

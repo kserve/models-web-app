@@ -1,6 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
+import { ConfigService } from 'src/app/services/config.service';
+import { SSEService } from 'src/app/services/sse.service';
 import { Clipboard } from '@angular/cdk/clipboard';
 import {
   InferenceServiceK8s,
@@ -38,10 +40,12 @@ export class IndexComponent implements OnInit, OnDestroy {
 
   namespaceSubscription = new Subscription();
   pollingSubscription = new Subscription();
+  sseSubscription = new Subscription();
 
   currentNamespace: string | string[];
   config = defaultConfig;
   inferenceServices: InferenceServiceIR[] = [];
+  sseEnabled = false;
 
   dashboardDisconnectedState = DashboardState.Disconnected;
 
@@ -62,6 +66,8 @@ export class IndexComponent implements OnInit, OnDestroy {
     private snack: SnackBarService,
     private router: Router,
     private clipboard: Clipboard,
+    private configService: ConfigService,
+    private sseService: SSEService,
     public ns: NamespaceService,
     public mwaNamespace: MWANamespaceService,
     public poller: PollerService,
@@ -69,6 +75,11 @@ export class IndexComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.mwaNamespace.initialize().subscribe();
+
+    // Check SSE configuration
+    this.configService.getConfig().subscribe(config => {
+      this.sseEnabled = config.sseEnabled !== false;
+    });
 
     // Reset the poller whenever the selected namespace changes
     this.namespaceSubscription = this.mwaNamespace
@@ -85,14 +96,81 @@ export class IndexComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.namespaceSubscription.unsubscribe();
-    this.pollingSubscription.unsubscribe();
+    this.namespaceSubscription?.unsubscribe();
+    this.pollingSubscription?.unsubscribe();
+    this.sseSubscription?.unsubscribe();
   }
 
   public poll(ns: string | string[]) {
-    this.pollingSubscription.unsubscribe();
+    this.pollingSubscription?.unsubscribe();
+    this.sseSubscription?.unsubscribe();
     this.inferenceServices = [];
 
+    if (this.sseEnabled && typeof ns === 'string') {
+      // Use SSE for real-time updates
+      this.sseSubscription = this.sseService
+        .watchInferenceServices<InferenceServiceK8s>(ns)
+        .subscribe(
+          event => {
+            if (event.type === 'INITIAL' && event.items) {
+              this.inferenceServices = this.processIncomingData(event.items);
+            } else if (event.type === 'ADDED' && event.object) {
+              const processed = this.processIncomingData([event.object]);
+              this.inferenceServices = [
+                ...this.inferenceServices,
+                ...processed,
+              ];
+            } else if (
+              event.type === 'MODIFIED' &&
+              event.object &&
+              event.object.metadata
+            ) {
+              const processed = this.processIncomingData([event.object]);
+              if (processed.length > 0) {
+                const index = this.inferenceServices.findIndex(
+                  svc =>
+                    svc.metadata?.name === event.object?.metadata?.name &&
+                    svc.metadata?.namespace ===
+                      event.object?.metadata?.namespace,
+                );
+                if (index !== -1) {
+                  this.inferenceServices[index] = processed[0];
+                  this.inferenceServices = [...this.inferenceServices];
+                }
+              }
+            } else if (
+              event.type === 'DELETED' &&
+              event.object &&
+              event.object.metadata
+            ) {
+              this.inferenceServices = this.inferenceServices.filter(
+                svc =>
+                  !(
+                    svc.metadata?.name === event.object?.metadata?.name &&
+                    svc.metadata?.namespace ===
+                      event.object?.metadata?.namespace
+                  ),
+              );
+            } else if (event.type === 'ERROR') {
+              console.error('SSE error event received:', event.message);
+              this.fallbackToPolling(ns);
+            }
+          },
+          error => {
+            console.error(
+              'SSE connection error, falling back to polling:',
+              error,
+            );
+            this.fallbackToPolling(ns);
+          },
+        );
+    } else {
+      // Use polling
+      this.fallbackToPolling(ns);
+    }
+  }
+
+  private fallbackToPolling(ns: string | string[]) {
     const request = this.backend.getInferenceServices(ns);
 
     this.pollingSubscription = this.poller

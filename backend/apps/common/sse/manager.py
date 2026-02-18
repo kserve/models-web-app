@@ -35,12 +35,10 @@ class SSEConnectionManager:
         watch_key = f"ns:{namespace}"
 
         with self._lock:
-            # Add client to the set
             if watch_key not in self._namespace_clients:
                 self._namespace_clients[watch_key] = set()
             self._namespace_clients[watch_key].add(client_queue)
 
-            # Start watcher if not already running
             if watch_key not in self._namespace_watchers:
                 log.info(f"Starting namespace watch for {namespace}")
 
@@ -65,12 +63,10 @@ class SSEConnectionManager:
         watch_key = f"single:{namespace}:{name}"
 
         with self._lock:
-            # Add client to the set
             if watch_key not in self._single_clients:
                 self._single_clients[watch_key] = set()
             self._single_clients[watch_key].add(client_queue)
 
-            # Start watcher if not already running
             if watch_key not in self._single_watchers:
                 log.info(f"Starting single watch for {namespace}/{name}")
 
@@ -96,7 +92,8 @@ class SSEConnectionManager:
             if watch_key in self._namespace_clients:
                 self._namespace_clients[watch_key].discard(client_queue)
 
-                # If no more clients, stop the watcher
+                # Stop the watcher only when all clients have disconnected
+                # This optimizes resource usage by reusing one watcher for multiple clients
                 if not self._namespace_clients[watch_key]:
                     log.info(f"Stopping namespace watch for {namespace}")
                     del self._namespace_clients[watch_key]
@@ -122,7 +119,8 @@ class SSEConnectionManager:
             if watch_key in self._single_clients:
                 self._single_clients[watch_key].discard(client_queue)
 
-                # If no more clients, stop the watcher
+                # Stop the watcher only when all clients have disconnected
+                # This optimizes resource usage by reusing one watcher for multiple clients
                 if not self._single_clients[watch_key]:
                     log.info(f"Stopping single watch for {namespace}/{name}")
                     del self._single_clients[watch_key]

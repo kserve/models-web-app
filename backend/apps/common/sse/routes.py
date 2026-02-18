@@ -26,7 +26,6 @@ def event_stream(client_queue, timeout=30):
                 message = client_queue.get(timeout=timeout)
                 yield message
             except Empty:
-                # Send a heartbeat to keep connection alive
                 yield ": heartbeat\n\n"
     except GeneratorExit:
         log.info("Client disconnected from SSE stream")
@@ -48,7 +47,6 @@ def stream_inference_services(namespace):
         watcher = InferenceServiceWatcher()
         return watcher.watch_namespace(ns, callback)
 
-    # Register the client with the manager
     sse_manager.register_namespace_watch(namespace, client_queue, watcher_factory)
 
     def generate():
@@ -56,7 +54,6 @@ def stream_inference_services(namespace):
             for event in event_stream(client_queue):
                 yield event
         finally:
-            # Cleanup when client disconnects
             sse_manager.unregister_namespace_watch(namespace, client_queue)
 
     return Response(
@@ -87,7 +84,6 @@ def stream_inference_service(namespace, name):
         watcher = InferenceServiceWatcher()
         return watcher.watch_single(ns, nm, callback)
 
-    # Register the client with the manager
     sse_manager.register_single_watch(namespace, name, client_queue, watcher_factory)
 
     def generate():
@@ -95,7 +91,6 @@ def stream_inference_service(namespace, name):
             for event in event_stream(client_queue):
                 yield event
         finally:
-            # Cleanup when client disconnects
             sse_manager.unregister_single_watch(namespace, name, client_queue)
 
     return Response(
@@ -132,7 +127,6 @@ def stream_events(namespace, name):
         except Exception as e:
             log.error(f"Error sending event: {e}")
 
-    # Start the event watcher
     watcher = EventWatcher()
     watcher.watch_events(namespace, name, callback)
 
@@ -141,7 +135,6 @@ def stream_events(namespace, name):
             for event in event_stream(client_queue):
                 yield event
         finally:
-            # Stop watcher when client disconnects
             watcher.stop()
 
     return Response(
@@ -187,7 +180,6 @@ def stream_logs(namespace, name):
         except Exception as e:
             log.error(f"Error sending log event: {e}")
 
-    # Start the log watcher
     watcher = LogWatcher()
     watcher.watch_logs(namespace, name, components, callback)
 
@@ -196,7 +188,6 @@ def stream_logs(namespace, name):
             for event in event_stream(client_queue):
                 yield event
         finally:
-            # Stop watcher when client disconnects
             watcher.stop()
 
     return Response(

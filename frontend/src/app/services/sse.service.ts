@@ -1,9 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-/**
- * Interface for SSE watch events
- */
 export interface WatchEvent<T> {
   type: 'INITIAL' | 'ADDED' | 'MODIFIED' | 'DELETED' | 'ERROR' | 'UPDATE';
   object?: T;
@@ -12,18 +9,12 @@ export interface WatchEvent<T> {
   message?: string;
 }
 
-/**
- * Service for handling Server-Sent Events (SSE) connections
- */
 @Injectable({
   providedIn: 'root',
 })
 export class SSEService {
   constructor() {}
 
-  /**
-   * Watch all InferenceServices in a namespace
-   */
   public watchInferenceServices<T>(
     namespace: string,
   ): Observable<WatchEvent<T>> {
@@ -31,9 +22,6 @@ export class SSEService {
     return this.createEventSource<T>(url);
   }
 
-  /**
-   * Watch a single InferenceService
-   */
   public watchInferenceService<T>(
     namespace: string,
     name: string,
@@ -42,9 +30,6 @@ export class SSEService {
     return this.createEventSource<T>(url);
   }
 
-  /**
-   * Watch Kubernetes events for an InferenceService
-   */
   public watchEvents<T>(
     namespace: string,
     name: string,
@@ -53,9 +38,6 @@ export class SSEService {
     return this.createEventSource<T>(url);
   }
 
-  /**
-   * Watch logs for an InferenceService
-   */
   public watchLogs(
     namespace: string,
     name: string,
@@ -71,9 +53,6 @@ export class SSEService {
     return this.createEventSource<any>(url);
   }
 
-  /**
-   * Create an EventSource and return an Observable
-   */
   private createEventSource<T>(url: string): Observable<WatchEvent<T>> {
     return new Observable(observer => {
       let eventSource: EventSource;
@@ -92,7 +71,9 @@ export class SSEService {
 
             const data: WatchEvent<T> = JSON.parse(event.data);
             observer.next(data);
-            reconnectAttempts = 0; // Reset on successful message
+            // Reset reconnection counter on successful message reception
+            // This prevents counting transient errors against the limit
+            reconnectAttempts = 0;
           } catch (error) {
             console.error('Error parsing SSE message:', error);
             observer.error(error);
@@ -106,6 +87,7 @@ export class SSEService {
           if (eventSource.readyState === EventSource.CLOSED) {
             reconnectAttempts++;
 
+            // Give up after max reconnection attempts to avoid infinite loops
             if (reconnectAttempts >= maxReconnectAttempts) {
               observer.error(
                 new Error(

@@ -61,7 +61,6 @@ class InferenceServiceWatcher:
 
         while not self._stop_event.is_set():
             try:
-                # Get initial list
                 try:
                     initial_list = api.list_custom_rsrc(**gvk, namespace=namespace)
                     callback("INITIAL", initial_list)
@@ -71,7 +70,6 @@ class InferenceServiceWatcher:
                     time.sleep(5)
                     continue
 
-                # Start watching for changes
                 for event in w.stream(
                     api.list_custom_rsrc,
                     **gvk,
@@ -114,7 +112,6 @@ class InferenceServiceWatcher:
 
         while not self._stop_event.is_set():
             try:
-                # Get initial resource
                 try:
                     initial_obj = api.get_custom_rsrc(
                         **gvk, namespace=namespace, name=name
@@ -128,7 +125,6 @@ class InferenceServiceWatcher:
                     time.sleep(5)
                     continue
 
-                # Watch for changes to this specific resource
                 field_selector = f"metadata.name={name}"
                 for event in w.stream(
                     api.list_custom_rsrc,
@@ -147,7 +143,6 @@ class InferenceServiceWatcher:
                         log.warning(f"Received incomplete event: {event}")
                         continue
 
-                    # Add deployment mode information
                     if isinstance(obj, dict):
                         try:
                             deployment_mode = utils.get_deployment_mode(obj)
@@ -206,7 +201,6 @@ class EventWatcher:
 
         while not self._stop_event.is_set():
             try:
-                # Get initial events
                 field_selector = f"involvedObject.name={name}"
                 try:
                     initial_events = v1.list_namespaced_event(
@@ -224,7 +218,8 @@ class EventWatcher:
                     time.sleep(5)
                     continue
 
-                # Watch for new events
+                # Watch for new events on the specific resource
+                # Events are Kubernetes cluster events (restarts, errors, status changes, etc.)
                 for event in w.stream(
                     v1.list_namespaced_event,
                     namespace=namespace,
@@ -311,10 +306,8 @@ class LogWatcher:
                 gvk = versions.inference_service_gvk()
                 svc = api.get_custom_rsrc(**gvk, namespace=namespace, name=name)
 
-                # Get deployment mode
                 deployment_mode = utils.get_deployment_mode(svc)
 
-                # Get component pods based on deployment mode
                 if deployment_mode == "ModelMesh":
                     component_pods_dict = utils.get_modelmesh_pods(svc, components)
                 elif deployment_mode == "Standard":
@@ -332,7 +325,6 @@ class LogWatcher:
                     time.sleep(5)
                     continue
 
-                # Collect logs from all pods
                 logs_response = {}
                 for component, pods in component_pods_dict.items():
                     if component not in logs_response:

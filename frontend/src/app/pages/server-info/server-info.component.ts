@@ -16,6 +16,7 @@ import {
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { ConfigService } from 'src/app/services/config.service';
+import { SSEService } from 'src/app/services/sse.service';
 import { isEqual } from 'lodash';
 import { generateDeleteConfig } from '../index/config';
 import { HttpClient } from '@angular/common/http';
@@ -40,6 +41,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   public grafanaFound = true;
   public isEditing = false;
   public editingIsvc: InferenceServiceK8s;
+  public sseEnabled = false;
 
   public buttonsConfig: ToolbarButton[] = [
     new ToolbarButton({
@@ -69,6 +71,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     retries: 1,
   });
   private pollingSubscription = new Subscription();
+  private sseSubscription = new Subscription();
 
   constructor(
     private http: HttpClient,
@@ -79,9 +82,15 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     private confirmDialog: ConfirmDialogService,
     private snack: SnackBarService,
     private configService: ConfigService,
+    private sseService: SSEService,
   ) {}
 
   ngOnInit() {
+    // Check SSE configuration
+    this.configService.getConfig().subscribe(config => {
+      this.sseEnabled = config.sseEnabled !== false;
+    });
+
     this.route.params.subscribe(params => {
       console.log($localize`Using namespace: ${params.namespace}`);
       this.ns.updateSelectedNamespace(params.namespace);
@@ -89,9 +98,44 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       this.serverName = params.name;
       this.namespace = params.namespace;
 
-      this.pollingSubscription = this.poller.start().subscribe(() => {
-        this.getBackendObjects();
-      });
+      if (this.sseEnabled) {
+        // Use SSE for real-time updates
+        this.sseSubscription = this.sseService
+          .watchInferenceService<InferenceServiceK8s>(
+            this.namespace,
+            this.serverName,
+          )
+          .subscribe(
+            event => {
+              if (event.type === 'INITIAL' && event.object) {
+                this.updateInferenceService(event.object);
+                this.loadOwnedObjects(event.object);
+              } else if (
+                (event.type === 'MODIFIED' || event.type === 'ADDED') &&
+                event.object
+              ) {
+                this.updateInferenceService(event.object);
+                this.loadOwnedObjects(event.object);
+              } else if (event.type === 'DELETED') {
+                // Resource was deleted, navigate back to list
+                console.log('InferenceService deleted, navigating to index');
+                this.router.navigate(['/']);
+              } else if (event.type === 'ERROR') {
+                console.error('SSE error event received:', event.message);
+                this.startPolling();
+              }
+            },
+            error => {
+              console.error(
+                'SSE connection error, falling back to polling:',
+                error,
+              );
+              this.startPolling();
+            },
+          );
+      } else {
+        this.startPolling();
+      }
     });
 
     // don't show a METRICS tab if Grafana is not exposed
@@ -112,7 +156,34 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.pollingSubscription.unsubscribe();
+    this.pollingSubscription?.unsubscribe();
+    this.sseSubscription?.unsubscribe();
+  }
+
+  private startPolling() {
+    this.pollingSubscription = this.poller.start().subscribe(() => {
+      this.getBackendObjects();
+    });
+  }
+
+  private loadOwnedObjects(inferenceService: InferenceServiceK8s) {
+    const components = ['predictor', 'transformer', 'explainer'];
+    const obs: Observable<[string, string, ComponentOwnedObjects]>[] = [];
+
+    components.forEach(component => {
+      obs.push(this.getOwnedObjects(inferenceService, component));
+    });
+
+    forkJoin(...obs).subscribe(objects => {
+      const ownedObjects = {};
+      for (const obj of objects) {
+        const component = obj[0];
+        ownedObjects[component] = obj[1];
+      }
+
+      this.ownedObjects = ownedObjects;
+      this.serverInfoLoaded = true;
+    });
   }
 
   get status(): Status {
@@ -184,25 +255,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       .getInferenceService(this.namespace, this.serverName)
       .subscribe(inferenceService => {
         this.updateInferenceService(inferenceService);
-
-        const components = ['predictor', 'transformer', 'explainer'];
-        const obs: Observable<[string, string, ComponentOwnedObjects]>[] = [];
-
-        components.forEach(component => {
-          obs.push(this.getOwnedObjects(inferenceService, component));
-        });
-
-        forkJoin(...obs).subscribe(objects => {
-          const ownedObjects = {};
-          for (const obj of objects) {
-            const component = obj[0];
-
-            ownedObjects[component] = obj[1];
-          }
-
-          this.ownedObjects = ownedObjects;
-          this.serverInfoLoaded = true;
-        });
+        this.loadOwnedObjects(inferenceService);
       });
   }
 

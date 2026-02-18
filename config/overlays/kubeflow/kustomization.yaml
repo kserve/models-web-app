@@ -18,6 +18,7 @@ configMapGenerator:
   - USERID_HEADER=kubeflow-userid
   - USERID_PREFIX=""
   - APP_PREFIX=/kserve-endpoints
+  - SSE_ENABLED=true
   - GRAFANA_PREFIX=/grafana
   - GRAFANA_CPU_MEMORY_DB=db/knative-serving-revision-cpu-and-memory-usage
   - GRAFANA_HTTP_REQUESTS_DB=db/knative-serving-revision-http-requests

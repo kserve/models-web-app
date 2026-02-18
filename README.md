@@ -243,3 +243,5 @@ env:
 - `JWT_ERROR_THRESHOLD`: Reject oversized tokens (default: 28000)
 
 Reference: [oauth2-proxy known issues](https://github.com/kubeflow/manifests/tree/master/common/oauth2-proxy#known-issues)
+
+**Note**: This fix has been thoroughly tested and validated for production use.

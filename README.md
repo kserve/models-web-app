@@ -221,25 +221,6 @@ make -C backend run-dev
 
 ### Large JWT Tokens with oauth2-proxy
 
-Users with large JWT tokens (common with Azure AD and extensive group memberships) may encounter request failures.
+Users with large JWT tokens (common with Azure AD and extensive group memberships) may encounter request failures. The deployment includes a Gunicorn configuration (`GUNICORN_CMD_ARGS=--limit-request-field_size 32000`) to handle larger headers.
 
-**Symptoms:**
-- Silent request failures or generic errors
-- Issues more common in corporate environments
-
-**Solution:**
-The deployment includes Gunicorn configuration to handle larger headers:
-
-```yaml
-env:
-  - name: GUNICORN_CMD_ARGS
-    value: --limit-request-field_size 32000
-```
-
-**Additional configuration:**
-- `JWT_WARNING_THRESHOLD`: Log warnings for large tokens (default: 16000)
-- `JWT_ERROR_THRESHOLD`: Reject oversized tokens (default: 28000)
-
-Reference: [oauth2-proxy known issues](https://github.com/kubeflow/manifests/tree/master/common/oauth2-proxy#known-issues)
-
-**Note**: This fix has been thoroughly tested and validated for production use.
+See [oauth2-proxy known issues](https://github.com/kubeflow/manifests/tree/master/common/oauth2-proxy#known-issues) for more details.

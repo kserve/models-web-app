@@ -16,6 +16,8 @@ export interface MWABackendResponse extends BackendResponse {
   hpa?: K8sObject;
   standardDeploymentObjects?: StandardDeploymentObjects;
   modelmeshObjects?: ModelMeshObjects;
+  logs?: string[];
+  containers?: string[];
 }
 
 export interface InferenceServiceLogs {

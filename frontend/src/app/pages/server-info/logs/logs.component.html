@@ -1,50 +1,63 @@
-<lib-loading-spinner *ngIf="!logsRequestCompleted"></lib-loading-spinner>
-
-<!--if no logs are present at all then show a warning message-->
-<ng-container *ngIf="logsRequestCompleted && !logsNotEmpty">
-  <lib-panel class="lib-panel">
-    No logs were found for this InferenceService.
-  </lib-panel>
-</ng-container>
-
-<!--logs loaded successfully from the backend-->
-<ng-container *ngIf="logsRequestCompleted && logsNotEmpty">
-  <ng-container *ngIf="loadErrorMsg">
-    <lib-panel>
-      {{ loadErrorMsg }}
-    </lib-panel>
-  </ng-container>
-
-  <div
-    *ngFor="let podLogs of currentLogs?.predictor; trackBy: logsTrackFn"
-    class="margin-bottom"
-  >
-    <lib-logs-viewer
-      heading="Predictor:"
-      [subHeading]="podLogs.podName"
-      [logs]="podLogs.logs"
-    ></lib-logs-viewer>
+<div class="logs-container">
+  <div class="logs-header">
+    <div class="logs-title">Logs</div>
   </div>
 
-  <div
-    *ngFor="let podLogs of currentLogs?.transformer; trackBy: logsTrackFn"
-    class="margin-bottom"
+  <mat-tab-group
+    #componentTabGroup
+    (selectedTabChange)="componentTabChange(componentTabGroup.selectedIndex)"
+    class="component-tabs"
+    animationDuration="0ms"
   >
-    <lib-logs-viewer
-      heading="Transformer:"
-      [subHeading]="podLogs.podName"
-      [logs]="podLogs.logs"
-    ></lib-logs-viewer>
-  </div>
+    <mat-tab
+      *ngFor="let component of components"
+      label="{{ component | titlecase }}"
+    >
+      <ng-template matTabContent>
+        <mat-tab-group
+          #containerTabGroup
+          (selectedTabChange)="
+            containerTabChange(containerTabGroup.selectedIndex)
+          "
+          class="container-tabs"
+          animationDuration="0ms"
+        >
+          <mat-tab
+            *ngFor="let container of isvcComponents[component].containers"
+            label="{{ container }}"
+          >
+            <ng-template matTabContent>
+              <div class="log-viewer-wrapper">
+                <lib-loading-spinner
+                  *ngIf="!logsRequestCompleted"
+                  class="spinner-overlay"
+                ></lib-loading-spinner>
 
-  <div
-    *ngFor="let podLogs of currentLogs?.explainer; trackBy: logsTrackFn"
-    class="margin-bottom"
-  >
-    <lib-logs-viewer
-      heading="Explainer:"
-      [subHeading]="podLogs.podName"
-      [logs]="podLogs.logs"
-    ></lib-logs-viewer>
-  </div>
-</ng-container>
+                <div *ngIf="loadErrorMsg.length" class="error-msg">
+                  <lib-icon [icon]="'warning'" class="warn-icon"></lib-icon>
+                  <span>{{ loadErrorMsg }}</span>
+                </div>
+
+                <app-logs-viewer
+                  *ngIf="currLogs.length"
+                  [logs]="currLogs"
+                ></app-logs-viewer>
+
+                <div
+                  *ngIf="
+                    logsRequestCompleted &&
+                    !currLogs.length &&
+                    !loadErrorMsg.length
+                  "
+                  class="no-logs"
+                >
+                  No logs available for this container.
+                </div>
+              </div>
+            </ng-template>
+          </mat-tab>
+        </mat-tab-group>
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
+</div>

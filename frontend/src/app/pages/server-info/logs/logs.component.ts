@@ -1,10 +1,4 @@
-import {
-  Component,
-  Input,
-  OnDestroy,
-  OnInit,
-  ViewChild,
-} from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { ConfigService } from 'src/app/services/config.service';
 import { SSEService } from 'src/app/services/sse.service';
@@ -104,10 +98,7 @@ export class LogsComponent implements OnInit, OnDestroy {
             }
           },
           error =>
-            console.error(
-              `Error getting ${component} containers`,
-              error,
-            ),
+            console.error(`Error getting ${component} containers`, error),
         );
     }
 
@@ -128,27 +119,22 @@ export class LogsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.sseSubscription = this.sseService
-      .watchLogs(namespace, name)
-      .subscribe(
-        event => {
-          if (event?.type === 'UPDATE' && event.logs) {
-            this.currLogs = event.logs;
-            this.logsRequestCompleted = true;
-            this.loadErrorMsg = '';
-          } else if (event?.type === 'ERROR') {
-            this.logsRequestCompleted = true;
-            this.loadErrorMsg = event.message || 'Error loading logs';
-          }
-        },
-        error => {
-          console.error(
-            'SSE failed, falling back to polling:',
-            error,
-          );
-          this.startPolling();
-        },
-      );
+    this.sseSubscription = this.sseService.watchLogs(namespace, name).subscribe(
+      event => {
+        if (event?.type === 'UPDATE' && event.logs) {
+          this.currLogs = event.logs;
+          this.logsRequestCompleted = true;
+          this.loadErrorMsg = '';
+        } else if (event?.type === 'ERROR') {
+          this.logsRequestCompleted = true;
+          this.loadErrorMsg = event.message || 'Error loading logs';
+        }
+      },
+      error => {
+        console.error('SSE failed, falling back to polling:', error);
+        this.startPolling();
+      },
+    );
   }
 
   private startPolling() {
@@ -185,8 +171,7 @@ export class LogsComponent implements OnInit, OnDestroy {
 
   componentTabChange(index: number) {
     this.currentComponent = Object.keys(this.isvcComponents)[index];
-    const containers =
-      this.isvcComponents[this.currentComponent]?.containers;
+    const containers = this.isvcComponents[this.currentComponent]?.containers;
 
     if (containers?.length) {
       this.currentContainer = containers[0];
@@ -200,8 +185,7 @@ export class LogsComponent implements OnInit, OnDestroy {
   }
 
   containerTabChange(index: number) {
-    const containers =
-      this.isvcComponents[this.currentComponent]?.containers;
+    const containers = this.isvcComponents[this.currentComponent]?.containers;
 
     if (containers?.length) {
       this.currentContainer = containers[index];

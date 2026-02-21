@@ -21,3 +21,16 @@ def post_inference_service(namespace):
     api.create_custom_rsrc(**gvk, data=cr, namespace=namespace)
 
     return api.success_response("message", "InferenceService successfully created.")
+
+
+@bp.route("/api/namespaces/<namespace>/inferencegraphs", methods=["POST"])
+@decorators.request_is_json_type
+@decorators.required_body_params("apiVersion", "kind", "metadata", "spec")
+def post_inference_graph(namespace):
+    """Handle creation of an InferenceGraph."""
+    cr = request.get_json()
+
+    gvk = versions.inference_graph_gvk()
+    api.create_custom_rsrc(**gvk, data=cr, namespace=namespace)
+
+    return api.success_response("message", "InferenceGraph successfully created.")

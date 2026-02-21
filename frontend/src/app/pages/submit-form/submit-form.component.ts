@@ -40,15 +40,21 @@ export class SubmitFormComponent implements OnInit {
   submit() {
     this.applying = true;
 
-    let cr: InferenceServiceK8s = {};
+    let cr: any = {};
     try {
       cr = load(this.yaml);
     } catch (e) {
       let msg = 'Could not parse the provided YAML';
 
-      if (e.mark && e.mark.line) {
-        msg = 'Error parsing the provided YAML in line: ' + e.mark.line;
+      if (e instanceof Error && e.message) {
+        const lineMatch = e.message.match(/line (\d+)/);
+        if (lineMatch) {
+          msg = `YAML parsing error at line ${lineMatch[1]}: ${e.message}`;
+        } else {
+          msg = `YAML parsing error: ${e.message}`;
+        }
       }
+
       const config: SnackBarConfig = {
         data: {
           msg,
@@ -61,16 +67,59 @@ export class SubmitFormComponent implements OnInit {
       return;
     }
 
-    if (!cr.metadata) {
+    if (!cr) {
       const config: SnackBarConfig = {
         data: {
-          msg: 'InferenceService must have a metadata field.',
+          msg: 'YAML is empty or invalid',
           snackType: SnackType.Error,
         },
         duration: 8000,
       };
       this.snack.open(config);
+      this.applying = false;
+      return;
+    }
 
+    const validationErrors: string[] = [];
+
+    if (!cr.apiVersion) {
+      validationErrors.push('Missing required field: apiVersion');
+    }
+    if (!cr.kind || cr.kind !== 'InferenceService') {
+      validationErrors.push(
+        'Missing or invalid field: kind (must be "InferenceService")',
+      );
+    }
+    if (!cr.metadata) {
+      validationErrors.push('Missing required field: metadata');
+    } else {
+      if (!cr.metadata.name) {
+        validationErrors.push('Missing required field: metadata.name');
+      }
+    }
+    if (!cr.spec) {
+      validationErrors.push('Missing required field: spec');
+    } else {
+      if (!cr.spec.predictor) {
+        validationErrors.push('Missing required field: spec.predictor');
+      } else {
+        if (!cr.spec.predictor.model && !cr.spec.predictor.containers) {
+          validationErrors.push(
+            'spec.predictor must have either "model" or "containers" defined',
+          );
+        }
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      const config: SnackBarConfig = {
+        data: {
+          msg: validationErrors.join(' | '),
+          snackType: SnackType.Error,
+        },
+        duration: 16000,
+      };
+      this.snack.open(config);
       this.applying = false;
       return;
     }
@@ -80,9 +129,40 @@ export class SubmitFormComponent implements OnInit {
 
     this.backend.postInferenceService(cr).subscribe({
       next: () => {
+        const config: SnackBarConfig = {
+          data: {
+            msg: 'InferenceService created successfully.',
+            snackType: SnackType.Success,
+          },
+          duration: 3000,
+        };
+        this.snack.open(config);
+        this.applying = false;
         this.navigateBack();
       },
-      error: () => {
+      error: err => {
+        let errorMsg = 'Failed to create InferenceService';
+
+        if (err?.error?.log) {
+          errorMsg = err.error.log;
+        } else if (err?.error?.message) {
+          errorMsg = err.error.message;
+        } else if (err?.error?.error) {
+          errorMsg = err.error.error;
+        } else if (typeof err?.error === 'string') {
+          errorMsg = err.error;
+        } else if (err?.statusText) {
+          errorMsg = `Server error: ${err.statusText}`;
+        }
+
+        const config: SnackBarConfig = {
+          data: {
+            msg: errorMsg,
+            snackType: SnackType.Error,
+          },
+          duration: 16000,
+        };
+        this.snack.open(config);
         this.applying = false;
       },
     });

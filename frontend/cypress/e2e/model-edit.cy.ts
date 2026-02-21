@@ -34,6 +34,17 @@ describe('Models Web App - Model Edit Tests', () => {
   };
 
   beforeEach(() => {
+    // Mock the configuration API that's loaded during app initialization
+    cy.intercept('GET', '/api/config', {
+      statusCode: 200,
+      body: {
+        grafanaPrefix: '/grafana',
+        grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
+        grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
+        sseEnabled: false,
+      },
+    }).as('getConfig');
+
     // Mock namespaces API
     cy.intercept('GET', '/api/config/namespaces', {
       statusCode: 200,
@@ -127,6 +138,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should load model details page and show edit button', () => {
+    // Wait for config to be loaded first (needed for SSE check)
+    cy.wait('@getConfig');
+
     // Wait for all API calls to complete (required for serverInfoLoaded = true)
     cy.wait('@getInferenceService');
     cy.wait('@getRevision');
@@ -153,6 +167,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should enter edit mode when EDIT button is clicked', () => {
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     // Wait for complete page load
     cy.wait('@getInferenceService');
     cy.wait('@getRevision');
@@ -178,6 +195,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should display YAML content in editor', () => {
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     // Wait for complete page load
     cy.wait('@getInferenceService');
     cy.wait('@getRevision');
@@ -214,6 +234,9 @@ describe('Models Web App - Model Edit Tests', () => {
         },
       },
     ).as('updateInferenceService');
+
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
 
     // Wait for page to load completely
     cy.wait('@getInferenceService');
@@ -267,6 +290,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should cancel edit when cancel button is clicked', () => {
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     // Wait for complete page load
     cy.wait('@getInferenceService');
     cy.wait('@getRevision');
@@ -308,6 +334,9 @@ describe('Models Web App - Model Edit Tests', () => {
       },
     ).as('updateInferenceServiceError');
 
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     // Wait for complete page load
     cy.wait('@getInferenceService');
     cy.wait('@getRevision');
@@ -341,6 +370,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should handle invalid YAML gracefully', () => {
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     // Wait for complete page load
     cy.wait('@getInferenceService');
     cy.wait('@getRevision');
@@ -374,8 +406,15 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should allow navigation back from details page', () => {
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     // Wait for page to load
     cy.wait('@getInferenceService');
+    cy.wait('@getRevision');
+    cy.wait('@getConfiguration');
+    cy.wait('@getKnativeService');
+    cy.wait('@getRoute');
 
     // Click back button
     cy.get('lib-title-actions-toolbar button[mat-icon-button]').first().click();

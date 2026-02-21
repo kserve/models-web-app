@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 bp = Blueprint("sse", __name__)
 
 
-def event_stream(client_queue, timeout=30):
+def event_stream(client_queue, timeout=5):
     """
     Generator function for SSE event stream.
 
@@ -20,12 +20,18 @@ def event_stream(client_queue, timeout=30):
         client_queue: Queue to receive events from
         timeout: Timeout for queue polling (seconds)
     """
+    log.info("event_stream() called")
     try:
         while True:
             try:
+                log.debug(
+                    f"Calling client_queue.get() with timeout={timeout}, qsize={client_queue.qsize()}"
+                )
                 message = client_queue.get(timeout=timeout)
+                log.info(f"Got message from queue: {message[:100]}...")
                 yield message
             except Empty:
+                log.debug("Queue empty, sending heartbeat")
                 yield ": heartbeat\n\n"
     except GeneratorExit:
         log.info("Client disconnected from SSE stream")
@@ -40,22 +46,29 @@ def stream_inference_services(namespace):
         namespace: The namespace to watch
     """
     from . import sse_manager
+    from flask import current_app
 
     client_queue = Queue(maxsize=500)
 
     def watcher_factory(ns, callback):
-        watcher = InferenceServiceWatcher()
+        watcher = InferenceServiceWatcher(app=current_app._get_current_object())
         return watcher.watch_namespace(ns, callback)
 
+    log.info(f"About to register namespace watch for {namespace}")
     sse_manager.register_namespace_watch(namespace, client_queue, watcher_factory)
+    log.info(f"Registered namespace watch for {namespace}, returning Response")
 
     def generate():
+        log.info(f"Generator started for {namespace}")
         try:
             for event in event_stream(client_queue):
+                log.debug(f"Yielding event for {namespace}")
                 yield event
         finally:
+            log.info(f"Generator finished for {namespace}")
             sse_manager.unregister_namespace_watch(namespace, client_queue)
 
+    log.info(f"Creating Response object for {namespace}")
     return Response(
         generate(),
         mimetype="text/event-stream",
@@ -77,11 +90,12 @@ def stream_inference_service(namespace, name):
         name: The name of the resource
     """
     from . import sse_manager
+    from flask import current_app
 
     client_queue = Queue(maxsize=500)
 
     def watcher_factory(ns, nm, callback):
-        watcher = InferenceServiceWatcher()
+        watcher = InferenceServiceWatcher(app=current_app._get_current_object())
         return watcher.watch_single(ns, nm, callback)
 
     sse_manager.register_single_watch(namespace, name, client_queue, watcher_factory)
@@ -113,6 +127,8 @@ def stream_events(namespace, name):
         namespace: The namespace of the resource
         name: The name of the resource
     """
+    from flask import current_app
+
     client_queue = Queue(maxsize=500)
 
     def callback(event_type, obj):
@@ -127,7 +143,7 @@ def stream_events(namespace, name):
         except Exception as e:
             log.error(f"Error sending event: {e}")
 
-    watcher = EventWatcher()
+    watcher = EventWatcher(app=current_app._get_current_object())
     watcher.watch_events(namespace, name, callback)
 
     def generate():
@@ -157,6 +173,8 @@ def stream_logs(namespace, name):
         namespace: The namespace of the resource
         name: The name of the resource
     """
+    from flask import current_app
+
     client_queue = Queue(maxsize=500)
     components = request.args.getlist("component")
 
@@ -180,7 +198,7 @@ def stream_logs(namespace, name):
         except Exception as e:
             log.error(f"Error sending log event: {e}")
 
-    watcher = LogWatcher()
+    watcher = LogWatcher(app=current_app._get_current_object())
     watcher.watch_logs(namespace, name, components, callback)
 
     def generate():

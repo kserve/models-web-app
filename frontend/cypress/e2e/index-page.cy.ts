@@ -7,6 +7,7 @@ describe('Models Web App - Index Page Tests', () => {
         grafanaPrefix: '/grafana',
         grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
         grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
+        sseEnabled: false,
       },
     }).as('getConfig');
 

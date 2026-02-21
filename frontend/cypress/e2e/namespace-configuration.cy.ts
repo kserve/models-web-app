@@ -1,13 +1,13 @@
 describe('Models Web App - Namespace Configuration Tests', () => {
   beforeEach(() => {
-    // Mock the app configuration API
+    // Mock the configuration API that's loaded during app initialization
     cy.intercept('GET', '/api/config', {
       statusCode: 200,
       body: {
         grafanaPrefix: '/grafana',
         grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
         grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
-        sseEnabled: true,
+        sseEnabled: false,
       },
     }).as('getConfig');
 

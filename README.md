@@ -33,8 +33,8 @@ You can apply the mentioned configurations by doing the following commands:
 
 ```bash
 # edit the configmap
-# CONFIG=config/overlays/kubeflow/kustomization.yaml
-CONFIG=config/base/kustomization.yaml
+# CONFIG=manifests/kustomize/overlays/kubeflow/kustomization.yaml
+CONFIG=manifests/kustomize/base/kustomization.yaml
 vim ${CONFIG}
 
 # Add the following env vars to the configMapGenerator's literals
@@ -44,8 +44,8 @@ vim ${CONFIG}
 - APP_SECURE_COOKIES="False"
 
 # reapply the kustomization
-# kustomize build config/overlays/kubeflow | kubectl apply -f -
-kustomize build config/base | kubectl apply -f -
+# kustomize build manifests/kustomize/overlays/kubeflow | kubectl apply -f -
+kustomize build manifests/kustomize/base | kubectl apply -f -
 ```
 
 ## Configuration
@@ -100,17 +100,17 @@ spec:
   template:
     spec:
       containers:
-      - name: kserve-models-web-app
-        env:
-        - name: ALLOWED_NAMESPACES
-          value: "kubeflow-user,kubeflow-admin"
+        - name: kserve-models-web-app
+          env:
+            - name: ALLOWED_NAMESPACES
+              value: "kubeflow-user,kubeflow-admin"
 ```
 
 ## Grafana Configuration
 
 The application supports runtime configuration of Grafana endpoints and dashboard names, allowing you to use custom Grafana instances and dashboard configurations without rebuilding the application.
 
-If you're deploying on Kubernetes with Kustomize, you can set these values in the application's ConfigMap by editing the `config/base/kustomization.yaml` (or your overlay) under `configMapGenerator` for `kserve-models-web-app-config`. Update the following literals as needed:
+If you're deploying on Kubernetes with Kustomize, you can set these values in the application's ConfigMap by editing the `manifests/kustomize/base/kustomization.yaml` (or your overlay) under `configMapGenerator` for `kserve-models-web-app-config`. Update the following literals as needed:
 
 - `GRAFANA_PREFIX` (e.g., `/grafana` or `/custom-grafana`)
 - `GRAFANA_CPU_MEMORY_DB` (e.g., `db/custom-cpu-memory-dashboard`)
@@ -119,7 +119,7 @@ If you're deploying on Kubernetes with Kustomize, you can set these values in th
 After editing, reapply your manifests, for example:
 
 ```bash
-kustomize build config/base | kubectl apply -f -
+kustomize build manifests/kustomize/base | kubectl apply -f -
 ```
 
 ### Configuration API
@@ -131,6 +131,7 @@ curl http://your-app-url/api/config
 ```
 
 Expected response:
+
 ```json
 {
   "grafanaPrefix": "/custom-grafana",

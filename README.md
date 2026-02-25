@@ -216,3 +216,11 @@ KUBEFLOW_REPOSITORY="/path/to/kubeflow/notebooks" make -C backend install-deps
 # run the backend
 make -C backend run-dev
 ```
+
+## Known Issues
+
+### Large JWT Tokens with oauth2-proxy
+
+Users with large JWT tokens (common with Azure AD and extensive group memberships) may encounter request failures. The deployment includes a Gunicorn configuration (`GUNICORN_CMD_ARGS=--limit-request-field_size 32000`) to handle larger headers.
+
+See [oauth2-proxy known issues](https://github.com/kubeflow/manifests/tree/master/common/oauth2-proxy#known-issues) for more details.

@@ -4,6 +4,7 @@ import kubeflow.kubeflow.crud_backend as base
 from kubeflow.kubeflow.crud_backend import config, logging
 
 from .routes import bp as routes_bp
+from .sse import sse_bp
 
 log = logging.getLogger(__name__)
 
@@ -16,5 +17,6 @@ def create_app(name=__name__, static_folder="static", cfg: config.Config = None)
 
     # Register the app's blueprints
     app.register_blueprint(routes_bp)
+    app.register_blueprint(sse_bp)
 
     return app

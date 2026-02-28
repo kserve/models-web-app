@@ -54,7 +54,16 @@ export class IndexComponent implements OnInit, OnDestroy {
     },
   });
 
-  buttons: ToolbarButton[] = [this.newEndpointButton];
+  private viewGraphsButton = new ToolbarButton({
+    text: $localize`View Graphs`,
+    icon: 'account_tree',
+    stroked: true,
+    fn: () => {
+      this.router.navigate(['/inference-graphs']);
+    },
+  });
+
+  buttons: ToolbarButton[] = [this.viewGraphsButton, this.newEndpointButton];
 
   constructor(
     private backend: MWABackendService,
@@ -68,8 +77,6 @@ export class IndexComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.mwaNamespace.initialize().subscribe();
-
     // Reset the poller whenever the selected namespace changes
     this.namespaceSubscription = this.mwaNamespace
       .getSelectedNamespace()
@@ -82,6 +89,9 @@ export class IndexComponent implements OnInit, OnDestroy {
         this.poll(ns);
         this.newEndpointButton.namespaceChanged(ns, $localize`Endpoint`);
       });
+
+    // Initialize after setting up the subscription
+    this.mwaNamespace.initialize().subscribe();
   }
 
   ngOnDestroy() {
@@ -96,10 +106,10 @@ export class IndexComponent implements OnInit, OnDestroy {
     const request = this.backend.getInferenceServices(ns);
 
     this.pollingSubscription = this.poller
-      .exponential(request)
-      .subscribe(svcs => {
+      .exponential(request as any)
+      .subscribe((svcs: any) => {
         this.inferenceServices = this.processIncomingData(svcs);
-      });
+      }) as any;
   }
 
   // action handling functions

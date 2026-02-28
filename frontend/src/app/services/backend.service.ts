@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { InferenceServiceK8s } from '../types/kfserving/v1beta1';
+import { InferenceGraphK8s } from '../types/kfserving/v1alpha1';
 import { MWABackendResponse, InferenceServiceLogs } from '../types/backend';
 import { EventObject } from '../types/event';
 
@@ -12,7 +13,7 @@ import { EventObject } from '../types/event';
 })
 export class MWABackendService extends BackendService {
   constructor(public http: HttpClient, public snack: SnackBarService) {
-    super(http, snack);
+    super(http as any, snack as any);
   }
 
   /*
@@ -51,7 +52,7 @@ export class MWABackendService extends BackendService {
     return this.getObjectsAllNamespaces(
       this.getInferenceServicesSingleNamespace.bind(this),
       namespaces,
-    );
+    ) as any;
   }
 
   public getInferenceServices(
@@ -62,6 +63,68 @@ export class MWABackendService extends BackendService {
     }
 
     return this.getInferenceServicesSingleNamespace(ns);
+  }
+
+  /*
+   * InferenceGraph GETters
+   */
+  public getInferenceGraph(
+    namespace: string,
+    name: string,
+  ): Observable<InferenceGraphK8s> {
+    const url = `api/namespaces/${namespace}/inferencegraphs/${name}`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error)),
+      map((resp: MWABackendResponse) => {
+        return resp.inferenceGraph;
+      }),
+    );
+  }
+
+  private getInferenceGraphsSingleNamespace(
+    namespace: string,
+  ): Observable<InferenceGraphK8s[]> {
+    const url = `api/namespaces/${namespace}/inferencegraphs`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error)),
+      map((resp: MWABackendResponse) => {
+        return resp.inferenceGraphs;
+      }),
+    );
+  }
+
+  private getInferenceGraphsAllNamespaces(
+    namespaces: string[],
+  ): Observable<InferenceGraphK8s[]> {
+    return this.getObjectsAllNamespaces(
+      this.getInferenceGraphsSingleNamespace.bind(this),
+      namespaces,
+    ) as any;
+  }
+
+  public getInferenceGraphs(
+    ns: string | string[],
+  ): Observable<InferenceGraphK8s[]> {
+    if (Array.isArray(ns)) {
+      return this.getInferenceGraphsAllNamespaces(ns);
+    }
+
+    return this.getInferenceGraphsSingleNamespace(ns);
+  }
+
+  public getInferenceGraphEvents(
+    inferenceGraph: InferenceGraphK8s,
+  ): Observable<EventObject[]> {
+    const name = inferenceGraph.metadata.name;
+    const namespace = inferenceGraph.metadata.namespace;
+    const url = `api/namespaces/${namespace}/inferencegraphs/${name}/events`;
+
+    return this.http.get<MWABackendResponse>(url).pipe(
+      catchError(error => this.handleError(error, false)),
+      map((resp: MWABackendResponse) => resp.events),
+    );
   }
 
   public getKnativeService(
@@ -182,6 +245,17 @@ export class MWABackendService extends BackendService {
       .pipe(catchError(error => this.handleError(error)));
   }
 
+  public postInferenceGraph(
+    inferenceGraph: InferenceGraphK8s,
+  ): Observable<MWABackendResponse> {
+    const ns = inferenceGraph.metadata.namespace;
+    const url = `api/namespaces/${ns}/inferencegraphs`;
+
+    return this.http
+      .post<MWABackendResponse>(url, inferenceGraph)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
   /*
    * PUT
    */
@@ -194,6 +268,18 @@ export class MWABackendService extends BackendService {
 
     return this.http
       .put<MWABackendResponse>(url, updatedInferenceService)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
+  public editInferenceGraph(
+    namespace: string,
+    name: string,
+    updatedInferenceGraph: InferenceGraphK8s,
+  ): Observable<MWABackendResponse> {
+    const url = `api/namespaces/${namespace}/inferencegraphs/${name}`;
+
+    return this.http
+      .put<MWABackendResponse>(url, updatedInferenceGraph)
       .pipe(catchError(error => this.handleError(error)));
   }
 
@@ -281,6 +367,18 @@ export class MWABackendService extends BackendService {
     const ns = inferenceService.metadata.namespace;
     const nm = inferenceService.metadata.name;
     const url = `api/namespaces/${ns}/inferenceservices/${nm}`;
+
+    return this.http
+      .delete<MWABackendResponse>(url)
+      .pipe(catchError(error => this.handleError(error, false)));
+  }
+
+  public deleteInferenceGraph(
+    inferenceGraph: InferenceGraphK8s,
+  ): Observable<MWABackendResponse> {
+    const ns = inferenceGraph.metadata.namespace;
+    const nm = inferenceGraph.metadata.name;
+    const url = `api/namespaces/${ns}/inferencegraphs/${nm}`;
 
     return this.http
       .delete<MWABackendResponse>(url)

@@ -21,3 +21,18 @@ def delete_inference_service(inference_service, namespace):
         "message",
         "InferenceService %s/%s successfully deleted." % (namespace, inference_service),
     )
+
+
+@bp.route(
+    "/api/namespaces/<namespace>/inferencegraphs/<inference_graph>",
+    methods=["DELETE"],
+)
+def delete_inference_graph(inference_graph, namespace):
+    """Handle DELETE requests and delete the provided InferenceGraph."""
+    log.info("Deleting InferenceGraph %s/%s'", namespace, inference_graph)
+    gvk = versions.inference_graph_gvk()
+    api.delete_custom_rsrc(**gvk, name=inference_graph, namespace=namespace)
+    return api.success_response(
+        "message",
+        "InferenceGraph %s/%s successfully deleted." % (namespace, inference_graph),
+    )

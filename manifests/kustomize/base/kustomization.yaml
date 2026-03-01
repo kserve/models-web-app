@@ -17,6 +17,8 @@ configMapGenerator:
     name: kserve-models-web-app-config
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+components:
+  - ../components/common
 labels:
   - includeSelectors: true
     pairs:

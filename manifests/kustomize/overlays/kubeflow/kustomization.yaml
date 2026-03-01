@@ -9,9 +9,9 @@ namespace: kubeflow
 generatorOptions:
   disableNameSuffixHash: true
 
-# To make namespace for standalone installation kustomizable,
-# variabalize ingress gateway, webhook service name and
-# kserve namespace in webhook configurations
+# Kubeflow overlay configuration for the kserve-models-web-app:
+# defines the ConfigMap generator, shared configuration, components,
+# and the VirtualService patch used in this environment.
 configMapGenerator:
   - behavior: replace
     literals:
@@ -30,7 +30,6 @@ resources:
 
 components:
   - ../../components/istio
-  - ../../components/common
 labels:
   - includeSelectors: true
     pairs:

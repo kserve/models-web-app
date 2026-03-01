@@ -76,7 +76,7 @@ jobs:
         run: |
           git diff --name-only --diff-filter=AM origin/master...HEAD \
           | grep -v 'upstream' \
-          | grep -E '^common/.*\.ya?ml$|^example/.*\.ya?ml$|^hack/.*\.ya?ml$|^tests/.*\.ya?ml$|^.github/.*\.ya?ml$|^manifests/.*\.ya?ml$' \
+          | grep -E '^common/.*\.ya?ml$|^example/.*\.ya?ml$|^hack/.*\.ya?ml$|^tests/.*\.ya?ml$|^\.github/.*\.ya?ml$|^manifests/.*\.ya?ml$' \
           > changed_files_in_PR.txt || true
           if [ ! -s changed_files_in_PR.txt ]; then
             echo "No YAML files have changed in this PR." > changed_files_in_PR.txt
@@ -125,7 +125,7 @@ jobs:
       - name: Set up changed files
         id: changed_files
         run: |
-          git diff --name-only origin/master...HEAD | grep -E '^[AM].*\.sh$' | grep -v '^applications/' | awk '{print $2}' > changed_files_in_PR.txt || true
+          git diff --name-only --diff-filter=AM origin/master...HEAD -- '*.sh' | grep -v '^applications/' > changed_files_in_PR.txt || true
           if [ ! -s changed_files_in_PR.txt ]; then
             echo "No bash files have changed in this PR."
           fi

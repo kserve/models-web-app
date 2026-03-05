@@ -13,7 +13,7 @@ jobs:
   test-models-web-app:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout models-web-app
+      - name: Checkout Models Web Application
         uses: actions/checkout@v4
         with:
           path: models-web-app
@@ -32,6 +32,23 @@ jobs:
       - name: Create kubeflow namespace
         working-directory: manifests
         run: kustomize build common/kubeflow-namespace/base | kubectl apply -f -
+
+      - name: Create KServe namespace
+        run: kubectl create namespace kserve --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Build and dry-run apply KServe Models Web Application base manifests
+        working-directory: models-web-app
+        run: |
+          kustomize build manifests/kustomize/base | kubectl apply --dry-run=server -f -
+
+      - name: Sync KServe Models Web Application manifests into kubeflow/manifests checkout
+        run: |
+          rm -rf manifests/applications/kserve/models-web-app/base
+          rm -rf manifests/applications/kserve/models-web-app/components
+          rm -rf manifests/applications/kserve/models-web-app/overlays
+          cp -R models-web-app/manifests/kustomize/base manifests/applications/kserve/models-web-app/
+          cp -R models-web-app/manifests/kustomize/components manifests/applications/kserve/models-web-app/
+          cp -R models-web-app/manifests/kustomize/overlays manifests/applications/kserve/models-web-app/
 
       - name: Install Istio CNI
         working-directory: manifests
@@ -70,12 +87,31 @@ jobs:
           kubectl wait --for=condition=Available --timeout=120s deployment/cluster-local-gateway -n istio-system
           sleep 60
 
-      - name: Build and dry-run apply KServe Models Web App base manifests
-        working-directory: models-web-app
+      - name: Wait for KServe Models Web Application deployment
         run: |
-          kustomize build manifests/kustomize/base | kubectl apply --dry-run=server -f -
+          kubectl wait --for=condition=Ready pods --all --all-namespaces --timeout=300s --field-selector=status.phase!=Succeeded
+          kubectl wait --for=condition=Available deployment/kserve-models-web-app -n kubeflow --timeout=60s
+          sleep 10
 
-      - name: Build and apply KServe Models Web App kubeflow overlay manifests
-        working-directory: models-web-app
+      - name: Setup python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Port forward
+        working-directory: manifests
+        run: ./tests/port_forward_gateway.sh
+
+      - name: Run KServe tests
+        run: bash ./models-web-app/manifests/tests/kserve_test.sh kubeflow-user-example-com
+
+      - name: Debug KServe Models Web Application connectivity
+        if: failure()
         run: |
-          kustomize build manifests/kustomize/overlays/kubeflow | kubectl apply -f -
+          kubectl get deployment,service,endpoints,pods -n kubeflow -l app.kubernetes.io/component=kserve-models-web-app || true
+          kubectl describe deployment kserve-models-web-app -n kubeflow || true
+          kubectl logs deployment/kserve-models-web-app -n kubeflow --all-containers=true --tail=200 || true
+
+      - name: Apply Pod Security Standards restricted levels
+        working-directory: manifests
+        run: ./tests/PSS_enable.sh

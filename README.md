@@ -100,10 +100,10 @@ spec:
   template:
     spec:
       containers:
-        - name: kserve-models-web-app
-          env:
-            - name: ALLOWED_NAMESPACES
-              value: "kubeflow-user,kubeflow-admin"
+      - name: kserve-models-web-app
+        env:
+        - name: ALLOWED_NAMESPACES
+          value: "kubeflow-user,kubeflow-admin"
 ```
 
 ## Grafana Configuration
@@ -131,7 +131,6 @@ curl http://your-app-url/api/config
 ```
 
 Expected response:
-
 ```json
 {
   "grafanaPrefix": "/custom-grafana",

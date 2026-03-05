@@ -7,7 +7,3 @@ resources:
 
 patches:
   - path: web-app-sidecar.yaml
-
-labels:
-  - pairs:
-      app.kubernetes.io/component: models-web-app

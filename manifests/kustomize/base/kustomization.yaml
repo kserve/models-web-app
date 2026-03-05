@@ -7,7 +7,7 @@ namespace: kserve
 images:
   - name: kserve/models-web-app
     newName: ghcr.io/kserve/models-web-app
-    newTag: latest
+    newTag: 0.15.0
 configMapGenerator:
   - literals:
       - APP_DISABLE_AUTH="True"
@@ -17,9 +17,8 @@ configMapGenerator:
     name: kserve-models-web-app-config
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-components:
-  - ../components/common
 labels:
   - includeSelectors: true
     pairs:
-      app.kubernetes.io/component: models-web-app
+      app.kubernetes.io/component: kserve-models-web-app
+      kustomize.component: kserve-models-web-app

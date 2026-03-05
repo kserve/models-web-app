@@ -43,6 +43,18 @@ describe('Models Web App - InferenceGraph Tests', () => {
       },
     }).as('getConfig');
 
+    cy.intercept('GET', '/api/namespaces', {
+      statusCode: 200,
+      body: {
+        namespaces: [
+          {
+            name: testNamespace,
+            status: 'Active',
+          },
+        ],
+      },
+    }).as('getNamespacesList');
+
     cy.intercept('GET', '/api/config/namespaces', {
       statusCode: 200,
       body: {
@@ -54,12 +66,16 @@ describe('Models Web App - InferenceGraph Tests', () => {
       statusCode: 200,
       body: [],
     }).as('getInferenceServices');
+
+    cy.intercept('GET', '**/dashboard_lib.bundle.js', { statusCode: 200, body: '' });
   });
 
   it('should load the inference graphs page successfully', () => {
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs`, {
       statusCode: 200,
-      body: [],
+      body: {
+        inferenceGraphs: [],
+      },
     }).as('getInferenceGraphsEmpty');
 
     cy.visit('/inference-graphs');
@@ -72,16 +88,21 @@ describe('Models Web App - InferenceGraph Tests', () => {
   it('should display inference graphs in a table', () => {
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs`, {
       statusCode: 200,
-      body: [mockInferenceGraph],
+      body: {
+        inferenceGraphs: [mockInferenceGraph],
+      },
     }).as('getInferenceGraphs');
 
     cy.visit('/inference-graphs');
     cy.wait('@getConfig');
     cy.wait('@getInferenceGraphs');
 
-    // Wait for table to render with data
+    cy.get('app-inference-graph', { timeout: 10000 }).should('exist');
+    
     cy.get('lib-table', { timeout: 10000 }).should('exist');
-    // Use contains on the page instead of just the table
+    
+    cy.wait(1000);
+    
     cy.contains(testGraphName, { timeout: 10000 }).should('be.visible');
     cy.contains('Sequence', { timeout: 10000 }).should('be.visible');
   });
@@ -89,7 +110,9 @@ describe('Models Web App - InferenceGraph Tests', () => {
   it('should navigate to new graph form', () => {
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs`, {
       statusCode: 200,
-      body: [],
+      body: {
+        inferenceGraphs: [],
+      },
     }).as('getInferenceGraphsEmpty');
 
     cy.visit('/inference-graphs');
@@ -102,16 +125,33 @@ describe('Models Web App - InferenceGraph Tests', () => {
   it('should create a new inference graph', () => {
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs`, {
       statusCode: 200,
-      body: [],
-    }).as('getInferenceGraphsEmpty');
+      body: {
+        inferenceGraphs: [],
+      },
+    }).as('getInferenceGraphsInitial');
 
-    cy.intercept('POST', `/api/namespaces/${testNamespace}/inferencegraphs`, {
-      statusCode: 200,
-      body: mockInferenceGraph,
+    cy.visit('/inference-graphs');
+    cy.wait('@getConfig');
+    cy.wait('@getInferenceGraphsInitial');
+
+    cy.intercept('POST', `/api/namespaces/${testNamespace}/inferencegraphs`, (req) => {
+      req.reply({
+        statusCode: 200,
+        body: {
+          inferenceGraph: mockInferenceGraph,
+        },
+      });
     }).as('createInferenceGraph');
 
-    cy.visit('/new-graph');
-    cy.wait('@getConfig', { timeout: 15000 });
+    cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs`, {
+      statusCode: 200,
+      body: {
+        inferenceGraphs: [mockInferenceGraph],
+      },
+    }).as('getInferenceGraphsAfterCreate');
+
+    cy.contains('button', 'New InferenceGraph').click();
+    cy.url().should('include', '/new-graph');
 
     const yamlContent = `apiVersion: serving.kserve.io/v1alpha1
 kind: InferenceGraph
@@ -128,16 +168,19 @@ spec:
 
     cy.get('textarea.yaml-editor', { timeout: 5000 }).should('be.visible').clear().type(yamlContent, { delay: 0 });
     cy.contains('button', 'CREATE', { timeout: 2000 }).should('be.visible').click();
+    
     cy.wait('@createInferenceGraph', { timeout: 10000 });
 
-    // Wait longer for navigation
     cy.url({ timeout: 15000 }).should('include', '/inference-graphs');
+    cy.url().should('not.include', '/new-graph');
   });
 
   it('should display graph details page', () => {
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs/${testGraphName}`, {
       statusCode: 200,
-      body: mockInferenceGraph,
+      body: {
+        inferenceGraph: mockInferenceGraph,
+      },
     }).as('getInferenceGraph');
 
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs/${testGraphName}/events`, {
@@ -148,8 +191,12 @@ spec:
     cy.visit(`/graph-details/${testNamespace}/${testGraphName}`);
     cy.wait('@getConfig');
     cy.wait('@getInferenceGraph', { timeout: 10000 });
+    cy.wait('@getEvents', { timeout: 10000 });
 
-    // Check for content on the page instead of within specific component
+    cy.get('app-graph-info', { timeout: 10000 }).should('exist');
+    
+    cy.wait(1500);
+
     cy.contains(testGraphName, { timeout: 10000 }).should('be.visible');
     cy.contains('Sequence', { timeout: 10000 }).should('be.visible');
   });
@@ -157,7 +204,9 @@ spec:
   it('should delete graph when confirmed', () => {
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs/${testGraphName}`, {
       statusCode: 200,
-      body: mockInferenceGraph,
+      body: {
+        inferenceGraph: mockInferenceGraph,
+      },
     }).as('getInferenceGraph');
 
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs/${testGraphName}/events`, {
@@ -169,22 +218,33 @@ spec:
       statusCode: 200,
     }).as('deleteInferenceGraph');
 
+    cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs`, {
+      statusCode: 200,
+      body: {
+        inferenceGraphs: [],
+      },
+    }).as('getInferenceGraphsAfterDelete');
+
     cy.visit(`/graph-details/${testNamespace}/${testGraphName}`);
     cy.wait('@getConfig');
     cy.wait('@getInferenceGraph', { timeout: 10000 });
+    cy.wait('@getEvents', { timeout: 10000 });
 
-    // Wait for page to fully load
+    cy.get('app-graph-info', { timeout: 10000 }).should('exist');
+    cy.wait(1000);
+    
     cy.contains(testGraphName, { timeout: 10000 }).should('be.visible');
     
-    // Find and click the delete button
     cy.contains('button', 'DELETE', { timeout: 10000 }).should('be.visible').scrollIntoView().click({ force: true });
     
-    // Wait for dialog and interact with it
     cy.get('mat-dialog-container', { timeout: 10000 }).should('be.visible');
     cy.get('mat-dialog-container').within(() => {
       cy.contains('button', 'DELETE', { timeout: 5000 }).click();
     });
 
     cy.wait('@deleteInferenceGraph', { timeout: 10000 });
+    
+    cy.url({ timeout: 10000 }).should('include', '/inference-graphs');
+    cy.url().should('not.include', '/graph-details');
   });
 });

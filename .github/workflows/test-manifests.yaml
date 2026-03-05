@@ -70,12 +70,36 @@ jobs:
           kubectl wait --for=condition=Available --timeout=120s deployment/cluster-local-gateway -n istio-system
           sleep 60
 
+      - name: Create kserve namespace
+        run: kubectl create namespace kserve --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Build and dry-run apply KServe Models Web App base manifests
         working-directory: models-web-app
         run: |
           kustomize build manifests/kustomize/base | kubectl apply --dry-run=server -f -
 
+      - name: Delete old models-web-app deployment to avoid immutable selector error
+        run: kubectl delete deployment kserve-models-web-app -n kubeflow --ignore-not-found
+
       - name: Build and apply KServe Models Web App kubeflow overlay manifests
         working-directory: models-web-app
         run: |
-          kustomize build manifests/kustomize/overlays/kubeflow | kubectl apply -f -
+          kustomize build manifests/kustomize/overlays/kubeflow | kubectl apply --server-side --force-conflicts -f -
+          kubectl wait --for=condition=Available deployment/kserve-models-web-app -n kubeflow --timeout=120s
+
+      - name: Setup python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Port forward
+        working-directory: manifests
+        run: ./tests/port_forward_gateway.sh
+
+      - name: Run KServe tests
+        working-directory: manifests
+        run: ./tests/kserve_test.sh kubeflow-user-example-com
+
+      - name: Apply Pod Security Standards restricted levels
+        working-directory: manifests
+        run: ./tests/PSS_enable.sh

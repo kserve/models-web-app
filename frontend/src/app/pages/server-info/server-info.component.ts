@@ -16,6 +16,7 @@ import {
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { ConfigService } from 'src/app/services/config.service';
+import { SSEService } from 'src/app/services/sse.service';
 import { isEqual } from 'lodash';
 import { generateDeleteConfig } from '../index/config';
 import { HttpClient } from '@angular/common/http';
@@ -32,14 +33,15 @@ import { getK8sObjectUiStatus } from 'src/app/shared/utils';
   styleUrls: ['./server-info.component.scss'],
 })
 export class ServerInfoComponent implements OnInit, OnDestroy {
-  public serverName: string;
-  public namespace: string;
+  public serverName: string = '';
+  public namespace: string = '';
   public serverInfoLoaded = false;
-  public inferenceService: InferenceServiceK8s;
+  public inferenceService: InferenceServiceK8s | null = null;
   public ownedObjects: InferenceServiceOwnedObjects = {};
   public grafanaFound = true;
   public isEditing = false;
-  public editingIsvc: InferenceServiceK8s;
+  public editingIsvc: InferenceServiceK8s | null = null;
+  public sseEnabled = false;
 
   public buttonsConfig: ToolbarButton[] = [
     new ToolbarButton({
@@ -69,6 +71,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     retries: 1,
   });
   private pollingSubscription = new Subscription();
+  private sseSubscription = new Subscription();
 
   constructor(
     private http: HttpClient,
@@ -79,18 +82,60 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     private confirmDialog: ConfirmDialogService,
     private snack: SnackBarService,
     private configService: ConfigService,
+    private sseService: SSEService,
   ) {}
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
-      console.log($localize`Using namespace: ${params.namespace}`);
-      this.ns.updateSelectedNamespace(params.namespace);
+    // Check SSE configuration first, then process routes
+    this.configService.getConfig().subscribe(config => {
+      this.sseEnabled = config.sseEnabled !== false;
 
-      this.serverName = params.name;
-      this.namespace = params.namespace;
+      // Now that config is loaded, handle route params
+      this.route.params.subscribe(params => {
+        console.log($localize`Using namespace: ${params.namespace}`);
+        this.ns.updateSelectedNamespace(params.namespace);
 
-      this.pollingSubscription = this.poller.start().subscribe(() => {
-        this.getBackendObjects();
+        this.serverName = params.name;
+        this.namespace = params.namespace;
+
+        if (this.sseEnabled) {
+          // Use SSE for real-time updates
+          this.sseSubscription = this.sseService
+            .watchInferenceService<InferenceServiceK8s>(
+              this.namespace,
+              this.serverName,
+            )
+            .subscribe(
+              event => {
+                if (event.type === 'INITIAL' && event.object) {
+                  this.updateInferenceService(event.object);
+                  this.loadOwnedObjects(event.object);
+                } else if (
+                  (event.type === 'MODIFIED' || event.type === 'ADDED') &&
+                  event.object
+                ) {
+                  this.updateInferenceService(event.object);
+                  this.loadOwnedObjects(event.object);
+                } else if (event.type === 'DELETED') {
+                  // Resource was deleted, navigate back to list
+                  console.log('InferenceService deleted, navigating to index');
+                  this.router.navigate(['/']);
+                } else if (event.type === 'ERROR') {
+                  console.error('SSE error event received:', event.message);
+                  this.startPolling();
+                }
+              },
+              error => {
+                console.error(
+                  'SSE connection error, falling back to polling:',
+                  error,
+                );
+                this.startPolling();
+              },
+            );
+        } else {
+          this.startPolling();
+        }
       });
     });
 
@@ -112,11 +157,41 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.pollingSubscription.unsubscribe();
+    this.pollingSubscription?.unsubscribe();
+    this.sseSubscription?.unsubscribe();
+  }
+
+  private startPolling() {
+    this.pollingSubscription?.unsubscribe();
+    this.pollingSubscription = this.poller.start().subscribe(() => {
+      this.getBackendObjects();
+    }) as any;
+  }
+
+  private loadOwnedObjects(inferenceService: InferenceServiceK8s) {
+    const components = ['predictor', 'transformer', 'explainer'];
+    const obs: Observable<[string, string, ComponentOwnedObjects]>[] = [];
+
+    components.forEach(component => {
+      obs.push(this.getOwnedObjects(inferenceService, component));
+    });
+
+    forkJoin(...obs).subscribe(objects => {
+      const ownedObjects: InferenceServiceOwnedObjects = {};
+      for (const obj of objects) {
+        const component: string = obj[0] as string;
+        (ownedObjects as Record<string, any>)[component] = obj[1];
+      }
+
+      this.ownedObjects = ownedObjects;
+      this.serverInfoLoaded = true;
+    });
   }
 
   get status(): Status {
-    return getK8sObjectUiStatus(this.inferenceService);
+    return getK8sObjectUiStatus(
+      this.inferenceService || ({} as InferenceServiceK8s),
+    );
   }
 
   public cancelEdit() {
@@ -130,6 +205,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   public deleteInferenceService() {
     const inferenceService = this.inferenceService;
+    if (!inferenceService) {
+      return;
+    }
     const dialogConfiguration = generateDeleteConfig(inferenceService);
 
     const dialogRef = this.confirmDialog.open(
@@ -184,25 +262,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       .getInferenceService(this.namespace, this.serverName)
       .subscribe(inferenceService => {
         this.updateInferenceService(inferenceService);
-
-        const components = ['predictor', 'transformer', 'explainer'];
-        const obs: Observable<[string, string, ComponentOwnedObjects]>[] = [];
-
-        components.forEach(component => {
-          obs.push(this.getOwnedObjects(inferenceService, component));
-        });
-
-        forkJoin(...obs).subscribe(objects => {
-          const ownedObjects = {};
-          for (const obj of objects) {
-            const component = obj[0];
-
-            ownedObjects[component] = obj[1];
-          }
-
-          this.ownedObjects = ownedObjects;
-          this.serverInfoLoaded = true;
-        });
+        this.loadOwnedObjects(inferenceService);
       });
   }
 
@@ -212,7 +272,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
    * request.
    */
   private updateInferenceService(inferenceService: InferenceServiceK8s) {
-    if (!this.inferenceService) {
+    if (!this.inferenceService || this.inferenceService === null) {
       this.inferenceService = inferenceService;
       return;
     }
@@ -236,7 +296,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   ): Observable<any> {
     if (
       !inferenceService.status ||
-      !inferenceService.status.components[component]
+      !(inferenceService.status.components as Record<string, any>)?.[component]
     ) {
       return of([component, {}]);
     }
@@ -249,7 +309,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       return this.backend
         .getModelMeshObjects(
           this.namespace,
-          inferenceService.metadata.name,
+          inferenceService.metadata?.name || '',
           component,
         )
         .pipe(
@@ -267,7 +327,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       return this.backend
         .getStandardDeploymentObjects(
           this.namespace,
-          inferenceService.metadata.name,
+          inferenceService.metadata?.name || '',
           component,
         )
         .pipe(
@@ -283,20 +343,22 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     } else {
       // Handle Serverless mode
       const revName =
-        inferenceService.status.components[component].latestCreatedRevision;
+        (inferenceService.status?.components as Record<string, any>)?.[
+          component
+        ]?.latestCreatedRevision || '';
       const objects: ComponentOwnedObjects = {
-        revision: undefined,
-        configuration: undefined,
-        knativeService: undefined,
-        route: undefined,
-      };
+        revision: null,
+        configuration: null,
+        knativeService: null,
+        route: null,
+      } as unknown as ComponentOwnedObjects;
 
       return this.backend.getKnativeRevision(this.namespace, revName).pipe(
         tap(r => (objects.revision = r)),
 
         // GET the configuration
         map(r => {
-          return r.metadata.ownerReferences[0].name;
+          return r.metadata?.ownerReferences?.[0]?.name || '';
         }),
         concatMap(confName => {
           return this.backend.getKnativeConfiguration(this.namespace, confName);
@@ -305,22 +367,21 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
         // GET the Knative service
         map(c => {
-          return c.metadata.ownerReferences[0].name;
+          return c.metadata?.ownerReferences?.[0]?.name || '';
         }),
         concatMap(svcName => {
           return this.backend.getKnativeService(this.namespace, svcName);
         }),
-        tap(
-          knativeInferenceService =>
-            (objects.knativeService = knativeInferenceService),
-        ),
+        tap(knativeInferenceService => {
+          objects.knativeService = knativeInferenceService;
+        }),
 
         // GET the Knative route
         map(knativeInferenceService => {
-          return knativeInferenceService.metadata.name;
+          return knativeInferenceService.metadata?.name || '';
         }),
         concatMap(routeName => {
-          return this.backend.getKnativeRoute(this.namespace, routeName);
+          return this.backend.getKnativeRoute(this.namespace, routeName || '');
         }),
         tap(route => (objects.route = route)),
 

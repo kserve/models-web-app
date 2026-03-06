@@ -1,0 +1,105 @@
+name: Test Manifests
+on:
+  pull_request:
+    paths:
+      - manifests/**
+      - .github/workflows/test-manifests.yaml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  test-models-web-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout models-web-app
+        uses: actions/checkout@v4
+        with:
+          path: models-web-app
+
+      - name: Checkout kubeflow/manifests
+        uses: actions/checkout@v4
+        with:
+          repository: kubeflow/manifests
+          path: manifests
+          ref: master
+
+      - name: Install KinD, Create KinD cluster and Install kustomize
+        working-directory: manifests
+        run: ./tests/install_KinD_create_KinD_cluster_install_kustomize.sh
+
+      - name: Create kubeflow namespace
+        working-directory: manifests
+        run: kustomize build common/kubeflow-namespace/base | kubectl apply -f -
+
+      - name: Install Istio CNI
+        working-directory: manifests
+        run: ./tests/istio-cni_install.sh
+
+      - name: Install oauth2-proxy
+        working-directory: manifests
+        run: ./tests/oauth2-proxy_install.sh
+
+      - name: Install cert-manager
+        working-directory: manifests
+        run: ./tests/cert_manager_install.sh
+
+      - name: Install knative CNI
+        working-directory: manifests
+        run: ./tests/knative_install.sh
+
+      - name: Install KServe
+        working-directory: manifests
+        run: ./tests/kserve_install.sh
+
+      - name: Install KF Multi Tenancy
+        working-directory: manifests
+        run: ./tests/multi_tenancy_install.sh
+
+      - name: Install kubeflow-istio-resources
+        working-directory: manifests
+        run: kustomize build common/istio/kubeflow-istio-resources/base | kubectl apply -f -
+
+      - name: Create KF Profile
+        working-directory: manifests
+        run: ./tests/kubeflow_profile_install.sh
+
+      - name: Wait for Istio configurations to propagate
+        run: |
+          kubectl wait --for=condition=Available --timeout=120s deployment/cluster-local-gateway -n istio-system
+          sleep 60
+
+      - name: Create kserve namespace
+        run: kubectl create namespace kserve --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Build and dry-run apply KServe Models Web App base manifests
+        working-directory: models-web-app
+        run: |
+          kustomize build manifests/kustomize/base | kubectl apply --dry-run=server -f -
+
+      - name: Delete old models-web-app deployment to avoid immutable selector error
+        run: kubectl delete deployment kserve-models-web-app -n kubeflow --ignore-not-found
+
+      - name: Build and apply KServe Models Web App kubeflow overlay manifests
+        working-directory: models-web-app
+        run: |
+          kustomize build manifests/kustomize/overlays/kubeflow | kubectl apply --server-side --force-conflicts -f -
+          kubectl wait --for=condition=Available deployment/kserve-models-web-app -n kubeflow --timeout=120s
+
+      - name: Setup python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Port forward
+        working-directory: manifests
+        run: ./tests/port_forward_gateway.sh
+
+      - name: Run KServe tests
+        working-directory: manifests
+        run: ./tests/kserve_test.sh kubeflow-user-example-com
+
+      - name: Apply Pod Security Standards restricted levels
+        working-directory: manifests
+        run: ./tests/PSS_enable.sh

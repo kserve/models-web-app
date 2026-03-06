@@ -40,9 +40,9 @@ export class SubmitFormComponent implements OnInit {
   submit() {
     this.applying = true;
 
-    let cr: any = {};
+    let cr: InferenceServiceK8s;
     try {
-      cr = load(this.yaml);
+      cr = load(this.yaml) as InferenceServiceK8s;
     } catch (e) {
       let msg = 'Could not parse the provided YAML';
 
@@ -124,7 +124,7 @@ export class SubmitFormComponent implements OnInit {
       return;
     }
 
-    cr.metadata.namespace = this.namespace;
+    cr.metadata!.namespace = this.namespace;
     console.log(cr);
 
     this.backend.postInferenceService(cr).subscribe({

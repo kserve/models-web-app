@@ -14,7 +14,6 @@ getTestBed().initTestEnvironment(
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting(),
 );
-// Then we find all the tests (excluding Jest tests which end with .jest.spec.ts).
-const context = require.context('./', true, /^((?!jest).)*\.spec\.ts$/);
+const context = require.context('./', true, /\.spec\.ts$/);
 // And load the modules.
 context.keys().map(context);

@@ -6,7 +6,7 @@ import {
   SnackBarService,
   SnackType,
 } from 'kubeflow';
-import { load, YAMLException } from 'js-yaml';
+import { load } from 'js-yaml';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { MWABackendService } from 'src/app/services/backend.service';
 
@@ -17,19 +17,19 @@ import { MWABackendService } from 'src/app/services/backend.service';
 })
 export class SubmitFormComponent implements OnInit {
   yaml = '';
-  namespace: string;
+  namespace!: string;
   applying = false;
 
   constructor(
     private router: Router,
-    private ns: NamespaceService,
+    private namespaceService: NamespaceService,
     private snack: SnackBarService,
     private backend: MWABackendService,
   ) {}
 
   ngOnInit() {
-    this.ns.getSelectedNamespace().subscribe(ns => {
-      this.namespace = ns;
+    this.namespaceService.getSelectedNamespace().subscribe(namespace => {
+      this.namespace = namespace;
     });
   }
 
@@ -40,9 +40,9 @@ export class SubmitFormComponent implements OnInit {
   submit() {
     this.applying = true;
 
-    let cr: InferenceServiceK8s;
+    let customResource: InferenceServiceK8s;
     try {
-      cr = load(this.yaml) as InferenceServiceK8s;
+      customResource = load(this.yaml) as InferenceServiceK8s;
     } catch (e) {
       let msg = 'Could not parse the provided YAML';
 
@@ -67,7 +67,7 @@ export class SubmitFormComponent implements OnInit {
       return;
     }
 
-    if (!cr) {
+    if (!customResource) {
       const config: SnackBarConfig = {
         data: {
           msg: 'YAML is empty or invalid',
@@ -82,28 +82,31 @@ export class SubmitFormComponent implements OnInit {
 
     const validationErrors: string[] = [];
 
-    if (!cr.apiVersion) {
+    if (!customResource.apiVersion) {
       validationErrors.push('Missing required field: apiVersion');
     }
-    if (!cr.kind || cr.kind !== 'InferenceService') {
+    if (!customResource.kind || customResource.kind !== 'InferenceService') {
       validationErrors.push(
         'Missing or invalid field: kind (must be "InferenceService")',
       );
     }
-    if (!cr.metadata) {
+    if (!customResource.metadata) {
       validationErrors.push('Missing required field: metadata');
     } else {
-      if (!cr.metadata.name) {
+      if (!customResource.metadata.name) {
         validationErrors.push('Missing required field: metadata.name');
       }
     }
-    if (!cr.spec) {
+    if (!customResource.spec) {
       validationErrors.push('Missing required field: spec');
     } else {
-      if (!cr.spec.predictor) {
+      if (!customResource.spec.predictor) {
         validationErrors.push('Missing required field: spec.predictor');
       } else {
-        if (!cr.spec.predictor.model && !cr.spec.predictor.containers) {
+        if (
+          !customResource.spec.predictor.model &&
+          !customResource.spec.predictor.containers
+        ) {
           validationErrors.push(
             'spec.predictor must have either "model" or "containers" defined',
           );
@@ -124,10 +127,9 @@ export class SubmitFormComponent implements OnInit {
       return;
     }
 
-    cr.metadata!.namespace = this.namespace;
-    console.log(cr);
+    customResource.metadata!.namespace = this.namespace;
 
-    this.backend.postInferenceService(cr).subscribe({
+    this.backend.postInferenceService(customResource).subscribe({
       next: () => {
         const config: SnackBarConfig = {
           data: {

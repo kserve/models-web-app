@@ -10,6 +10,10 @@ import { NamespaceService, SnackBarService } from 'kubeflow';
 import { of, throwError } from 'rxjs';
 import { GraphFormComponent } from './graph-form.component';
 import { MWABackendService } from 'src/app/services/backend.service';
+import {
+  InferenceGraphK8s,
+  InferenceRouterType,
+} from 'src/app/types/kfserving/v1alpha1';
 
 const mockInferenceGraph: any = {
   kind: 'InferenceGraph',
@@ -121,6 +125,25 @@ describe('GraphFormComponent (Jest)', () => {
       name: 'test-graph',
     });
 
+    const mockGraph: InferenceGraphK8s = {
+      apiVersion: 'serving.kserve.io/v1alpha1',
+      kind: 'InferenceGraph',
+      metadata: {
+        name: 'test-graph',
+        namespace: 'kubeflow-user',
+      },
+      spec: {
+        nodes: {
+          root: {
+            routerType: InferenceRouterType.Sequence,
+            steps: [{ serviceName: 'test-service' }],
+          },
+        },
+      },
+    };
+
+    mockBackendService.getInferenceGraph.mockReturnValue(of(mockGraph));
+
     component.ngOnInit();
 
     expect(mockBackendService.getInferenceGraph).toHaveBeenCalledWith(
@@ -171,15 +194,22 @@ describe('GraphFormComponent (Jest)', () => {
     expect(mockLocation.back).toHaveBeenCalled();
   });
 
-  it('should clear YAML error when YAML changes', () => {
+  it('should clear YAML error when valid YAML is provided', () => {
     component.yamlError = 'Some error';
-    component.yaml = 'new yaml content';
+    component.yaml = `apiVersion: serving.kserve.io/v1alpha1
+kind: InferenceGraph
+metadata:
+  name: test-graph
+spec:
+  nodes:
+    root:
+      routerType: Sequence`;
     component.onYamlChange();
 
-    expect(component.yamlError).toBeTruthy();
+    expect(component.yamlError).toBeFalsy();
   });
 
-  it('should validate yaml when onYamlChange is called', () => {
+  it('should set YAML error when invalid YAML is provided', () => {
     component.yaml = 'invalid yaml: [[';
     component.onYamlChange();
 

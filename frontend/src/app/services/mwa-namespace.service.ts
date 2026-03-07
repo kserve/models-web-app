@@ -132,12 +132,6 @@ export class MWANamespaceService {
    */
   public initialize(): Observable<string> {
     return this.getNamespaceConfig().pipe(
-      tap(config => {
-        // Auto-select the namespace if available
-        if (config.autoSelectedNamespace) {
-          this.setSelectedNamespace(config.autoSelectedNamespace);
-        }
-      }),
       map(config => {
         // Return the auto-selected namespace or empty string
         return config.autoSelectedNamespace || this._selectedNamespace$.value;

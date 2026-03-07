@@ -112,12 +112,14 @@ export interface InferenceGraphStatus {
 /**
  * Helper function to check if InferenceGraph is ready
  */
-export function isInferenceGraphReady(ig: InferenceGraphK8s): boolean {
-  if (!ig.status?.conditions) {
+export function isInferenceGraphReady(
+  inferenceGraph: InferenceGraphK8s,
+): boolean {
+  if (!inferenceGraph.status?.conditions) {
     return false;
   }
 
-  const readyCondition = ig.status.conditions.find(
+  const readyCondition = inferenceGraph.status.conditions.find(
     (c: Condition) => c.type === 'Ready',
   );
 
@@ -127,9 +129,11 @@ export function isInferenceGraphReady(ig: InferenceGraphK8s): boolean {
 /**
  * Get display status for InferenceGraph
  */
-export function getInferenceGraphStatus(ig: InferenceGraphK8s): Status {
+export function getInferenceGraphStatus(
+  inferenceGraph: InferenceGraphK8s,
+): Status {
   // Check if the InferenceGraph has a creation timestamp (exists in cluster)
-  if (!ig.metadata?.creationTimestamp) {
+  if (!inferenceGraph.metadata?.creationTimestamp) {
     return {
       phase: STATUS_TYPE.UNAVAILABLE,
       state: 'Not Created',
@@ -138,8 +142,11 @@ export function getInferenceGraphStatus(ig: InferenceGraphK8s): Status {
   }
 
   // If status conditions exist, use them for detailed status
-  if (ig.status?.conditions && ig.status.conditions.length > 0) {
-    const readyCondition = ig.status.conditions.find(
+  if (
+    inferenceGraph.status?.conditions &&
+    inferenceGraph.status.conditions.length > 0
+  ) {
+    const readyCondition = inferenceGraph.status.conditions.find(
       (c: Condition) => c.type === 'Ready',
     );
 
@@ -169,30 +176,29 @@ export function getInferenceGraphStatus(ig: InferenceGraphK8s): Status {
     };
   }
 
-  // If no conditions but creation timestamp exists, it's newly created or updating
   return {
-    phase: STATUS_TYPE.READY,
-    state: 'Created',
-    message: 'InferenceGraph successfully created',
+    phase: STATUS_TYPE.WAITING,
+    state: 'Initializing',
+    message: 'InferenceGraph is initializing',
   };
 }
 
 /**
  * Get the root router type for display
  */
-export function getRootRouterType(ig: InferenceGraphK8s): string {
-  if (!ig.spec?.nodes || !ig.spec.nodes['root']) {
+export function getRootRouterType(inferenceGraph: InferenceGraphK8s): string {
+  if (!inferenceGraph.spec?.nodes || !inferenceGraph.spec.nodes['root']) {
     return 'Unknown';
   }
-  return ig.spec.nodes['root'].routerType;
+  return inferenceGraph.spec.nodes['root'].routerType;
 }
 
 /**
  * Count the number of nodes in the graph
  */
-export function getNodeCount(ig: InferenceGraphK8s): number {
-  if (!ig.spec?.nodes) {
+export function getNodeCount(inferenceGraph: InferenceGraphK8s): number {
+  if (!inferenceGraph.spec?.nodes) {
     return 0;
   }
-  return Object.keys(ig.spec.nodes).length;
+  return Object.keys(inferenceGraph.spec.nodes).length;
 }

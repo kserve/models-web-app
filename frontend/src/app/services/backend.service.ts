@@ -56,13 +56,13 @@ export class MWABackendService extends BackendService {
   }
 
   public getInferenceServices(
-    ns: string | string[],
+    namespace: string | string[],
   ): Observable<InferenceServiceK8s[]> {
-    if (Array.isArray(ns)) {
-      return this.getInferenceServicesAllNamespaces(ns);
+    if (Array.isArray(namespace)) {
+      return this.getInferenceServicesAllNamespaces(namespace);
     }
 
-    return this.getInferenceServicesSingleNamespace(ns);
+    return this.getInferenceServicesSingleNamespace(namespace);
   }
 
   /*
@@ -105,20 +105,20 @@ export class MWABackendService extends BackendService {
   }
 
   public getInferenceGraphs(
-    ns: string | string[],
+    namespace: string | string[],
   ): Observable<InferenceGraphK8s[]> {
-    if (Array.isArray(ns)) {
-      return this.getInferenceGraphsAllNamespaces(ns);
+    if (Array.isArray(namespace)) {
+      return this.getInferenceGraphsAllNamespaces(namespace);
     }
 
-    return this.getInferenceGraphsSingleNamespace(ns);
+    return this.getInferenceGraphsSingleNamespace(namespace);
   }
 
   public getInferenceGraphEvents(
     inferenceGraph: InferenceGraphK8s,
   ): Observable<EventObject[]> {
-    const name = inferenceGraph.metadata.name;
-    const namespace = inferenceGraph.metadata.namespace;
+    const name = inferenceGraph.metadata!.name;
+    const namespace = inferenceGraph.metadata!.namespace;
     const url = `api/namespaces/${namespace}/inferencegraphs/${name}/events`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
@@ -248,7 +248,7 @@ export class MWABackendService extends BackendService {
   public postInferenceGraph(
     inferenceGraph: InferenceGraphK8s,
   ): Observable<MWABackendResponse> {
-    const ns = inferenceGraph.metadata.namespace;
+    const ns = inferenceGraph.metadata!.namespace;
     const url = `api/namespaces/${ns}/inferencegraphs`;
 
     return this.http
@@ -376,9 +376,9 @@ export class MWABackendService extends BackendService {
   public deleteInferenceGraph(
     inferenceGraph: InferenceGraphK8s,
   ): Observable<MWABackendResponse> {
-    const ns = inferenceGraph.metadata.namespace;
-    const nm = inferenceGraph.metadata.name;
-    const url = `api/namespaces/${ns}/inferencegraphs/${nm}`;
+    const namespace = inferenceGraph.metadata!.namespace;
+    const name = inferenceGraph.metadata!.name;
+    const url = `api/namespaces/${namespace}/inferencegraphs/${name}`;
 
     return this.http
       .delete<MWABackendResponse>(url)

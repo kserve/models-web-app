@@ -67,7 +67,7 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
     private confirmDialog: ConfirmDialogService,
     private snack: SnackBarService,
     private router: Router,
-    public ns: NamespaceService,
+    public namespaceService: NamespaceService,
     public mwaNamespace: MWANamespaceService,
     public poller: PollerService,
   ) {}
@@ -76,14 +76,17 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
     // Reset the poller whenever the selected namespace changes
     this.namespaceSubscription = this.mwaNamespace
       .getSelectedNamespace()
-      .subscribe(ns => {
-        if (!ns) {
+      .subscribe(namespace => {
+        if (!namespace) {
           return;
         }
 
-        this.currentNamespace = ns;
-        this.poll(ns);
-        this.newGraphButton.namespaceChanged(ns, $localize`InferenceGraph`);
+        this.currentNamespace = namespace;
+        this.poll(namespace);
+        this.newGraphButton.namespaceChanged(
+          namespace,
+          $localize`InferenceGraph`,
+        );
       });
 
     // Initialize after setting up the subscription
@@ -95,20 +98,29 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
     this.pollingSubscription.unsubscribe();
   }
 
-  public poll(ns: string | string[]) {
+  public poll(namespace: string | string[]) {
     this.pollingSubscription.unsubscribe();
     this.inferenceGraphs = [];
 
-    console.log('InferenceGraph: Polling for namespace:', ns);
+    if (!this.env.production) {
+      console.log('InferenceGraph: Polling for namespace:', namespace);
+    }
 
-    const request = this.backend.getInferenceGraphs(ns);
+    const request = this.backend.getInferenceGraphs(namespace);
 
     this.pollingSubscription = this.poller
       .exponential(request as any)
       .subscribe((graphs: InferenceGraphK8s[]) => {
-        console.log('InferenceGraph: Received graphs:', graphs);
+        if (!this.env.production) {
+          console.log('InferenceGraph: Received graphs:', graphs);
+        }
         this.inferenceGraphs = this.processIncomingData(graphs);
-        console.log('InferenceGraph: Processed graphs:', this.inferenceGraphs);
+        if (!this.env.production) {
+          console.log(
+            'InferenceGraph: Processed graphs:',
+            this.inferenceGraphs,
+          );
+        }
       }) as any;
   }
 

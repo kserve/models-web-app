@@ -68,7 +68,7 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private ns: NamespaceService,
+    private namespaceService: NamespaceService,
     private backend: MWABackendService,
     private confirmDialog: ConfirmDialogService,
     private snack: SnackBarService,
@@ -77,7 +77,7 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.route.params.subscribe(params => {
-      this.ns.updateSelectedNamespace(params.namespace);
+      this.namespaceService.updateSelectedNamespace(params.namespace);
 
       this.graphName = params.name;
       this.namespace = params.namespace;
@@ -168,6 +168,9 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
         );
       },
     );
+    dialogRef.afterClosed().subscribe(() => {
+      applyingSub.unsubscribe();
+    });
   }
 
   public getRootRouterType(): string {

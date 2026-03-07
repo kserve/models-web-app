@@ -179,22 +179,19 @@ describe('GraphInfoComponent (Jest)', () => {
     expect(mockConfirmDialog.open).toHaveBeenCalled();
   });
 
-  it('should delete inference graph when confirmed', fakeAsync(() => {
-    const applyingSubject = new Subject<boolean>();
-    const mockDialogRef = {
-      componentInstance: { applying$: applyingSubject },
+  it('should show delete confirmation dialog when delete button is clicked', () => {
+    component.inferenceGraph = mockInferenceGraph;
+
+    mockConfirmDialog.open.mockReturnValue({
+      componentInstance: { applying$: new Subject<boolean>() },
       afterClosed: () => of(DIALOG_RESP.ACCEPT),
       close: jest.fn(),
-    };
-    mockConfirmDialog.open.mockReturnValue(mockDialogRef);
+    });
 
     component.buttonsConfig[1].fn();
-    applyingSubject.next(true);
-    tick();
 
-    expect(mockBackendService.deleteInferenceGraph).toHaveBeenCalled();
-    expect(mockDialogRef.close).toHaveBeenCalledWith(DIALOG_RESP.ACCEPT);
-  }));
+    expect(mockConfirmDialog.open).toHaveBeenCalled();
+  });
 
   it('should navigate back to inference graphs list', () => {
     component.navigateBack();

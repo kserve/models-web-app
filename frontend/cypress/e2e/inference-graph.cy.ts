@@ -101,8 +101,6 @@ describe('Models Web App - InferenceGraph Tests', () => {
     
     cy.get('lib-table', { timeout: 10000 }).should('exist');
     
-    cy.wait(1000);
-    
     cy.contains(testGraphName, { timeout: 10000 }).should('be.visible');
     cy.contains('Sequence', { timeout: 10000 }).should('be.visible');
   });
@@ -195,8 +193,6 @@ spec:
 
     cy.get('app-graph-info', { timeout: 10000 }).should('exist');
     
-    cy.wait(1500);
-
     cy.contains(testGraphName, { timeout: 10000 }).should('be.visible');
     cy.contains('Sequence', { timeout: 10000 }).should('be.visible');
   });

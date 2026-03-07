@@ -6,7 +6,7 @@ import {
   SnackBarService,
   SnackType,
 } from 'kubeflow';
-import { load, YAMLException } from 'js-yaml';
+import { load } from 'js-yaml';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { MWABackendService } from 'src/app/services/backend.service';
 
@@ -17,19 +17,19 @@ import { MWABackendService } from 'src/app/services/backend.service';
 })
 export class SubmitFormComponent implements OnInit {
   yaml = '';
-  namespace: string;
+  namespace!: string;
   applying = false;
 
   constructor(
     private router: Router,
-    private ns: NamespaceService,
+    private namespaceService: NamespaceService,
     private snack: SnackBarService,
     private backend: MWABackendService,
   ) {}
 
   ngOnInit() {
-    this.ns.getSelectedNamespace().subscribe(ns => {
-      this.namespace = ns;
+    this.namespaceService.getSelectedNamespace().subscribe(namespace => {
+      this.namespace = namespace;
     });
   }
 
@@ -40,15 +40,21 @@ export class SubmitFormComponent implements OnInit {
   submit() {
     this.applying = true;
 
-    let cr: InferenceServiceK8s = {};
+    let customResource: InferenceServiceK8s;
     try {
-      cr = load(this.yaml);
+      customResource = load(this.yaml) as InferenceServiceK8s;
     } catch (e) {
       let msg = 'Could not parse the provided YAML';
 
-      if (e.mark && e.mark.line) {
-        msg = 'Error parsing the provided YAML in line: ' + e.mark.line;
+      if (e instanceof Error && e.message) {
+        const lineMatch = e.message.match(/line (\d+)/);
+        if (lineMatch) {
+          msg = `YAML parsing error at line ${lineMatch[1]}: ${e.message}`;
+        } else {
+          msg = `YAML parsing error: ${e.message}`;
+        }
       }
+
       const config: SnackBarConfig = {
         data: {
           msg,
@@ -61,28 +67,104 @@ export class SubmitFormComponent implements OnInit {
       return;
     }
 
-    if (!cr.metadata) {
+    if (!customResource) {
       const config: SnackBarConfig = {
         data: {
-          msg: 'InferenceService must have a metadata field.',
+          msg: 'YAML is empty or invalid',
           snackType: SnackType.Error,
         },
         duration: 8000,
       };
       this.snack.open(config);
-
       this.applying = false;
       return;
     }
 
-    cr.metadata.namespace = this.namespace;
-    console.log(cr);
+    const validationErrors: string[] = [];
 
-    this.backend.postInferenceService(cr).subscribe({
+    if (!customResource.apiVersion) {
+      validationErrors.push('Missing required field: apiVersion');
+    }
+    if (!customResource.kind || customResource.kind !== 'InferenceService') {
+      validationErrors.push(
+        'Missing or invalid field: kind (must be "InferenceService")',
+      );
+    }
+    if (!customResource.metadata) {
+      validationErrors.push('Missing required field: metadata');
+    } else {
+      if (!customResource.metadata.name) {
+        validationErrors.push('Missing required field: metadata.name');
+      }
+    }
+    if (!customResource.spec) {
+      validationErrors.push('Missing required field: spec');
+    } else {
+      if (!customResource.spec.predictor) {
+        validationErrors.push('Missing required field: spec.predictor');
+      } else {
+        if (
+          !customResource.spec.predictor.model &&
+          !customResource.spec.predictor.containers
+        ) {
+          validationErrors.push(
+            'spec.predictor must have either "model" or "containers" defined',
+          );
+        }
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      const config: SnackBarConfig = {
+        data: {
+          msg: validationErrors.join(' | '),
+          snackType: SnackType.Error,
+        },
+        duration: 16000,
+      };
+      this.snack.open(config);
+      this.applying = false;
+      return;
+    }
+
+    customResource.metadata!.namespace = this.namespace;
+
+    this.backend.postInferenceService(customResource).subscribe({
       next: () => {
+        const config: SnackBarConfig = {
+          data: {
+            msg: 'InferenceService created successfully.',
+            snackType: SnackType.Success,
+          },
+          duration: 3000,
+        };
+        this.snack.open(config);
+        this.applying = false;
         this.navigateBack();
       },
-      error: () => {
+      error: err => {
+        let errorMsg = 'Failed to create InferenceService';
+
+        if (err?.error?.log) {
+          errorMsg = err.error.log;
+        } else if (err?.error?.message) {
+          errorMsg = err.error.message;
+        } else if (err?.error?.error) {
+          errorMsg = err.error.error;
+        } else if (typeof err?.error === 'string') {
+          errorMsg = err.error;
+        } else if (err?.statusText) {
+          errorMsg = `Server error: ${err.statusText}`;
+        }
+
+        const config: SnackBarConfig = {
+          data: {
+            msg: errorMsg,
+            snackType: SnackType.Error,
+          },
+          duration: 16000,
+        };
+        this.snack.open(config);
         this.applying = false;
       },
     });

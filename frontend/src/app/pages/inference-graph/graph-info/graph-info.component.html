@@ -1,0 +1,139 @@
+<div class="lib-content-wrapper details-page">
+  <lib-title-actions-toolbar
+    title="InferenceGraph details"
+    [buttons]="buttonsConfig"
+    [backButton]="true"
+    (back)="navigateBack()"
+    class="margin-bottom"
+    i18n-title
+  >
+  </lib-title-actions-toolbar>
+
+  <div class="details-page-outer">
+    <lib-loading-spinner *ngIf="!graphInfoLoaded"></lib-loading-spinner>
+
+    <ng-container *ngIf="graphInfoLoaded">
+      <div class="details-page-inner">
+        <div class="details-page-inner-2">
+          <lib-status-icon
+            class="small-padding-right"
+            [phase]="status.phase"
+          ></lib-status-icon>
+          <div class="title">{{ graphName }}</div>
+        </div>
+        <div class="small-padding-up">
+          <lib-status-info [status]="status"></lib-status-info>
+        </div>
+      </div>
+
+      <mat-tab-group
+        class="page-placement"
+        dynamicHeight
+        animationDuration="0ms"
+      >
+        <mat-tab label="OVERVIEW">
+          <div class="page-padding">
+            <lib-details-list-item key="Name">
+              {{ inferenceGraph.metadata?.name }}
+            </lib-details-list-item>
+            <lib-details-list-item key="Namespace">
+              {{ inferenceGraph.metadata?.namespace }}
+            </lib-details-list-item>
+            <lib-details-list-item key="Created">
+              <lib-date-time
+                [date]="inferenceGraph.metadata?.creationTimestamp"
+              ></lib-date-time>
+            </lib-details-list-item>
+            <lib-details-list-item key="URL" *ngIf="inferenceGraph.status?.url">
+              <a [href]="inferenceGraph.status.url" target="_blank">
+                {{ inferenceGraph.status.url }}
+              </a>
+            </lib-details-list-item>
+            <lib-details-list-item key="Root Router Type">
+              {{ getRootRouterType() }}
+            </lib-details-list-item>
+            <lib-details-list-item key="Node Count">
+              {{ getNodeCount() }}
+            </lib-details-list-item>
+            <h3 class="section-header">Graph Structure</h3>
+            <div *ngFor="let nodeName of getNodeNames()" class="node-section">
+              <h4>Node: {{ nodeName }}</h4>
+              <lib-details-list-item key="Router Type">
+                {{ inferenceGraph.spec?.nodes[nodeName]?.routerType }}
+              </lib-details-list-item>
+
+              <ng-container
+                *ngIf="inferenceGraph.spec?.nodes[nodeName]?.steps as steps"
+              >
+                <h5 *ngIf="steps.length > 0">Steps:</h5>
+                <lib-details-list-item
+                  *ngFor="let step of steps; let i = index"
+                  [key]="'Step ' + (i + 1)"
+                >
+                  {{ getStepDescription(step) }}
+                </lib-details-list-item>
+              </ng-container>
+            </div>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="EVENTS">
+          <div class="page-padding">
+            <div *ngIf="graphInfoLoaded">
+              <div *ngIf="events && events.length > 0" style="overflow-x: auto">
+                <table class="events-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 10%">Type</th>
+                      <th style="width: 15%">Reason</th>
+                      <th style="width: 50%">Message</th>
+                      <th style="width: 25%">Last Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let event of events">
+                      <td>
+                        <span
+                          style="
+                            display: inline-block;
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            background-color: #dbeafe;
+                            color: #1e40af;
+                            font-weight: 600;
+                            font-size: 12px;
+                          "
+                        >
+                          {{ event.type }}
+                        </span>
+                      </td>
+                      <td>{{ event.reason }}</td>
+                      <td>{{ event.message }}</td>
+                      <td style="color: #6b7280; font-size: 12px">
+                        {{ event.lastTimestamp }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div *ngIf="!events || events.length === 0" class="no-events">
+                No events available
+              </div>
+            </div>
+          </div>
+        </mat-tab>
+
+        <mat-tab label="YAML">
+          <div class="yaml-container">
+            <pre *ngIf="graphInfoLoaded && yaml" class="yaml-content">{{
+              yaml
+            }}</pre>
+            <div *ngIf="graphInfoLoaded && !yaml" class="no-events">
+              No YAML content available
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
+    </ng-container>
+  </div>
+</div>

@@ -3,7 +3,7 @@
 import json
 import threading
 from typing import Dict, Set, Callable, Any
-from queue import Queue
+from queue import Queue, Full
 
 from kubeflow.kubeflow.crud_backend import logging
 
@@ -215,84 +215,10 @@ class SSEConnectionManager:
 
         try:
             message = f"data: {json.dumps(event_data)}\n\n"
-            log.info(
-                f"Putting message in queue (qsize before={client_queue.qsize()}): type={event_type}"
+            client_queue.put_nowait(message)
+        except Full:
+            log.warning(
+                f"Client queue full (qsize={client_queue.qsize()}), dropping event type={event_type}"
             )
-            client_queue.put(message)
-            log.info(f"Message put in queue (qsize after={client_queue.qsize()})")
         except Exception as e:
             log.error(f"Error sending event to client: {e}")
-
-    def _broadcast_event(
-        self, watch_key: str, event_type: str, obj: Any, is_namespace: bool = True
-    ):
-        """
-        Broadcast an event to all clients watching a resource.
-
-        Args:
-            watch_key: The watch key (namespace or single resource)
-            event_type: The type of event (ADDED, MODIFIED, DELETED, etc.)
-            obj: The Kubernetes object
-            is_namespace: Whether this is a namespace-scoped watch
-        """
-        log.debug(f"Broadcasting event type={event_type} for key={watch_key}")
-        clients = (
-            self._namespace_clients.get(watch_key, set())
-            if is_namespace
-            else self._single_clients.get(watch_key, set())
-        )
-
-        log.debug(f"Number of clients for {watch_key}: {len(clients)}")
-        if not clients:
-            log.warning(f"No clients registered for {watch_key}")
-            return
-
-        # Validate event data before broadcasting
-        if obj is None:
-            log.warning(
-                f"Received None object for event type {event_type}, skipping broadcast"
-            )
-            return
-
-        # For INITIAL events, extract items from the list response
-        if event_type == "INITIAL" and isinstance(obj, dict) and "items" in obj:
-            event_data = {
-                "type": event_type,
-                "items": obj["items"],
-            }
-        else:
-            event_data = {
-                "type": event_type,
-                "object": obj,
-            }
-
-        try:
-            message = f"data: {json.dumps(event_data)}\n\n"
-            log.debug(
-                f"Successfully serialized event, message length: {len(message)} bytes"
-            )
-        except (TypeError, ValueError) as e:
-            log.error(f"Error serializing event data: {e}", exc_info=True)
-            return
-
-        # Send to all connected clients
-        dead_clients = set()
-        sent_count = 0
-        for client_queue in clients:
-            try:
-                client_queue.put(message)
-                sent_count += 1
-            except Exception as e:
-                log.error(f"Error sending event to client: {e}")
-                dead_clients.add(client_queue)
-
-        log.debug(f"Sent event to {sent_count} clients, {len(dead_clients)} dead")
-
-        # Clean up dead clients
-        if dead_clients:
-            with self._lock:
-                for dead_client in dead_clients:
-                    if is_namespace:
-                        self._namespace_clients[watch_key].discard(dead_client)
-                    else:
-                        self._single_clients[watch_key].discard(dead_client)

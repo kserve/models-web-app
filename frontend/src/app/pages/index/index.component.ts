@@ -1,7 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
-import { ConfigService } from 'src/app/services/config.service';
 import { SSEService } from 'src/app/services/sse.service';
 import { Clipboard } from '@angular/cdk/clipboard';
 import {
@@ -45,7 +44,6 @@ export class IndexComponent implements OnInit, OnDestroy {
   currentNamespace: string | string[] = '';
   config = defaultConfig;
   inferenceServices: InferenceServiceIR[] = [];
-  sseEnabled = false;
 
   dashboardDisconnectedState = DashboardState.Disconnected;
 
@@ -75,7 +73,6 @@ export class IndexComponent implements OnInit, OnDestroy {
     private snack: SnackBarService,
     private router: Router,
     private clipboard: Clipboard,
-    private configService: ConfigService,
     private sseService: SSEService,
     public ns: NamespaceService,
     public mwaNamespace: MWANamespaceService,
@@ -85,11 +82,6 @@ export class IndexComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.mwaNamespace.initialize().subscribe();
-
-    // Check SSE configuration
-    this.configService.getConfig().subscribe(config => {
-      this.sseEnabled = config.sseEnabled !== false;
-    });
 
     // Reset the poller whenever the selected namespace changes
     this.namespaceSubscription = this.mwaNamespace
@@ -112,35 +104,18 @@ export class IndexComponent implements OnInit, OnDestroy {
   }
 
   public poll(ns: string | string[]) {
-    console.log(`[IndexComponent] poll() called for namespace: ${ns}`);
     this.pollingSubscription?.unsubscribe();
     this.sseSubscription?.unsubscribe();
-    console.log(
-      `[IndexComponent] Cleared previous subscriptions, resetting inferenceServices`,
-    );
     this.inferenceServices = [];
 
-    if (this.sseEnabled && typeof ns === 'string') {
+    if (typeof ns === 'string') {
       // Use SSE for real-time updates
-      console.log(`[IndexComponent] Starting SSE for namespace: ${ns}`);
       this.sseSubscription = this.sseService
         .watchInferenceServices<InferenceServiceK8s>(ns)
         .subscribe(
           event => {
-            console.log(
-              `[IndexComponent] Received SSE event:`,
-              event.type,
-              event,
-            );
             if (event.type === 'INITIAL' && event.items) {
-              console.log(
-                `[IndexComponent] Processing INITIAL with ${event.items.length} items`,
-              );
               this.inferenceServices = this.processIncomingData(event.items);
-              console.log(
-                `[IndexComponent] After processing: ${this.inferenceServices.length} services`,
-              );
-              console.log(`[IndexComponent] Triggering change detection`);
               this.cdr.detectChanges();
             } else if (event.type === 'ADDED' && event.object) {
               const processed = this.processIncomingData([event.object]);
@@ -206,11 +181,9 @@ export class IndexComponent implements OnInit, OnDestroy {
 
     this.pollingSubscription?.unsubscribe();
     this.pollingSubscription = this.poller
-      .exponential(request as any)
-      .subscribe((svcs: any) => {
-        this.inferenceServices = this.processIncomingData(
-          svcs as InferenceServiceK8s[],
-        );
+      .exponential(request)
+      .subscribe((svcs: InferenceServiceK8s[]) => {
+        this.inferenceServices = this.processIncomingData(svcs);
       });
   }
 

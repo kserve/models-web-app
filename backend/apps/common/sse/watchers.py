@@ -289,33 +289,38 @@ class EventWatcher:
     def _watch_events_thread(self, namespace: str, name: str, callback: Callable):
         """Thread function for watching events."""
         v1 = client.CoreV1Api()
-        w = watch.Watch()
+        field_selector = f"involvedObject.name={name}"
+        initial_sent = False
+        resource_version = None
 
         while not self._stop_event.is_set():
+            w = watch.Watch()
             try:
-                field_selector = f"involvedObject.name={name}"
-                try:
-                    initial_events = v1.list_namespaced_event(
-                        namespace, field_selector=field_selector
-                    )
-                    events_list = [
-                        api.object_to_dict(event) for event in initial_events.items
-                    ]
-                    callback("INITIAL", {"items": events_list})
-                except Exception as e:
-                    log.error(
-                        f"Error fetching initial events for {namespace}/{name}: {e}"
-                    )
-                    callback("ERROR", {"message": str(e)})
-                    time.sleep(5)
-                    continue
+                if not initial_sent:
+                    try:
+                        initial_events = v1.list_namespaced_event(
+                            namespace, field_selector=field_selector
+                        )
+                        events_list = [
+                            api.object_to_dict(event) for event in initial_events.items
+                        ]
+                        resource_version = initial_events.metadata.resource_version
+                        callback("INITIAL", {"items": events_list})
+                        initial_sent = True
+                    except Exception as e:
+                        log.error(
+                            f"Error fetching initial events for {namespace}/{name}: {e}"
+                        )
+                        callback("ERROR", {"message": str(e)})
+                        time.sleep(5)
+                        continue
 
                 # Watch for new events on the specific resource
-                # Events are Kubernetes cluster events (restarts, errors, status changes, etc.)
                 for event in w.stream(
                     v1.list_namespaced_event,
                     namespace=namespace,
                     field_selector=field_selector,
+                    resource_version=resource_version,
                     timeout_seconds=60,
                 ):
                     if self._stop_event.is_set():
@@ -329,7 +334,11 @@ class EventWatcher:
                         continue
 
                     try:
-                        callback(event_type, api.object_to_dict(obj))
+                        obj_dict = api.object_to_dict(obj)
+                        resource_version = obj_dict.get("metadata", {}).get(
+                            "resourceVersion", resource_version
+                        )
+                        callback(event_type, obj_dict)
                     except Exception as e:
                         log.error(f"Error processing event: {e}")
 
@@ -339,8 +348,8 @@ class EventWatcher:
                 log.error(f"Error watching events for {namespace}/{name}: {e}")
                 callback("ERROR", {"message": str(e)})
                 time.sleep(5)
-
-        w.stop()
+            finally:
+                w.stop()
 
     def stop(self):
         """Stop the event watcher."""

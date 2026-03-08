@@ -52,7 +52,7 @@ export class MWABackendService extends BackendService {
     return this.getObjectsAllNamespaces(
       this.getInferenceServicesSingleNamespace.bind(this),
       namespaces,
-    ) as any;
+    );
   }
 
   public getInferenceServices(
@@ -101,7 +101,7 @@ export class MWABackendService extends BackendService {
     return this.getObjectsAllNamespaces(
       this.getInferenceGraphsSingleNamespace.bind(this),
       namespaces,
-    ) as any;
+    );
   }
 
   public getInferenceGraphs(

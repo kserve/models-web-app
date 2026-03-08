@@ -41,8 +41,6 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   public grafanaFound = true;
   public isEditing = false;
   public editingIsvc: InferenceServiceK8s | null = null;
-  public sseEnabled = false;
-
   public buttonsConfig: ToolbarButton[] = [
     new ToolbarButton({
       text: 'EDIT',
@@ -86,57 +84,48 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Check SSE configuration first, then process routes
-    this.configService.getConfig().subscribe(config => {
-      this.sseEnabled = config.sseEnabled !== false;
+    // Handle route params
+    this.route.params.subscribe(params => {
+      console.log($localize`Using namespace: ${params.namespace}`);
+      this.ns.updateSelectedNamespace(params.namespace);
 
-      // Now that config is loaded, handle route params
-      this.route.params.subscribe(params => {
-        console.log($localize`Using namespace: ${params.namespace}`);
-        this.ns.updateSelectedNamespace(params.namespace);
+      this.serverName = params.name;
+      this.namespace = params.namespace;
 
-        this.serverName = params.name;
-        this.namespace = params.namespace;
-
-        if (this.sseEnabled) {
-          // Use SSE for real-time updates
-          this.sseSubscription = this.sseService
-            .watchInferenceService<InferenceServiceK8s>(
-              this.namespace,
-              this.serverName,
-            )
-            .subscribe(
-              event => {
-                if (event.type === 'INITIAL' && event.object) {
-                  this.updateInferenceService(event.object);
-                  this.loadOwnedObjects(event.object);
-                } else if (
-                  (event.type === 'MODIFIED' || event.type === 'ADDED') &&
-                  event.object
-                ) {
-                  this.updateInferenceService(event.object);
-                  this.loadOwnedObjects(event.object);
-                } else if (event.type === 'DELETED') {
-                  // Resource was deleted, navigate back to list
-                  console.log('InferenceService deleted, navigating to index');
-                  this.router.navigate(['/']);
-                } else if (event.type === 'ERROR') {
-                  console.error('SSE error event received:', event.message);
-                  this.startPolling();
-                }
-              },
-              error => {
-                console.error(
-                  'SSE connection error, falling back to polling:',
-                  error,
-                );
-                this.startPolling();
-              },
+      // Use SSE for real-time updates
+      this.sseSubscription = this.sseService
+        .watchInferenceService<InferenceServiceK8s>(
+          this.namespace,
+          this.serverName,
+        )
+        .subscribe(
+          event => {
+            if (event.type === 'INITIAL' && event.object) {
+              this.updateInferenceService(event.object);
+              this.loadOwnedObjects(event.object);
+            } else if (
+              (event.type === 'MODIFIED' || event.type === 'ADDED') &&
+              event.object
+            ) {
+              this.updateInferenceService(event.object);
+              this.loadOwnedObjects(event.object);
+            } else if (event.type === 'DELETED') {
+              // Resource was deleted, navigate back to list
+              console.log('InferenceService deleted, navigating to index');
+              this.router.navigate(['/']);
+            } else if (event.type === 'ERROR') {
+              console.error('SSE error event received:', event.message);
+              this.startPolling();
+            }
+          },
+          error => {
+            console.error(
+              'SSE connection error, falling back to polling:',
+              error,
             );
-        } else {
-          this.startPolling();
-        }
-      });
+            this.startPolling();
+          },
+        );
     });
 
     // don't show a METRICS tab if Grafana is not exposed
@@ -165,7 +154,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     this.pollingSubscription?.unsubscribe();
     this.pollingSubscription = this.poller.start().subscribe(() => {
       this.getBackendObjects();
-    }) as any;
+    });
   }
 
   private loadOwnedObjects(inferenceService: InferenceServiceK8s) {
@@ -272,7 +261,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
    * request.
    */
   private updateInferenceService(inferenceService: InferenceServiceK8s) {
-    if (!this.inferenceService || this.inferenceService === null) {
+    if (!this.inferenceService) {
       this.inferenceService = inferenceService;
       return;
     }

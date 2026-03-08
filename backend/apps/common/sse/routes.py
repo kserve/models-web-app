@@ -1,7 +1,7 @@
 """SSE route handlers for real-time updates."""
 
 import json
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 from flask import Blueprint, Response, request
 
 from kubeflow.kubeflow.crud_backend import logging
@@ -139,7 +139,9 @@ def stream_events(namespace, name):
         }
         message = f"data: {json.dumps(event_data)}\n\n"
         try:
-            client_queue.put(message)
+            client_queue.put_nowait(message)
+        except Full:
+            log.warning(f"Client queue full, dropping event type={event_type}")
         except Exception as e:
             log.error(f"Error sending event: {e}")
 
@@ -194,7 +196,9 @@ def stream_logs(namespace, name):
         }
         message = f"data: {json.dumps(event_data)}\n\n"
         try:
-            client_queue.put(message)
+            client_queue.put_nowait(message)
+        except Full:
+            log.warning(f"Client queue full, dropping log event type={event_type}")
         except Exception as e:
             log.error(f"Error sending log event: {e}")
 

@@ -7,7 +7,6 @@ describe('Models Web App - Namespace Configuration Tests', () => {
         grafanaPrefix: '/grafana',
         grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
         grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
-        sseEnabled: false,
       },
     }).as('getConfig');
 

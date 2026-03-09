@@ -37,7 +37,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
     },
   };
   beforeEach(() => {
-    cy.on('uncaught:exception', (err) => {
+    cy.on('uncaught:exception', err => {
       if (
         err.message.includes('403') ||
         err.message.includes('Forbidden') ||
@@ -55,7 +55,8 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
         statusCode: 200,
         body: {
           grafanaPrefix: '/grafana',
-          grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
+          grafanaCpuMemoryDb:
+            'db/knative-serving-revision-cpu-and-memory-usage',
           grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
         },
       }).as('config');
@@ -216,10 +217,14 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
 
     it('should handle SSE network errors gracefully', () => {
       // SSE endpoint times out or is unreachable
-      cy.intercept('GET', '/api/sse/namespaces/kubeflow-user/inferenceservices', {
-        statusCode: 0,
-        forceNetworkError: true,
-      });
+      cy.intercept(
+        'GET',
+        '/api/sse/namespaces/kubeflow-user/inferenceservices',
+        {
+          statusCode: 0,
+          forceNetworkError: true,
+        },
+      );
 
       cy.intercept('GET', '/api/config', {
         statusCode: 200,

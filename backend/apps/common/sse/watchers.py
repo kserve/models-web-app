@@ -66,21 +66,25 @@ class InferenceServiceWatcher:
             f"[Thread {thread_id}] Watcher thread started for namespace: {namespace}"
         )
 
+        # Track state outside the loop so INITIAL is only sent once and the
+        # watch stream resumes from the correct resourceVersion after a timeout.
+        initial_sent = False
+        resource_version = None
+
         while not self._stop_event.is_set():
             try:
-                # Use Flask app and request context if available to call API functions
-                # The entire watch stream needs to be within the context
-                # Get GVK inside context so current_app.config is accessible
                 if self._app:
                     with self._app.test_request_context():
                         gvk = versions.inference_service_gvk()
-                        self._do_namespace_watch(gvk, namespace, callback)
+                        initial_sent, resource_version = self._do_namespace_watch(
+                            gvk, namespace, callback, initial_sent, resource_version
+                        )
                 else:
                     gvk = versions.inference_service_gvk()
-                    self._do_namespace_watch(gvk, namespace, callback)
+                    initial_sent, resource_version = self._do_namespace_watch(
+                        gvk, namespace, callback, initial_sent, resource_version
+                    )
 
-                # Check stop event after watch completes
-                # (watch stream can timeout naturally, but we shouldn't restart if stop was requested)
                 if self._stop_event.is_set():
                     log.info(
                         f"[Thread {thread_id}] Stop event detected after watch completion for {namespace}"
@@ -101,34 +105,52 @@ class InferenceServiceWatcher:
                     f"[Thread {thread_id}] Error in namespace watch for {namespace}: {e}"
                 )
                 callback("ERROR", {"message": str(e)})
-                time.sleep(5)  # Wait before retrying
+                # Reset state so the next retry does a fresh initial fetch
+                initial_sent = False
+                resource_version = None
+                time.sleep(5)
 
         log.info(
             f"[Thread {thread_id}] Watcher thread EXITING for namespace: {namespace}"
         )
 
-    def _do_namespace_watch(self, gvk: dict, namespace: str, callback: Callable):
-        """Helper method to perform the actual namespace watch within request context."""
+    def _do_namespace_watch(
+        self,
+        gvk: dict,
+        namespace: str,
+        callback: Callable,
+        initial_sent: bool,
+        resource_version: Optional[str],
+    ) -> tuple:
+        """Perform one iteration of the namespace watch within request context.
+
+        Sends INITIAL only when initial_sent is False, then streams watch events
+        from resource_version. Returns the updated (initial_sent, resource_version)
+        so the caller can resume correctly after a stream timeout.
+        """
         w = watch.Watch()
 
-        try:
-            log.info(f"Fetching initial list for {namespace} with GVK: {gvk}")
-            initial_list = api.list_custom_rsrc(**gvk, namespace=namespace)
-            items = initial_list.get("items", [])
-            resource_version = initial_list.get("metadata", {}).get("resourceVersion")
-            log.info(
-                f"Successfully fetched {len(items)} items, resourceVersion={resource_version}"
-            )
-            # Send items directly to match the WatchEvent interface
-            callback("INITIAL", {"items": items})
-            log.info(f"INITIAL callback completed for {namespace}")
-        except Exception as e:
-            log.error(
-                f"Error fetching initial list for {namespace}: {e}", exc_info=True
-            )
-            callback("ERROR", {"message": str(e)})
-            time.sleep(5)
-            return
+        if not initial_sent:
+            try:
+                log.info(f"Fetching initial list for {namespace} with GVK: {gvk}")
+                initial_list = api.list_custom_rsrc(**gvk, namespace=namespace)
+                items = initial_list.get("items", [])
+                resource_version = initial_list.get("metadata", {}).get(
+                    "resourceVersion"
+                )
+                log.info(
+                    f"Successfully fetched {len(items)} items, resourceVersion={resource_version}"
+                )
+                callback("INITIAL", {"items": items})
+                log.info(f"INITIAL callback completed for {namespace}")
+                initial_sent = True
+            except Exception as e:
+                log.error(
+                    f"Error fetching initial list for {namespace}: {e}", exc_info=True
+                )
+                callback("ERROR", {"message": str(e)})
+                time.sleep(5)
+                return initial_sent, resource_version
 
         try:
             log.info(
@@ -141,7 +163,7 @@ class InferenceServiceWatcher:
                 namespace=namespace,
                 plural=gvk["kind"],
                 resource_version=resource_version,
-                timeout_seconds=10,
+                timeout_seconds=60,
             ):
                 if self._stop_event.is_set():
                     log.info(f"Stop event set, breaking watch for {namespace}")
@@ -154,8 +176,10 @@ class InferenceServiceWatcher:
                     log.warning(f"Received incomplete event: {event}")
                     continue
 
-                # Add deployment mode information
                 if isinstance(obj, dict):
+                    rv = obj.get("metadata", {}).get("resourceVersion")
+                    if rv:
+                        resource_version = rv
                     try:
                         deployment_mode = utils.get_deployment_mode(obj)
                         obj["deploymentMode"] = deployment_mode
@@ -166,23 +190,33 @@ class InferenceServiceWatcher:
         finally:
             w.stop()
 
+        return initial_sent, resource_version
+
     def _watch_single_thread(self, namespace: str, name: str, callback: Callable):
         """Thread function for watching a single resource."""
+        # Track state outside the loop so INITIAL is only sent once.
+        initial_sent = False
+        resource_version = None
+
         while not self._stop_event.is_set():
             try:
-                # Use Flask app and request context if available to call API functions
-                # The entire watch stream needs to be within the context
-                # Get GVK inside context so current_app.config is accessible
                 if self._app:
                     with self._app.test_request_context():
                         gvk = versions.inference_service_gvk()
-                        self._do_single_watch(gvk, namespace, name, callback)
+                        initial_sent, resource_version = self._do_single_watch(
+                            gvk,
+                            namespace,
+                            name,
+                            callback,
+                            initial_sent,
+                            resource_version,
+                        )
                 else:
                     gvk = versions.inference_service_gvk()
-                    self._do_single_watch(gvk, namespace, name, callback)
+                    initial_sent, resource_version = self._do_single_watch(
+                        gvk, namespace, name, callback, initial_sent, resource_version
+                    )
 
-                # Check stop event after watch completes
-                # (watch stream can timeout naturally, but we shouldn't restart if stop was requested)
                 if self._stop_event.is_set():
                     log.info(
                         f"Stop event detected after watch completion for {namespace}/{name}"
@@ -194,25 +228,42 @@ class InferenceServiceWatcher:
                     break
                 log.error(f"Error in single watch for {namespace}/{name}: {e}")
                 callback("ERROR", {"message": str(e)})
-                time.sleep(5)  # Wait before retrying
+                # Reset state so the next retry does a fresh initial fetch
+                initial_sent = False
+                resource_version = None
+                time.sleep(5)
 
     def _do_single_watch(
-        self, gvk: dict, namespace: str, name: str, callback: Callable
-    ):
-        """Helper method to perform the actual single resource watch within request context."""
+        self,
+        gvk: dict,
+        namespace: str,
+        name: str,
+        callback: Callable,
+        initial_sent: bool,
+        resource_version: Optional[str],
+    ) -> tuple:
+        """Perform one iteration of the single-resource watch within request context.
+
+        Sends INITIAL only when initial_sent is False, then streams watch events
+        from resource_version. Returns the updated (initial_sent, resource_version).
+        """
         w = watch.Watch()
 
-        try:
-            initial_obj = api.get_custom_rsrc(**gvk, namespace=namespace, name=name)
-            resource_version = initial_obj.get("metadata", {}).get("resourceVersion")
-            deployment_mode = utils.get_deployment_mode(initial_obj)
-            initial_obj["deploymentMode"] = deployment_mode
-            callback("INITIAL", initial_obj)
-        except Exception as e:
-            log.warning(f"Resource {namespace}/{name} not found: {e}")
-            callback("ERROR", {"message": f"Resource not found: {str(e)}"})
-            time.sleep(5)
-            return
+        if not initial_sent:
+            try:
+                initial_obj = api.get_custom_rsrc(**gvk, namespace=namespace, name=name)
+                resource_version = initial_obj.get("metadata", {}).get(
+                    "resourceVersion"
+                )
+                deployment_mode = utils.get_deployment_mode(initial_obj)
+                initial_obj["deploymentMode"] = deployment_mode
+                callback("INITIAL", initial_obj)
+                initial_sent = True
+            except Exception as e:
+                log.warning(f"Resource {namespace}/{name} not found: {e}")
+                callback("ERROR", {"message": f"Resource not found: {str(e)}"})
+                time.sleep(5)
+                return initial_sent, resource_version
 
         try:
             field_selector = f"metadata.name={name}"
@@ -224,7 +275,7 @@ class InferenceServiceWatcher:
                 plural=gvk["kind"],
                 field_selector=field_selector,
                 resource_version=resource_version,
-                timeout_seconds=10,
+                timeout_seconds=60,
             ):
                 if self._stop_event.is_set():
                     break
@@ -237,6 +288,11 @@ class InferenceServiceWatcher:
                     continue
 
                 if isinstance(obj, dict):
+                    # Track the latest resourceVersion so the stream resumes
+                    # from the right point after a timeout.
+                    rv = obj.get("metadata", {}).get("resourceVersion")
+                    if rv:
+                        resource_version = rv
                     try:
                         deployment_mode = utils.get_deployment_mode(obj)
                         obj["deploymentMode"] = deployment_mode
@@ -246,6 +302,8 @@ class InferenceServiceWatcher:
                 callback(event_type, obj)
         finally:
             w.stop()
+
+        return initial_sent, resource_version
 
     def stop(self):
         """Stop the watcher."""

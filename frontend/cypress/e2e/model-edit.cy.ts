@@ -127,6 +127,22 @@ describe('Models Web App - Model Edit Tests', () => {
       },
     ).as('getRoute');
 
+    cy.intercept(
+      'GET',
+      '/api/sse/namespaces/kubeflow-user/inferenceservices/test-sklearn-model',
+      {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+        body: `data: ${JSON.stringify({
+          type: 'INITIAL',
+          object: testModel,
+        })}\n\n`,
+      },
+    ).as('watchInferenceService');
+
     // Mock Grafana API (optional - for metrics tab)
     cy.intercept('GET', '/grafana/api/search', {
       statusCode: 404,
@@ -139,9 +155,7 @@ describe('Models Web App - Model Edit Tests', () => {
   it('should load model details page and show edit button', () => {
     // Wait for config to be loaded first (needed for SSE check)
     cy.wait('@getConfig');
-
-    // Wait for all API calls to complete (required for serverInfoLoaded = true)
-    cy.wait('@getInferenceService');
+    cy.wait('@watchInferenceService');
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -169,8 +183,7 @@ describe('Models Web App - Model Edit Tests', () => {
     // Wait for config to be loaded first
     cy.wait('@getConfig');
 
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    cy.wait('@watchInferenceService');
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -197,8 +210,8 @@ describe('Models Web App - Model Edit Tests', () => {
     // Wait for config to be loaded first
     cy.wait('@getConfig');
 
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    // Wait for SSE connection then owned objects
+    cy.wait('@watchInferenceService');
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -237,8 +250,7 @@ describe('Models Web App - Model Edit Tests', () => {
     // Wait for config to be loaded first
     cy.wait('@getConfig');
 
-    // Wait for page to load completely
-    cy.wait('@getInferenceService');
+    cy.wait('@watchInferenceService');
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -292,8 +304,7 @@ describe('Models Web App - Model Edit Tests', () => {
     // Wait for config to be loaded first
     cy.wait('@getConfig');
 
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    cy.wait('@watchInferenceService');
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -336,8 +347,7 @@ describe('Models Web App - Model Edit Tests', () => {
     // Wait for config to be loaded first
     cy.wait('@getConfig');
 
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    cy.wait('@watchInferenceService');
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -372,8 +382,7 @@ describe('Models Web App - Model Edit Tests', () => {
     // Wait for config to be loaded first
     cy.wait('@getConfig');
 
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    cy.wait('@watchInferenceService');
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -405,11 +414,37 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should allow navigation back from details page', () => {
+    cy.on('uncaught:exception', err => {
+      if (
+        err.message.includes('403') ||
+        err.message.includes('Forbidden') ||
+        err.message.includes('Http failure response')
+      ) {
+        return false;
+      }
+      return true;
+    });
+    cy.intercept('GET', '/api/namespaces/kubeflow-user/inferenceservices', {
+      statusCode: 200,
+      body: { inferenceServices: [testModel] },
+    }).as('getInferenceServicesList');
+
+    cy.intercept('GET', '/api/sse/namespaces/kubeflow-user/inferenceservices', {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      },
+      body: `data: ${JSON.stringify({
+        type: 'INITIAL',
+        items: [testModel],
+      })}\n\n`,
+    }).as('watchInferenceServicesList');
+
     // Wait for config to be loaded first
     cy.wait('@getConfig');
 
-    // Wait for page to load
-    cy.wait('@getInferenceService');
+    cy.wait('@watchInferenceService');
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');

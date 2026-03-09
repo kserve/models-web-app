@@ -13,7 +13,7 @@ import { EventObject } from '../types/event';
 })
 export class MWABackendService extends BackendService {
   constructor(public http: HttpClient, public snack: SnackBarService) {
-    super(http as any, snack as any);
+    super(http, snack);
   }
 
   /*

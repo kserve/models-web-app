@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Observable, Subscription } from 'rxjs';
+import { Subscription, of } from 'rxjs';
+import { switchMap, catchError } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
 import { dump } from 'js-yaml';
 import {
@@ -16,6 +17,7 @@ import {
 import { MWABackendService } from 'src/app/services/backend.service';
 import {
   InferenceGraphK8s,
+  InferenceStep,
   getInferenceGraphStatus,
   getRootRouterType,
   getNodeCount,
@@ -87,7 +89,7 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
 
       this.pollingSubscription = this.poller.start().subscribe(() => {
         this.getBackendObjects();
-      }) as any;
+      });
     });
   }
 
@@ -106,33 +108,34 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
   }
 
   private getBackendObjects() {
-    this.backend.getInferenceGraph(this.namespace, this.graphName).subscribe(
-      graph => {
-        this.inferenceGraph = graph;
-        this.status = getInferenceGraphStatus(graph);
-        this.yamlData = dump(graph);
-
-        this.backend.getInferenceGraphEvents(graph).subscribe(
-          events => {
-            this.events = events || [];
-            this.cdr.detectChanges();
-          },
-          err => {
-            console.warn('Could not load events:', err);
-            this.events = [];
-            this.cdr.detectChanges();
-          },
-        );
-
-        this.graphInfoLoaded = true;
-        this.cdr.detectChanges();
-      },
-      err => {
-        console.error('Error loading inference graph:', err);
-        this.graphInfoLoaded = true;
-        this.cdr.detectChanges();
-      },
-    );
+    this.backend
+      .getInferenceGraph(this.namespace, this.graphName)
+      .pipe(
+        switchMap(graph => {
+          this.inferenceGraph = graph;
+          this.status = getInferenceGraphStatus(graph);
+          this.yamlData = dump(graph);
+          this.graphInfoLoaded = true;
+          this.cdr.detectChanges();
+          return this.backend.getInferenceGraphEvents(graph).pipe(
+            catchError(err => {
+              console.warn('Could not load events:', err);
+              return of([]);
+            }),
+          );
+        }),
+      )
+      .subscribe({
+        next: events => {
+          this.events = events || [];
+          this.cdr.detectChanges();
+        },
+        error: err => {
+          console.error('Error loading inference graph:', err);
+          this.graphInfoLoaded = true;
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   private deleteInferenceGraph() {
@@ -188,14 +191,14 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
     return Object.keys(this.inferenceGraph.spec.nodes);
   }
 
-  public getNodeSteps(nodeName: string): any[] {
+  public getNodeSteps(nodeName: string): InferenceStep[] {
     if (!this.inferenceGraph?.spec?.nodes?.[nodeName]?.steps) {
       return [];
     }
     return this.inferenceGraph.spec.nodes[nodeName].steps;
   }
 
-  public getStepDescription(step: any): string {
+  public getStepDescription(step: InferenceStep): string {
     const parts: string[] = [];
     if (step.name) {
       parts.push(`Name: ${step.name}`);

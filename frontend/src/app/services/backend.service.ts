@@ -248,8 +248,8 @@ export class MWABackendService extends BackendService {
   public postInferenceGraph(
     inferenceGraph: InferenceGraphK8s,
   ): Observable<MWABackendResponse> {
-    const ns = inferenceGraph.metadata!.namespace;
-    const url = `api/namespaces/${ns}/inferencegraphs`;
+    const namespace = inferenceGraph.metadata!.namespace;
+    const url = `api/namespaces/${namespace}/inferencegraphs`;
 
     return this.http
       .post<MWABackendResponse>(url, inferenceGraph)

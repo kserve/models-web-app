@@ -109,7 +109,7 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
     const request = this.backend.getInferenceGraphs(namespace);
 
     this.pollingSubscription = this.poller
-      .exponential(request as any)
+      .exponential(request)
       .subscribe((graphs: InferenceGraphK8s[]) => {
         if (!this.env.production) {
           console.log('InferenceGraph: Received graphs:', graphs);
@@ -121,7 +121,7 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
             this.inferenceGraphs,
           );
         }
-      }) as any;
+      });
   }
 
   // action handling functions

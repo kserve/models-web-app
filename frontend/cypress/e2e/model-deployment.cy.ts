@@ -1,3 +1,5 @@
+import { Interception } from 'cypress/types/net-stubbing';
+
 describe('Models Web App - Model Deployment Tests', () => {
   beforeEach(() => {
     // Load fixture data
@@ -37,94 +39,39 @@ describe('Models Web App - Model Deployment Tests', () => {
     });
   };
 
-  // Helper function to set Monaco editor value and properly trigger Angular change detection
   const setMonacoEditorValue = (value: string) => {
-    // Wait for the Monaco editor component to be visible and ready
-    cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible');
+    cy.get('app-submit-form', { timeout: 15000 }).should('exist');
 
-    // Wait for Monaco to fully initialize
-    cy.wait(2000);
-
-    // Properly update Monaco editor and trigger change events
     cy.window().then((win: any) => {
-      if (win.monaco && win.monaco.editor) {
-        const editors = win.monaco.editor.getEditors();
-        if (editors.length > 0) {
-          const editor = editors[0];
-          const model = editor.getModel();
-          if (model) {
-            // Set the value in Monaco editor
-            model.setValue(value);
-
-            // Force a change event to fire by running in NgZone
-            // This ensures the textChange event is emitted and the component's yaml property is updated
-            if (win.Zone && win.Zone.current) {
-              win.Zone.current.run(() => {
-                // Simulate the change event that would normally be triggered
-                const changeEvent = {
-                  changes: [
-                    {
-                      range: model.getFullModelRange(),
-                      rangeLength: model.getValueLength(),
-                      text: value,
-                    },
-                  ],
-                  eol: model.getEOL(),
-                  versionId: model.getVersionId(),
-                  isUndoing: false,
-                  isRedoing: false,
-                  isFlush: false,
-                };
-
-                // Fire the content change event manually to trigger the textChange emission
-                if (editor._onDidChangeModelContent) {
-                  editor._onDidChangeModelContent.fire(changeEvent);
-                }
-              });
-            }
-
-            // Also ensure the editor has focus
-            editor.focus();
-          }
-        }
-      }
-
-      // As a fallback, also try to update the Angular component directly
       cy.get('app-submit-form').then($el => {
         const element = $el[0];
-        let component: any = null;
-
-        // Try to get the Angular component instance
         if (win.ng && win.ng.getComponent) {
           try {
-            component = win.ng.getComponent(element);
+            const component = win.ng.getComponent(element);
+            if (component) {
+              component.yaml = value;
+              if (win.ng.applyChanges) {
+                win.ng.applyChanges(element);
+              } else if (win.Zone) {
+                win.Zone.current.run(() => {
+                  try {
+                    const injector = win.ng.getInjector(element);
+                    const appRef = injector.get(
+                      win.ng.coreTokens?.ApplicationRef,
+                    );
+                    if (appRef) {
+                      appRef.tick();
+                    }
+                  } catch (e) {}
+                });
+              }
+            }
           } catch (e) {
             console.log('ng.getComponent failed:', e);
           }
         }
-
-        // Update the component's yaml property directly as fallback
-        if (component && 'yaml' in component) {
-          component.yaml = value;
-
-          // Trigger Angular change detection
-          if (win.ng && win.Zone) {
-            win.Zone.current.run(() => {
-              try {
-                const injector = win.ng.getInjector(element);
-                const appRef = injector.get(win.ng.coreTokens.ApplicationRef);
-                appRef.tick();
-              } catch (e) {
-                console.log('Change detection failed:', e);
-              }
-            });
-          }
-        }
       });
     });
-
-    // Wait for changes to propagate
-    cy.wait(1500);
 
     // Verify the value was set by checking if CREATE button is enabled
     cy.get('lib-submit-bar button')
@@ -135,9 +82,7 @@ describe('Models Web App - Model Deployment Tests', () => {
   it('should navigate to submit form via button and load all components', () => {
     // Start from the home page
     cy.visit('/');
-
-    // Wait for the page to stabilize
-    cy.wait(1000);
+    cy.get('app-index', { timeout: 10000 }).should('exist');
 
     // Verify "New Endpoint" button exists and click it
     cy.contains('button', 'New Endpoint').should('be.visible').click();
@@ -282,31 +227,34 @@ spec:
     cy.get('lib-submit-bar button')
       .contains(/submit|create/i)
       .click();
-
-    // Wait a moment and try triggering submit directly if the API call doesn't happen
-    cy.wait(3000).then(() => {
-      cy.window().then((win: any) => {
-        if (win.ng) {
-          cy.get('app-submit-form').then($el => {
-            const element = $el[0];
-            try {
-              const component = win.ng.getComponent(element);
-              if (component && component.submit) {
-                console.log('Manually triggering submit...');
-                component.submit();
-              }
-            } catch (e) {
-              console.log('Failed to manually trigger submit:', e);
+    cy.get<Interception[]>('@createInferenceService.all').then(
+      interceptions => {
+        if (interceptions.length === 0) {
+          cy.window().then((win: any) => {
+            if (win.ng) {
+              cy.get('app-submit-form').then($el => {
+                const element = $el[0];
+                try {
+                  const component = win.ng.getComponent(element);
+                  if (component && component.submit) {
+                    component.submit();
+                  }
+                } catch (e) {}
+              });
             }
           });
         }
-      });
-    });
+      },
+    );
 
     // Verify API call was made or that submission succeeded
-    cy.get('@createInferenceService.all', { timeout: 10000 }).then((interceptions: any) => {
+    cy.get<Interception[]>('@createInferenceService.all', {
+      timeout: 10000,
+    }).then(interceptions => {
       if (interceptions.length > 0) {
-        expect((interceptions[0] as any).request.body).to.include('test-sklearn-model');
+          expect(interceptions[0].request.body).to.include(
+          'test-sklearn-model',
+        );
       }
     });
 
@@ -364,7 +312,9 @@ metadata:
       .and($el => {
         const text = $el.text().toLowerCase();
         expect(text).to.satisfy((t: string) => {
-          return t.includes('yaml') || t.includes('parsing') || t.includes('error');
+          return (
+            t.includes('yaml') || t.includes('parsing') || t.includes('error')
+          );
         });
       });
 
@@ -416,6 +366,10 @@ spec:
   it('should validate required fields in YAML', () => {
     cy.visit('/new');
 
+    cy.intercept('POST', '/api/namespaces/*/inferenceservices').as(
+      'createInferenceService',
+    );
+
     // Wait for the page to load
     cy.get('app-submit-form', { timeout: 10000 }).should('exist');
 
@@ -457,9 +411,6 @@ spec:
 
     // Check that Monaco editor has some pre-filled content
     cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible');
-
-    // Wait a bit for any pre-filled template to load
-    cy.wait(1000);
 
     // Get the current value (if any)
     cy.window().then((win: any) => {

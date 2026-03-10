@@ -12,7 +12,6 @@ export interface InferenceGraphIR extends InferenceGraphK8s {
   ui: {
     actions: {
       delete?: STATUS_TYPE;
-      copy?: STATUS_TYPE;
     };
 
     status?: Status;
@@ -107,23 +106,6 @@ export interface InferenceGraphStatus {
   conditions?: Condition[];
   url?: string;
   deploymentMode?: string;
-}
-
-/**
- * Helper function to check if InferenceGraph is ready
- */
-export function isInferenceGraphReady(
-  inferenceGraph: InferenceGraphK8s,
-): boolean {
-  if (!inferenceGraph.status?.conditions) {
-    return false;
-  }
-
-  const readyCondition = inferenceGraph.status.conditions.find(
-    (c: Condition) => c.type === 'Ready',
-  );
-
-  return readyCondition?.status === 'True';
 }
 
 /**

@@ -106,10 +106,10 @@ export class IndexComponent implements OnInit, OnDestroy {
     const request = this.backend.getInferenceServices(ns);
 
     this.pollingSubscription = this.poller
-      .exponential(request as any)
-      .subscribe((svcs: any) => {
+      .exponential(request)
+      .subscribe((svcs: InferenceServiceK8s[]) => {
         this.inferenceServices = this.processIncomingData(svcs);
-      }) as any;
+      });
   }
 
   // action handling functions

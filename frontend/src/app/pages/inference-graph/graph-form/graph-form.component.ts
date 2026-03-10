@@ -117,7 +117,7 @@ spec:
     }
   }
 
-  validateYaml(): any {
+  validateYaml(): InferenceGraphK8s | null {
     this.yamlError = '';
 
     if (!this.yaml || this.yaml.trim() === '') {
@@ -126,7 +126,7 @@ spec:
     }
 
     try {
-      const customResource: any = load(this.yaml);
+      const customResource = load(this.yaml) as InferenceGraphK8s;
 
       if (!customResource) {
         this.yamlError = 'YAML is empty';
@@ -140,6 +140,11 @@ spec:
 
       if (!customResource.kind) {
         this.yamlError = 'Missing required field: kind';
+        return null;
+      }
+
+      if (customResource.kind !== 'InferenceGraph') {
+        this.yamlError = 'Invalid field: kind must be "InferenceGraph"';
         return null;
       }
 
@@ -161,6 +166,28 @@ spec:
       if (!customResource.spec.nodes) {
         this.yamlError = 'Missing required field: spec.nodes';
         return null;
+      }
+
+      if (Object.keys(customResource.spec.nodes).length === 0) {
+        this.yamlError =
+          'spec.nodes cannot be empty - must define at least one node';
+        return null;
+      }
+
+      for (const nodeName of Object.keys(customResource.spec.nodes)) {
+        const node = customResource.spec.nodes[nodeName];
+        if (!node.routerType) {
+          this.yamlError = `Node "${nodeName}": missing required field "routerType"`;
+          return null;
+        }
+        if (!node.steps || !Array.isArray(node.steps)) {
+          this.yamlError = `Node "${nodeName}": missing required field "steps" (must be an array)`;
+          return null;
+        }
+        if (node.steps.length === 0) {
+          this.yamlError = `Node "${nodeName}": steps array cannot be empty`;
+          return null;
+        }
       }
 
       return customResource;
@@ -196,67 +223,6 @@ spec:
     }
 
     this.applying = true;
-
-    const validationErrors: string[] = [];
-
-    if (!customResource.apiVersion) {
-      validationErrors.push('Missing required field: apiVersion');
-    }
-    if (!customResource.kind || customResource.kind !== 'InferenceGraph') {
-      validationErrors.push(
-        'Missing or invalid field: kind (must be "InferenceGraph")',
-      );
-    }
-    if (!customResource.metadata) {
-      validationErrors.push('Missing required field: metadata');
-    } else {
-      if (!customResource.metadata.name) {
-        validationErrors.push('Missing required field: metadata.name');
-      }
-    }
-    if (!customResource.spec) {
-      validationErrors.push('Missing required field: spec');
-    } else {
-      if (!customResource.spec.nodes) {
-        validationErrors.push('Missing required field: spec.nodes');
-      } else if (Object.keys(customResource.spec.nodes).length === 0) {
-        validationErrors.push(
-          'spec.nodes cannot be empty - must define at least one node',
-        );
-      } else {
-        // Validate each node
-        for (const nodeName of Object.keys(customResource.spec.nodes)) {
-          const node = customResource.spec.nodes[nodeName];
-          if (!node.routerType) {
-            validationErrors.push(
-              `Node "${nodeName}": missing required field "routerType"`,
-            );
-          }
-          if (!node.steps || !Array.isArray(node.steps)) {
-            validationErrors.push(
-              `Node "${nodeName}": missing required field "steps" (must be an array)`,
-            );
-          } else if (node.steps.length === 0) {
-            validationErrors.push(
-              `Node "${nodeName}": steps array cannot be empty`,
-            );
-          }
-        }
-      }
-    }
-
-    if (validationErrors.length > 0) {
-      const config: SnackBarConfig = {
-        data: {
-          msg: validationErrors.join(' | '),
-          snackType: SnackType.Error,
-        },
-        duration: 16000,
-      };
-      this.snack.open(config);
-      this.applying = false;
-      return;
-    }
 
     customResource.metadata.namespace = this.namespace;
 

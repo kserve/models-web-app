@@ -9,7 +9,7 @@ namespace: kubeflow
 generatorOptions:
   disableNameSuffixHash: true
 
-# Kubeflow overlay configuration for the kserve-models-web-app:
+# Kubeflow overlay configuration for the kserve-models-web-application:
 # defines the ConfigMap generator, shared configuration, components,
 # and the VirtualService patch used in this environment.
 configMapGenerator:
@@ -21,7 +21,7 @@ configMapGenerator:
       - GRAFANA_PREFIX=/grafana
       - GRAFANA_CPU_MEMORY_DB=db/knative-serving-revision-cpu-and-memory-usage
       - GRAFANA_HTTP_REQUESTS_DB=db/knative-serving-revision-http-requests
-    name: kserve-models-web-app-config
+    name: kserve-models-web-application-config
 
 configurations:
   - params.yaml
@@ -31,10 +31,10 @@ resources:
 components:
   - ../../components/istio
 patches:
-  - path: patches/web-app-vsvc.yaml
+  - path: patches/web-application-vsvc.yaml
     target:
       group: networking.istio.io
       kind: VirtualService
-      name: kserve-models-web-app
+      name: kserve-models-web-application
       namespace: kserve
       version: v1beta1

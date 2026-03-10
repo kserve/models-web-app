@@ -5,5 +5,5 @@ labels:
   - includeSelectors: false
     pairs:
       app.kubernetes.io/managed-by: kustomize
-      app.kubernetes.io/name: models-web-app
-      app.kubernetes.io/part-of: models-web-app
+      app.kubernetes.io/name: models-web-application
+      app.kubernetes.io/part-of: models-web-application

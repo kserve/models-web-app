@@ -6,4 +6,4 @@ resources:
   - authorization-policy.yaml
 
 patches:
-  - path: web-app-sidecar.yaml
+  - path: web-application-sidecar.yaml

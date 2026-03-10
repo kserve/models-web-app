@@ -95,12 +95,12 @@ Add the environment variable to your deployment configuration:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kserve-models-web-app
+  name: kserve-models-web-application
 spec:
   template:
     spec:
       containers:
-      - name: kserve-models-web-app
+      - name: kserve-models-web-application
         env:
         - name: ALLOWED_NAMESPACES
           value: "kubeflow-user,kubeflow-admin"

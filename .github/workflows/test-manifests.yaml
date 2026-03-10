@@ -10,7 +10,7 @@ permissions:
   actions: read
 
 jobs:
-  test-models-web-app:
+  test-models-web-application:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Models Web Application
@@ -49,6 +49,9 @@ jobs:
           cp -R models-web-app/manifests/kustomize/base manifests/applications/kserve/models-web-app/
           cp -R models-web-app/manifests/kustomize/components manifests/applications/kserve/models-web-app/
           cp -R models-web-app/manifests/kustomize/overlays manifests/applications/kserve/models-web-app/
+
+      - name: Patch kubeflow/manifests KServe tests for Models Web Application
+        run: python models-web-app/.github/scripts/patch_kubeflow_kserve_tests.py manifests
 
       - name: Install Istio CNI
         working-directory: manifests
@@ -90,7 +93,7 @@ jobs:
       - name: Wait for KServe Models Web Application deployment
         run: |
           kubectl wait --for=condition=Ready pods --all --all-namespaces --timeout=300s --field-selector=status.phase!=Succeeded
-          kubectl wait --for=condition=Available deployment/kserve-models-web-app -n kubeflow --timeout=60s
+          kubectl wait --for=condition=Available deployment/kserve-models-web-application -n kubeflow --timeout=60s
           sleep 10
 
       - name: Setup python 3.12
@@ -98,19 +101,32 @@ jobs:
         with:
           python-version: 3.12
 
+      - name: Verify KServe Models Web Application routing
+        run: |
+          EXPECTED_HOST="kserve-models-web-application.kubeflow.svc.cluster.local"
+          ACTUAL_HOST=$(kubectl get virtualservice kserve-models-web-application -n kubeflow -o jsonpath='{.spec.http[0].route[0].destination.host}')
+          if [ "${ACTUAL_HOST}" != "${EXPECTED_HOST}" ]; then
+            echo "FAILURE: Expected VirtualService destination host ${EXPECTED_HOST}, got ${ACTUAL_HOST}"
+            kubectl get virtualservice kserve-models-web-application -n kubeflow -o yaml
+            exit 1
+          fi
+
       - name: Port forward
         working-directory: manifests
         run: ./tests/port_forward_gateway.sh
 
       - name: Run KServe tests
-        run: bash ./models-web-app/manifests/tests/kserve_test.sh kubeflow-user-example-com
+        working-directory: manifests
+        run: bash ./tests/kserve_test.sh kubeflow-user-example-com
 
       - name: Debug KServe Models Web Application connectivity
         if: failure()
         run: |
-          kubectl get deployment,service,endpoints,pods -n kubeflow -l app.kubernetes.io/component=kserve-models-web-app || true
-          kubectl describe deployment kserve-models-web-app -n kubeflow || true
-          kubectl logs deployment/kserve-models-web-app -n kubeflow --all-containers=true --tail=200 || true
+          kubectl get deployment,service,endpoints,pods -n kubeflow -l app.kubernetes.io/component=kserve-models-web-application || true
+          kubectl get virtualservice kserve-models-web-application -n kubeflow -o yaml || true
+          kubectl get authorizationpolicy kserve-models-web-application -n kubeflow -o yaml || true
+          kubectl describe deployment kserve-models-web-application -n kubeflow || true
+          kubectl logs deployment/kserve-models-web-application -n kubeflow --all-containers=true --tail=200 || true
 
       - name: Apply Pod Security Standards restricted levels
         working-directory: manifests

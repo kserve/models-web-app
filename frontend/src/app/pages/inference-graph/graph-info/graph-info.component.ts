@@ -66,6 +66,7 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
     retries: 1,
   });
   private pollingSubscription = new Subscription();
+  private paramsSubscription = new Subscription();
 
   constructor(
     private route: ActivatedRoute,
@@ -78,7 +79,7 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    this.paramsSubscription = this.route.params.subscribe(params => {
       this.namespaceService.updateSelectedNamespace(params.namespace);
 
       this.graphName = params.name;
@@ -86,6 +87,9 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
 
       // Initial load before starting polling
       this.getBackendObjects();
+
+      // Unsubscribe from previous polling before starting a new one
+      this.pollingSubscription.unsubscribe();
 
       this.pollingSubscription = this.poller.start().subscribe(() => {
         this.getBackendObjects();
@@ -96,6 +100,9 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.pollingSubscription) {
       this.pollingSubscription.unsubscribe();
+    }
+    if (this.paramsSubscription) {
+      this.paramsSubscription.unsubscribe();
     }
   }
 
@@ -212,7 +219,7 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
     if (step.serviceUrl) {
       parts.push(`URL: ${step.serviceUrl}`);
     }
-    if (step.weight) {
+    if (step.weight !== undefined && step.weight !== null) {
       parts.push(`Weight: ${step.weight}`);
     }
     if (step.condition) {

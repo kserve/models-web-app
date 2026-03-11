@@ -102,15 +102,6 @@ export class SubmitFormComponent implements OnInit {
     } else {
       if (!customResource.spec.predictor) {
         validationErrors.push('Missing required field: spec.predictor');
-      } else {
-        if (
-          !customResource.spec.predictor.model &&
-          !customResource.spec.predictor.containers
-        ) {
-          validationErrors.push(
-            'spec.predictor must have either "model" or "containers" defined',
-          );
-        }
       }
     }
 

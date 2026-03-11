@@ -252,9 +252,9 @@ spec:
       timeout: 10000,
     }).then(interceptions => {
       if (interceptions.length > 0) {
-          expect(interceptions[0].request.body).to.include(
-          'test-sklearn-model',
-        );
+        const body = interceptions[0].request.body;
+        const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
+        expect(bodyStr).to.include('test-sklearn-model');
       }
     });
 

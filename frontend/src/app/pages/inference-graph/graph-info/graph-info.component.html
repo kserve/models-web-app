@@ -45,7 +45,11 @@
               ></lib-date-time>
             </lib-details-list-item>
             <lib-details-list-item key="URL" *ngIf="inferenceGraph.status?.url">
-              <a [href]="inferenceGraph.status.url" target="_blank">
+              <a
+                [href]="inferenceGraph.status.url"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 {{ inferenceGraph.status.url }}
               </a>
             </lib-details-list-item>

@@ -1,4 +1,6 @@
 // Mock for Kubeflow imports used in getK8sObjectUiStatus function
+import { throwError } from 'rxjs';
+
 export enum STATUS_TYPE {
   UNINITIALIZED = 'Uninitialized',
   TERMINATING = 'Terminating',
@@ -69,7 +71,7 @@ export class BackendService {
   constructor(public http?: any, public snack?: any) {}
 
   handleError(error: any): any {
-    return error;
+    return throwError(() => error);
   }
 }
 

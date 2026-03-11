@@ -10,11 +10,11 @@ log = logging.getLogger(__name__)
 
 
 @bp.route(
-    "/api/namespaces/<namespace>/inferenceservices/<inferenceService>", methods=["PUT"]
+    "/api/namespaces/<namespace>/inferenceservices/<inference_service>", methods=["PUT"]
 )
 @decorators.request_is_json_type
 @decorators.required_body_params("apiVersion", "kind", "metadata", "spec")
-def replace_inference_service(namespace: str, inferenceService: str):
+def replace_inference_service(namespace: str, inference_service: str):
     gvk = versions.inference_service_gvk()
     api.authz.ensure_authorized(
         "update",
@@ -31,7 +31,7 @@ def replace_inference_service(namespace: str, inferenceService: str):
         version=gvk["version"],
         plural=gvk["kind"],
         namespace=namespace,
-        name=inferenceService,
+        name=inference_service,
         body=customResource,
     )
 

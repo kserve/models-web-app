@@ -89,7 +89,9 @@ export class GraphInfoComponent implements OnInit, OnDestroy {
       this.getBackendObjects();
 
       // Unsubscribe from previous polling before starting a new one
-      this.pollingSubscription.unsubscribe();
+      if (this.pollingSubscription) {
+        this.pollingSubscription.unsubscribe();
+      }
 
       this.pollingSubscription = this.poller.start().subscribe(() => {
         this.getBackendObjects();

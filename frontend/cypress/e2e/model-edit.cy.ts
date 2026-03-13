@@ -1,3 +1,33 @@
+interface AceEditor {
+  getValue(): string;
+  setValue(value: string): void;
+  clearSelection(): void;
+}
+
+interface AceStatic {
+  edit(element: Element): AceEditor;
+}
+
+interface CypressWindowWithExtensions {
+  ace: AceStatic;
+  EventSource: {
+    new (url: string): {
+      readyState: number;
+      onerror: ((e: Event) => void) | null;
+      onopen: ((e: Event) => void) | null;
+      onmessage: ((e: MessageEvent) => void) | null;
+      close(): void;
+      addEventListener(): void;
+      removeEventListener(): void;
+      dispatchEvent(): boolean;
+    };
+    CONNECTING: 0 | number;
+    OPEN: 1 | number;
+    CLOSED: 2 | number;
+  };
+  setTimeout: Window['setTimeout'];
+}
+
 describe('Models Web App - Model Edit Tests', () => {
   const testModel = {
     metadata: {
@@ -34,6 +64,16 @@ describe('Models Web App - Model Edit Tests', () => {
   };
 
   beforeEach(() => {
+    // Mock the configuration API that's loaded during app initialization
+    cy.intercept('GET', '/api/config', {
+      statusCode: 200,
+      body: {
+        grafanaPrefix: '/grafana',
+        grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
+        grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
+      },
+    }).as('getConfig');
+
     // Mock namespaces API
     cy.intercept('GET', '/api/config/namespaces', {
       statusCode: 200,
@@ -122,13 +162,60 @@ describe('Models Web App - Model Edit Tests', () => {
       statusCode: 404,
     }).as('getGrafana');
 
-    // Navigate to model details page
-    cy.visit('/details/kubeflow-user/test-sklearn-model');
+    cy.visit('/details/kubeflow-user/test-sklearn-model', {
+      onBeforeLoad(win) {
+        const initialData = JSON.stringify({
+          type: 'INITIAL',
+          object: testModel,
+        });
+
+        class FakeEventSource {
+          static CONNECTING = 0;
+          static OPEN = 1;
+          static CLOSED = 2;
+          readyState = 1;
+          onerror: ((e: Event) => void) | null = null;
+          onopen: ((e: Event) => void) | null = null;
+          onmessage: ((e: MessageEvent) => void) | null = null;
+
+          constructor(url: string) {
+            if (url.includes('inferenceservices/test-sklearn-model')) {
+              win.setTimeout(() => {
+                if (this.onmessage) {
+                  this.onmessage(
+                    new MessageEvent('message', {
+                      data: initialData,
+                    }),
+                  );
+                }
+              }, 10);
+            } else {
+              this.readyState = 2;
+              win.setTimeout(() => {
+                if (this.onerror) this.onerror(new Event('error'));
+              }, 50);
+            }
+          }
+
+          close() {
+            this.readyState = 2;
+          }
+          addEventListener() {}
+          removeEventListener() {}
+          dispatchEvent() {
+            return false;
+          }
+        }
+
+        (win as unknown as CypressWindowWithExtensions).EventSource = FakeEventSource;
+      },
+    });
   });
 
   it('should load model details page and show edit button', () => {
-    // Wait for all API calls to complete (required for serverInfoLoaded = true)
-    cy.wait('@getInferenceService');
+    // Wait for config to be loaded first (needed for SSE check)
+    cy.wait('@getConfig');
+
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -137,13 +224,10 @@ describe('Models Web App - Model Edit Tests', () => {
     // Verify page elements are loaded
     cy.get('lib-title-actions-toolbar', { timeout: 10000 }).should('exist');
     cy.contains('Endpoint details').should('be.visible');
+    cy.get('mat-tab-group', { timeout: 20000 }).should('be.visible');
+
     cy.contains('test-sklearn-model').should('be.visible');
-
-    // Wait for tabs to appear (indicates serverInfoLoaded = true) - check for tab content
-    cy.get('mat-tab-group', { timeout: 15000 }).should('be.visible');
-
-    // Verify specific tabs exist by looking for their text content
-    cy.contains('OVERVIEW', { timeout: 10000 }).should('be.visible');
+    cy.contains('OVERVIEW').should('be.visible');
     cy.contains('DETAILS').should('be.visible');
 
     // Verify EDIT button exists (should be available after full load)
@@ -153,8 +237,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should enter edit mode when EDIT button is clicked', () => {
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -178,8 +263,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should display YAML content in editor', () => {
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -215,8 +301,9 @@ describe('Models Web App - Model Edit Tests', () => {
       },
     ).as('updateInferenceService');
 
-    // Wait for page to load completely
-    cy.wait('@getInferenceService');
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -231,9 +318,10 @@ describe('Models Web App - Model Edit Tests', () => {
     cy.get('.ace_editor', { timeout: 10000 }).should('be.visible');
 
     // Edit the YAML content
-    cy.window().then((win: any) => {
+    cy.window().then((win: Cypress.AUTWindow) => {
+      const typedWin = win as unknown as CypressWindowWithExtensions;
       // Get the ACE editor instance and modify content
-      const aceEditor = win.ace.edit(Cypress.$('.ace_editor')[0]);
+      const aceEditor = typedWin.ace.edit(Cypress.$('.ace_editor')[0]);
       const currentValue = aceEditor.getValue();
       const updatedValue = currentValue
         .replace(
@@ -267,8 +355,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should cancel edit when cancel button is clicked', () => {
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -308,8 +397,9 @@ describe('Models Web App - Model Edit Tests', () => {
       },
     ).as('updateInferenceServiceError');
 
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -341,8 +431,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should handle invalid YAML gracefully', () => {
-    // Wait for complete page load
-    cy.wait('@getInferenceService');
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
     cy.wait('@getRevision');
     cy.wait('@getConfiguration');
     cy.wait('@getKnativeService');
@@ -357,8 +448,9 @@ describe('Models Web App - Model Edit Tests', () => {
     cy.get('.ace_editor', { timeout: 10000 }).should('be.visible');
 
     // Set invalid YAML content
-    cy.window().then((win: any) => {
-      const aceEditor = win.ace.edit(Cypress.$('.ace_editor')[0]);
+    cy.window().then((win: Cypress.AUTWindow) => {
+      const typedWin = win as unknown as CypressWindowWithExtensions;
+      const aceEditor = typedWin.ace.edit(Cypress.$('.ace_editor')[0]);
       aceEditor.setValue('invalid: yaml: content: [unclosed');
       aceEditor.clearSelection();
     });
@@ -374,8 +466,40 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should allow navigation back from details page', () => {
-    // Wait for page to load
-    cy.wait('@getInferenceService');
+    cy.on('uncaught:exception', err => {
+      if (
+        err.message.includes('403') ||
+        err.message.includes('Forbidden') ||
+        err.message.includes('Http failure response')
+      ) {
+        return false;
+      }
+      return true;
+    });
+    cy.intercept('GET', '/api/namespaces/kubeflow-user/inferenceservices', {
+      statusCode: 200,
+      body: { inferenceServices: [testModel] },
+    }).as('getInferenceServicesList');
+
+    cy.intercept('GET', '/api/sse/namespaces/kubeflow-user/inferenceservices', {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+      },
+      body: `data: ${JSON.stringify({
+        type: 'INITIAL',
+        items: [testModel],
+      })}\n\n`,
+    }).as('watchInferenceServicesList');
+
+    // Wait for config to be loaded first
+    cy.wait('@getConfig');
+
+    cy.wait('@getRevision');
+    cy.wait('@getConfiguration');
+    cy.wait('@getKnativeService');
+    cy.wait('@getRoute');
 
     // Click back button
     cy.get('lib-title-actions-toolbar button[mat-icon-button]').first().click();

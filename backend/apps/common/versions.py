@@ -51,3 +51,15 @@ def inference_graph_gvk():
         "version": "v1alpha1",
         "kind": "inferencegraphs",
     }
+
+
+def trained_model_gvk():
+    """
+    Return the GVK needed for a TrainedModel.
+
+    """
+    return {
+        "group": "serving.kserve.io",
+        "version": "v1alpha1",
+        "kind": "trainedmodels",
+    }

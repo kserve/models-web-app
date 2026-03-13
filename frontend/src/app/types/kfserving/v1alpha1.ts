@@ -7,6 +7,20 @@ import {
 } from '@kubernetes/client-node';
 import { Params } from '@angular/router';
 
+export interface TrainedModelSpec {
+  inferenceService: string;
+  model: {
+    framework: string;
+    storageUri: string;
+    memory: string;
+  };
+}
+
+export interface TrainedModelK8s extends K8sObject {
+  metadata?: V1ObjectMeta;
+  spec?: TrainedModelSpec;
+}
+
 export interface InferenceGraphIR extends InferenceGraphK8s {
   // this type is used in the frontend after parsing the backend response
   ui: {

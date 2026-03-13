@@ -6,9 +6,12 @@ import {
   SnackBarService,
   SnackType,
 } from 'kubeflow';
-import { load } from 'js-yaml';
+import { loadAll } from 'js-yaml';
+import { forkJoin, Observable } from 'rxjs';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
+import { TrainedModelK8s } from 'src/app/types/kfserving/v1alpha1';
 import { MWABackendService } from 'src/app/services/backend.service';
+import { MWABackendResponse } from 'src/app/types/backend';
 
 @Component({
   selector: 'app-submit-form',
@@ -40,9 +43,9 @@ export class SubmitFormComponent implements OnInit {
   submit() {
     this.applying = true;
 
-    let customResource: InferenceServiceK8s;
+    let docs: unknown[];
     try {
-      customResource = load(this.yaml) as InferenceServiceK8s;
+      docs = loadAll(this.yaml);
     } catch (e) {
       let msg = 'Could not parse the provided YAML';
 
@@ -55,86 +58,87 @@ export class SubmitFormComponent implements OnInit {
         }
       }
 
-      const config: SnackBarConfig = {
-        data: {
-          msg,
-          snackType: SnackType.Error,
-        },
-        duration: 16000,
-      };
-      this.snack.open(config);
+      this.showError(msg);
       this.applying = false;
       return;
     }
 
-    if (!customResource) {
-      const config: SnackBarConfig = {
-        data: {
-          msg: 'YAML is empty or invalid',
-          snackType: SnackType.Error,
-        },
-        duration: 8000,
-      };
-      this.snack.open(config);
+    const validDocs = docs.filter(d => d != null);
+    if (validDocs.length === 0) {
+      this.showError('YAML is empty or invalid');
       this.applying = false;
       return;
     }
 
     const validationErrors: string[] = [];
+    const inferenceServices: InferenceServiceK8s[] = [];
+    const trainedModels: TrainedModelK8s[] = [];
 
-    if (!customResource.apiVersion) {
-      validationErrors.push('Missing required field: apiVersion');
+    for (const doc of validDocs) {
+      const resource = doc as any;
+      const kind = resource?.kind;
+
+      if (kind === 'InferenceService') {
+        validationErrors.push(...this.validateInferenceService(resource));
+        inferenceServices.push(resource as InferenceServiceK8s);
+      } else if (kind === 'TrainedModel') {
+        validationErrors.push(...this.validateTrainedModel(resource));
+        trainedModels.push(resource as TrainedModelK8s);
+      } else {
+        validationErrors.push(
+          `Unsupported resource kind: "${
+            kind || 'unknown'
+          }". Only InferenceService and TrainedModel are supported.`,
+        );
+      }
     }
-    if (!customResource.kind || customResource.kind !== 'InferenceService') {
+
+    if (inferenceServices.length === 0) {
       validationErrors.push(
-        'Missing or invalid field: kind (must be "InferenceService")',
+        'At least one InferenceService document is required.',
       );
     }
-    if (!customResource.metadata) {
-      validationErrors.push('Missing required field: metadata');
-    } else {
-      if (!customResource.metadata.name) {
-        validationErrors.push('Missing required field: metadata.name');
-      }
-    }
-    if (!customResource.spec) {
-      validationErrors.push('Missing required field: spec');
-    } else {
-      if (!customResource.spec.predictor) {
-        validationErrors.push('Missing required field: spec.predictor');
-      }
+
+    if (inferenceServices.length > 1) {
+      validationErrors.push(
+        'Only one InferenceService document is allowed per submission.',
+      );
     }
 
     if (validationErrors.length > 0) {
-      const config: SnackBarConfig = {
-        data: {
-          msg: validationErrors.join(' | '),
-          snackType: SnackType.Error,
-        },
-        duration: 16000,
-      };
-      this.snack.open(config);
+      this.showError(validationErrors.join(' | '), 16000);
       this.applying = false;
       return;
     }
 
-    customResource.metadata!.namespace = this.namespace;
+    const requests: Observable<MWABackendResponse>[] = [];
 
-    this.backend.postInferenceService(customResource).subscribe({
+    for (const svc of inferenceServices) {
+      svc.metadata!.namespace = this.namespace;
+      requests.push(this.backend.postInferenceService(svc));
+    }
+
+    for (const tm of trainedModels) {
+      if (!tm.metadata) {
+        tm.metadata = {};
+      }
+      tm.metadata.namespace = this.namespace;
+      requests.push(this.backend.postTrainedModel(tm));
+    }
+
+    forkJoin(requests).subscribe({
       next: () => {
-        const config: SnackBarConfig = {
-          data: {
-            msg: 'InferenceService created successfully.',
-            snackType: SnackType.Success,
-          },
-          duration: 3000,
-        };
-        this.snack.open(config);
+        const total = inferenceServices.length + trainedModels.length;
+        const msg =
+          total === 1
+            ? 'InferenceService created successfully.'
+            : `${total} resources created successfully.`;
+        this.showSuccess(msg);
         this.applying = false;
         this.navigateBack();
       },
       error: err => {
-        let errorMsg = 'Failed to create InferenceService';
+        let errorMsg = 'Failed to create resources';
 
         if (err?.error?.log) {
           errorMsg = err.error.log;
@@ -148,16 +152,68 @@ export class SubmitFormComponent implements OnInit {
           errorMsg = `Server error: ${err.statusText}`;
         }
 
-        const config: SnackBarConfig = {
-          data: {
-            msg: errorMsg,
-            snackType: SnackType.Error,
-          },
-          duration: 16000,
-        };
-        this.snack.open(config);
+        this.showError(errorMsg, 16000);
         this.applying = false;
       },
     });
+  }
+
+  private validateInferenceService(resource: any): string[] {
+    const errors: string[] = [];
+    if (!resource.apiVersion) {
+      errors.push('InferenceService: Missing required field: apiVersion');
+    }
+    if (!resource.metadata) {
+      errors.push('InferenceService: Missing required field: metadata');
+    } else if (!resource.metadata.name) {
+      errors.push('InferenceService: Missing required field: metadata.name');
+    }
+    if (!resource.spec) {
+      errors.push('InferenceService: Missing required field: spec');
+    } else if (!resource.spec.predictor) {
+      errors.push('InferenceService: Missing required field: spec.predictor');
+    }
+    return errors;
+  }
+
+  private validateTrainedModel(resource: any): string[] {
+    const errors: string[] = [];
+    if (!resource.apiVersion) {
+      errors.push('TrainedModel: Missing required field: apiVersion');
+    }
+    if (!resource.metadata) {
+      errors.push('TrainedModel: Missing required field: metadata');
+    } else if (!resource.metadata.name) {
+      errors.push('TrainedModel: Missing required field: metadata.name');
+    }
+    if (!resource.spec) {
+      errors.push('TrainedModel: Missing required field: spec');
+    } else {
+      if (!resource.spec.inferenceService) {
+        errors.push(
+          'TrainedModel: Missing required field: spec.inferenceService',
+        );
+      }
+      if (!resource.spec.model) {
+        errors.push('TrainedModel: Missing required field: spec.model');
+      }
+    }
+    return errors;
+  }
+
+  private showError(msg: string, duration = 8000) {
+    const config: SnackBarConfig = {
+      data: { msg, snackType: SnackType.Error },
+      duration,
+    };
+    this.snack.open(config);
+  }
+
+  private showSuccess(msg: string) {
+    const config: SnackBarConfig = {
+      data: { msg, snackType: SnackType.Success },
+      duration: 3000,
+    };
+    this.snack.open(config);
   }
 }

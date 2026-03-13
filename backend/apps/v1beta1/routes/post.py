@@ -41,3 +41,16 @@ def post_inference_graph(namespace):
     api.create_custom_rsrc(**gvk, data=customResource, namespace=namespace)
 
     return api.success_response("message", "InferenceGraph successfully created.")
+
+
+@bp.route("/api/namespaces/<namespace>/trainedmodels", methods=["POST"])
+@decorators.request_is_json_type
+@decorators.required_body_params("apiVersion", "kind", "metadata", "spec")
+def post_trained_model(namespace):
+    """Handle creation of a TrainedModel."""
+    customResource = request.get_json()
+
+    gvk = versions.trained_model_gvk()
+    api.create_custom_rsrc(**gvk, data=customResource, namespace=namespace)
+
+    return api.success_response("message", "TrainedModel successfully created.")

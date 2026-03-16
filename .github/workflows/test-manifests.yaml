@@ -15,16 +15,15 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout kserve/models-web-app
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Checkout kubeflow/manifests at one-line fix SHA
-        uses: actions/checkout@v4
+      - name: Checkout kubeflow/manifests
+        uses: actions/checkout@v5
         with:
-          repository: danish9039/manifests
-          ref: fee48d517e04c333163c6c06e4c799ee34547862
+          repository: kubeflow/manifests
           path: kubeflow-manifests
 
       - name: Install KinD, Create KinD cluster and Install kustomize
@@ -58,24 +57,16 @@ jobs:
         working-directory: kubeflow-manifests
         run: ./tests/knative_install.sh
 
-      - name: Install KServe core from kubeflow/manifests
-        run: |
-          cd kubeflow-manifests
-          set +e
-          for i in 1 2 3; do
-            kustomize build applications/kserve/kserve | kubectl apply --server-side --force-conflicts -f - && break
-            sleep 10
-          done
-          set -e
-          kubectl wait --for=condition=established --timeout=60s \
-            crd/clusterservingruntimes.serving.kserve.io
+      - name: Install KServe (core + ClusterServingRuntimes)
+        working-directory: kubeflow-manifests
+        run: ./tests/kserve_install.sh
 
-      - name: Install KServe Models Web App from THIS PR manifests
+      - name: Override models web app with THIS PR manifests
         run: |
           kustomize build manifests/kustomize/overlays/kubeflow | \
             kubectl apply --server-side --force-conflicts -f -
-          kubectl wait --for=condition=Ready pods --all --all-namespaces \
-            --timeout=600s --field-selector=status.phase!=Succeeded
+          kubectl rollout status deployment/kserve-models-web-application \
+            -n kubeflow --timeout=120s
           kubectl wait --for=condition=Available \
             deployment/kserve-models-web-application \
             -n kubeflow --timeout=60s
@@ -85,7 +76,7 @@ jobs:
         run: ./tests/kubeflow_profile_install.sh
 
       - name: Setup python 3.12
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.12
 
@@ -125,7 +116,7 @@ jobs:
 
       - name: Upload Diagnostic Logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: kserve-models-web-app-test-logs
           path: logs/

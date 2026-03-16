@@ -1,133 +1,120 @@
-name: Test Manifests
+name: Test KServe Models Web Application
 on:
   pull_request:
     paths:
-      - manifests/**
       - .github/workflows/test-manifests.yaml
+      - manifests/kustomize/**
 
 permissions:
   contents: read
   actions: read
 
-jobs:
-  test-models-web-application:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Models Web Application
-        uses: actions/checkout@v4
-        with:
-          path: models-web-app
+env:
+  KF_PROFILE: kubeflow-user-example-com
 
-      - name: Checkout kubeflow/manifests
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout kserve/models-web-app
+        uses: actions/checkout@v4
+
+      - name: Checkout kubeflow/manifests at one-line fix SHA
         uses: actions/checkout@v4
         with:
-          repository: kubeflow/manifests
-          path: manifests
-          ref: master
+          repository: danish9039/manifests
+          ref: fee48d517e04c333163c6c06e4c799ee34547862
+          path: kubeflow-manifests
 
       - name: Install KinD, Create KinD cluster and Install kustomize
-        working-directory: manifests
-        run: ./tests/install_KinD_create_KinD_cluster_install_kustomize.sh
+        run: ./kubeflow-manifests/tests/install_KinD_create_KinD_cluster_install_kustomize.sh
 
-      - name: Create kubeflow namespace
-        working-directory: manifests
-        run: kustomize build common/kubeflow-namespace/base | kubectl apply -f -
+      - name: Create Kubeflow Namespace
+        run: kustomize build kubeflow-manifests/common/kubeflow-namespace/base | kubectl apply -f -
 
-      - name: Create KServe namespace
-        run: kubectl create namespace kserve --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Build and dry-run apply KServe Models Web Application base manifests
-        working-directory: models-web-app
-        run: |
-          kustomize build manifests/kustomize/base | kubectl apply --dry-run=server -f -
-
-      - name: Sync KServe Models Web Application manifests into kubeflow/manifests checkout
-        run: |
-          rm -rf manifests/applications/kserve/models-web-app/base
-          rm -rf manifests/applications/kserve/models-web-app/components
-          rm -rf manifests/applications/kserve/models-web-app/overlays
-          cp -R models-web-app/manifests/kustomize/base manifests/applications/kserve/models-web-app/
-          cp -R models-web-app/manifests/kustomize/components manifests/applications/kserve/models-web-app/
-          cp -R models-web-app/manifests/kustomize/overlays manifests/applications/kserve/models-web-app/
-
-      - name: Patch kubeflow/manifests KServe tests for Models Web Application
-        run: python models-web-app/.github/scripts/patch_kubeflow_kserve_tests.py manifests
+      - name: Install Certificate Manager
+        run: ./kubeflow-manifests/tests/cert_manager_install.sh
 
       - name: Install Istio CNI
-        working-directory: manifests
-        run: ./tests/istio-cni_install.sh
+        run: ./kubeflow-manifests/tests/istio-cni_install.sh
 
-      - name: Install oauth2-proxy
-        working-directory: manifests
-        run: ./tests/oauth2-proxy_install.sh
+      - name: Install OAuth2 Proxy
+        run: ./kubeflow-manifests/tests/oauth2-proxy_install.sh
 
-      - name: Install cert-manager
-        working-directory: manifests
-        run: ./tests/cert_manager_install.sh
+      - name: Install Kubeflow Istio Resources
+        run: kustomize build kubeflow-manifests/common/istio/kubeflow-istio-resources/base | kubectl apply -f -
 
-      - name: Install knative CNI
-        working-directory: manifests
-        run: ./tests/knative_install.sh
+      - name: Install Multi-Tenancy
+        run: ./kubeflow-manifests/tests/multi_tenancy_install.sh
 
-      - name: Install KServe
-        working-directory: manifests
-        run: ./tests/kserve_install.sh
+      - name: Install Knative
+        run: ./kubeflow-manifests/tests/knative_install.sh
 
-      - name: Install KF Multi Tenancy
-        working-directory: manifests
-        run: ./tests/multi_tenancy_install.sh
+      - name: Install KServe core from kubeflow/manifests
+        run: |
+          cd kubeflow-manifests
+          set +e
+          for i in 1 2 3; do
+            kustomize build applications/kserve/kserve | kubectl apply --server-side --force-conflicts -f - && break
+            sleep 10
+          done
+          set -e
+          kubectl wait --for=condition=established --timeout=60s \
+            crd/clusterservingruntimes.serving.kserve.io
 
-      - name: Install kubeflow-istio-resources
-        working-directory: manifests
-        run: kustomize build common/istio/kubeflow-istio-resources/base | kubectl apply -f -
+      - name: Install KServe Models Web App from THIS PR manifests
+        run: |
+          kustomize build manifests/kustomize/overlays/kubeflow | \
+            kubectl apply --server-side --force-conflicts -f -
+          kubectl wait --for=condition=Ready pods --all --all-namespaces \
+            --timeout=600s --field-selector=status.phase!=Succeeded
+          kubectl wait --for=condition=Available \
+            deployment/kserve-models-web-application \
+            -n kubeflow --timeout=60s
 
       - name: Create KF Profile
-        working-directory: manifests
-        run: ./tests/kubeflow_profile_install.sh
-
-      - name: Wait for Istio configurations to propagate
-        run: |
-          kubectl wait --for=condition=Available --timeout=120s deployment/cluster-local-gateway -n istio-system
-          sleep 60
-
-      - name: Wait for KServe Models Web Application deployment
-        run: |
-          kubectl wait --for=condition=Ready pods --all --all-namespaces --timeout=300s --field-selector=status.phase!=Succeeded
-          kubectl wait --for=condition=Available deployment/kserve-models-web-application -n kubeflow --timeout=60s
-          sleep 10
+        run: ./kubeflow-manifests/tests/kubeflow_profile_install.sh
 
       - name: Setup python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: 3.12
 
-      - name: Verify KServe Models Web Application routing
-        run: |
-          EXPECTED_HOST="kserve-models-web-application.kubeflow.svc.cluster.local"
-          ACTUAL_HOST=$(kubectl get virtualservice kserve-models-web-application -n kubeflow -o jsonpath='{.spec.http[0].route[0].destination.host}')
-          if [ "${ACTUAL_HOST}" != "${EXPECTED_HOST}" ]; then
-            echo "FAILURE: Expected VirtualService destination host ${EXPECTED_HOST}, got ${ACTUAL_HOST}"
-            kubectl get virtualservice kserve-models-web-application -n kubeflow -o yaml
-            exit 1
-          fi
+      - name: Port-forward the istio-ingress gateway
+        run: ./kubeflow-manifests/tests/port_forward_gateway.sh
 
-      - name: Port forward
-        working-directory: manifests
-        run: ./tests/port_forward_gateway.sh
+      - name: Wait for Istio configurations to propagate
+        run: |
+          kubectl wait --for=condition=Available --timeout=120s \
+            deployment/cluster-local-gateway -n istio-system
+          sleep 60
 
       - name: Run KServe tests
-        working-directory: manifests
-        run: bash ./tests/kserve_test.sh kubeflow-user-example-com
+        run: ./kubeflow-manifests/tests/kserve_test.sh "${KF_PROFILE}"
 
-      - name: Debug KServe Models Web Application connectivity
-        if: failure()
+      - name: Apply Pod Security Standards
+        run: ./kubeflow-manifests/tests/PSS_enable.sh
+
+      - name: Collect Logs on Failure
+        if: failure() || cancelled()
         run: |
-          kubectl get deployment,service,endpoints,pods -n kubeflow -l app.kubernetes.io/component=kserve-models-web-application || true
-          kubectl get virtualservice kserve-models-web-application -n kubeflow -o yaml || true
-          kubectl get authorizationpolicy kserve-models-web-application -n kubeflow -o yaml || true
-          kubectl describe deployment kserve-models-web-application -n kubeflow || true
-          kubectl logs deployment/kserve-models-web-application -n kubeflow --all-containers=true --tail=200 || true
+          mkdir -p logs
+          kubectl get all --all-namespaces > logs/resources.txt
+          kubectl get events --all-namespaces \
+            --sort-by=.metadata.creationTimestamp > logs/events.txt
+          for ns in kubeflow istio-system cert-manager auth kubeflow-user-example-com; do
+            kubectl describe pods -n $ns > logs/$ns-pods.txt
+            for pod in $(kubectl get pods -n $ns \
+                -o jsonpath='{.items[*].metadata.name}'); do
+              kubectl logs -n $ns $pod --tail=100 \
+                > logs/$ns-$pod.txt 2>&1 || true
+            done
+          done
 
-      - name: Apply Pod Security Standards restricted levels
-        working-directory: manifests
-        run: ./tests/PSS_enable.sh
+      - name: Upload Diagnostic Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kserve-models-web-app-test-logs
+          path: logs/

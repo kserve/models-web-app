@@ -24,14 +24,14 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
   deployForm: FormGroup;
 
   frameworks = [
-    { value: 'sklearn', viewValue: 'Scikit-learn' },
-    { value: 'tensorflow', viewValue: 'TensorFlow' },
-    { value: 'pytorch', viewValue: 'PyTorch' },
-    { value: 'xgboost', viewValue: 'XGBoost' },
-    { value: 'huggingface', viewValue: 'HuggingFace' },
-    { value: 'onnx', viewValue: 'ONNX' },
-    { value: 'triton', viewValue: 'Triton' },
-    { value: 'custom', viewValue: 'Custom' },
+    { value: 'sklearn', viewValue: $localize`Scikit-learn` },
+    { value: 'tensorflow', viewValue: $localize`TensorFlow` },
+    { value: 'pytorch', viewValue: $localize`PyTorch` },
+    { value: 'xgboost', viewValue: $localize`XGBoost` },
+    { value: 'huggingface', viewValue: $localize`HuggingFace` },
+    { value: 'onnx', viewValue: $localize`ONNX` },
+    { value: 'triton', viewValue: $localize`Triton` },
+    { value: 'custom', viewValue: $localize`Custom` },
   ];
 
   private namespaceSubscription = new Subscription();

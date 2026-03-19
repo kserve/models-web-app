@@ -1,0 +1,42 @@
+.deploy-form {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.form-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.spacer {
+  display: none;
+}
+
+/* Material overrides to make the form look cleaner */
+::ng-deep .mat-form-field-wrapper {
+  padding-bottom: 1.25em;
+}

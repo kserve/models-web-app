@@ -1,6 +1,11 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { KubeflowModule } from 'kubeflow';
 import { NamespaceService, SnackBarService, DashboardState } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
@@ -33,7 +38,16 @@ describe('SubmitFormComponent', () => {
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [SubmitFormComponent],
-      imports: [RouterTestingModule, CommonModule, KubeflowModule],
+      imports: [
+        RouterTestingModule,
+        CommonModule,
+        KubeflowModule,
+        ReactiveFormsModule,
+        NoopAnimationsModule,
+        MatInputModule,
+        MatFormFieldModule,
+        MatSelectModule
+      ],
       providers: [
         { provide: MWABackendService, useValue: MWABackendServiceStub },
         { provide: NamespaceService, useValue: NamespaceServiceStub },

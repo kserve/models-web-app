@@ -8,16 +8,158 @@
   >
   </lib-title-actions-toolbar>
 
-  <lib-monaco-editor
-    [(text)]="yaml"
-    language="yaml"
-    [height]="620"
-  ></lib-monaco-editor>
+  <form [formGroup]="deployForm" class="deploy-form" (ngSubmit)="submit()">
+    <div class="form-section">
+      <h3>Model Info</h3>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Model Name *</mat-label>
+        <input
+          matInput
+          formControlName="modelName"
+          placeholder="e.g. my-sklearn-model"
+        />
+        <mat-hint>Lowercase letters, numbers, and hyphens only</mat-hint>
+        <mat-error *ngIf="deployForm.get('modelName')?.hasError('required')"
+          >Model name is required</mat-error
+        >
+        <mat-error *ngIf="deployForm.get('modelName')?.hasError('pattern')"
+          >Invalid Kubernetes name</mat-error
+        >
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Model Framework *</mat-label>
+        <mat-select formControlName="modelFramework">
+          <mat-option *ngFor="let fw of frameworks" [value]="fw.value">
+            {{ fw.viewValue }}
+          </mat-option>
+        </mat-select>
+        <mat-error
+          *ngIf="deployForm.get('modelFramework')?.hasError('required')"
+          >Framework is required</mat-error
+        >
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Framework Version</mat-label>
+        <input
+          matInput
+          formControlName="frameworkVersion"
+          placeholder="e.g. 2 (optional)"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Storage URI *</mat-label>
+        <input
+          matInput
+          formControlName="storageUri"
+          placeholder="gs://bucket/path or s3://bucket/path"
+        />
+        <mat-hint>Supports gs://, s3://, https://, and pvc paths</mat-hint>
+        <mat-error *ngIf="deployForm.get('storageUri')?.hasError('required')"
+          >Storage URI is required</mat-error
+        >
+        <mat-error *ngIf="deployForm.get('storageUri')?.hasError('pattern')"
+          >Invalid URI scheme</mat-error
+        >
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Runtime</mat-label>
+        <input
+          matInput
+          formControlName="runtime"
+          placeholder="e.g. kserve-sklearnserver (optional)"
+        />
+        <mat-hint
+          >Leave empty to let KServe auto-select based on framework</mat-hint
+        >
+      </mat-form-field>
+    </div>
+
+    <div class="form-section">
+      <h3>Scaling</h3>
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Min Replicas</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="minReplicas"
+            min="0"
+            max="100"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Max Replicas</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="maxReplicas"
+            min="1"
+            max="100"
+          />
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Resource Allocation</h3>
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>GPU (nvidia.com/gpu)</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="gpuCount"
+            min="0"
+            max="16"
+          />
+        </mat-form-field>
+        <div class="spacer"></div>
+        <mat-form-field appearance="outline">
+          <mat-label>CPU Request</mat-label>
+          <input
+            matInput
+            formControlName="cpuRequest"
+            placeholder="e.g. 500m or 1"
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>CPU Limit</mat-label>
+          <input
+            matInput
+            formControlName="cpuLimit"
+            placeholder="e.g. 1 or 2"
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Memory Request</mat-label>
+          <input
+            matInput
+            formControlName="memoryRequest"
+            placeholder="e.g. 512Mi"
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Memory Limit</mat-label>
+          <input
+            matInput
+            formControlName="memoryLimit"
+            placeholder="e.g. 1Gi"
+          />
+        </mat-form-field>
+      </div>
+    </div>
+  </form>
 
   <lib-submit-bar
     [allowYAMLEditing]="false"
     [isApplying]="applying"
-    [createDisabled]="!yaml"
+    [createDisabled]="deployForm.invalid"
     (create)="submit()"
     (cancel)="navigateBack()"
   ></lib-submit-bar>

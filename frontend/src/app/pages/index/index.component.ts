@@ -158,15 +158,10 @@ export class IndexComponent implements OnInit, OnDestroy {
               );
               this.cdr.detectChanges();
             } else if (event.type === 'ERROR') {
-              console.error('SSE error event received:', event.message);
               this.fallbackToPolling(ns);
             }
           },
           error => {
-            console.error(
-              'SSE connection error, falling back to polling:',
-              error,
-            );
             this.fallbackToPolling(ns);
           },
         );

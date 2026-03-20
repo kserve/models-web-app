@@ -81,15 +81,10 @@ export class EventsComponent implements OnDestroy {
               e => e.metadata?.uid !== event.object?.metadata?.uid,
             );
           } else if (event.type === 'ERROR') {
-            console.error('SSE error event received:', event.message);
             this.fallbackToPolling(inferenceService);
           }
         },
         error => {
-          console.error(
-            'SSE connection error, falling back to polling:',
-            error,
-          );
           this.fallbackToPolling(inferenceService);
         },
       );

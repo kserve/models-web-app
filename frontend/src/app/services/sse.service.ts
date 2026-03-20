@@ -55,53 +55,41 @@ export class SSEService {
 
   private createEventSource<T>(url: string): Observable<WatchEvent<T>> {
     return new Observable(observer => {
-      let eventSource: EventSource;
       let reconnectAttempts = 0;
       const maxReconnectAttempts = 3;
+      const eventSource = new EventSource(url);
 
-      try {
-        eventSource = new EventSource(url);
+      eventSource.onmessage = (event: MessageEvent) => {
+        if (!event.data || event.data.trim() === '') {
+          return;
+        }
 
-        eventSource.onmessage = (event: MessageEvent) => {
-          try {
-            if (!event.data || event.data.trim() === '') {
-              return;
-            }
+        const data: WatchEvent<T> = JSON.parse(event.data);
+        observer.next(data);
+        reconnectAttempts = 0;
+      };
 
-            const data: WatchEvent<T> = JSON.parse(event.data);
-            observer.next(data);
-            reconnectAttempts = 0;
-          } catch (error) {
-            console.error('Error parsing SSE message:', error);
-            observer.error(error);
+      eventSource.onerror = (error: Event) => {
+        if (eventSource.readyState === EventSource.CONNECTING) {
+          reconnectAttempts++;
+          if (reconnectAttempts >= maxReconnectAttempts) {
+            observer.error(
+              new Error(
+                `SSE failed to reconnect after ${maxReconnectAttempts} attempts`,
+              ),
+            );
+            eventSource.close();
           }
-        };
-
-        eventSource.onerror = (error: Event) => {
-          if (eventSource.readyState === EventSource.CONNECTING) {
-            reconnectAttempts++;
-            if (reconnectAttempts >= maxReconnectAttempts) {
-              observer.error(
-                new Error(
-                  `SSE failed to reconnect after ${maxReconnectAttempts} attempts`,
-                ),
-              );
-              eventSource.close();
-            }
-            return;
-          }
-          observer.error(error);
-          eventSource.close();
-        };
-
-        eventSource.onopen = () => {
-          reconnectAttempts = 0;
-        };
-      } catch (error) {
+          return;
+        }
         observer.error(error);
-      }
+        eventSource.close();
+      };
 
-      // Cleanup function
+      eventSource.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
       return () => {
         if (eventSource) {
           eventSource.close();

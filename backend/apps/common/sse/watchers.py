@@ -61,13 +61,6 @@ class InferenceServiceWatcher:
 
     def _watch_namespace_thread(self, namespace: str, callback: Callable):
         """Thread function for watching a namespace."""
-        thread_id = threading.get_ident()
-        log.info(
-            f"[Thread {thread_id}] Watcher thread started for namespace: {namespace}"
-        )
-
-        # Track state outside the loop so INITIAL is only sent once and the
-        # watch stream resumes from the correct resourceVersion after a timeout.
         initial_sent = False
         resource_version = None
 
@@ -86,33 +79,16 @@ class InferenceServiceWatcher:
                     )
 
                 if self._stop_event.is_set():
-                    log.info(
-                        f"[Thread {thread_id}] Stop event detected after watch completion for {namespace}"
-                    )
                     break
-                else:
-                    log.info(
-                        f"[Thread {thread_id}] Watch stream ended naturally (timeout), restarting for {namespace}"
-                    )
 
             except Exception as e:
                 if self._stop_event.is_set():
-                    log.info(
-                        f"[Thread {thread_id}] Stop event detected in exception handler for {namespace}"
-                    )
                     break
-                log.error(
-                    f"[Thread {thread_id}] Error in namespace watch for {namespace}: {e}"
-                )
+                log.error(f"Error in namespace watch for {namespace}: {e}")
                 callback("ERROR", {"message": str(e)})
-                # Reset state so the next retry does a fresh initial fetch
                 initial_sent = False
                 resource_version = None
                 time.sleep(5)
-
-        log.info(
-            f"[Thread {thread_id}] Watcher thread EXITING for namespace: {namespace}"
-        )
 
     def _do_namespace_watch(
         self,
@@ -122,40 +98,25 @@ class InferenceServiceWatcher:
         initial_sent: bool,
         resource_version: Optional[str],
     ) -> tuple:
-        """Perform one iteration of the namespace watch within request context.
-
-        Sends INITIAL only when initial_sent is False, then streams watch events
-        from resource_version. Returns the updated (initial_sent, resource_version)
-        so the caller can resume correctly after a stream timeout.
-        """
+        """Perform one iteration of the namespace watch within request context."""
         w = watch.Watch()
 
         if not initial_sent:
             try:
-                log.info(f"Fetching initial list for {namespace} with GVK: {gvk}")
                 initial_list = api.list_custom_rsrc(**gvk, namespace=namespace)
                 items = initial_list.get("items", [])
                 resource_version = initial_list.get("metadata", {}).get(
                     "resourceVersion"
                 )
-                log.info(
-                    f"Successfully fetched {len(items)} items, resourceVersion={resource_version}"
-                )
                 callback("INITIAL", {"items": items})
-                log.info(f"INITIAL callback completed for {namespace}")
                 initial_sent = True
             except Exception as e:
-                log.error(
-                    f"Error fetching initial list for {namespace}: {e}", exc_info=True
-                )
+                log.error(f"Error fetching initial list for {namespace}: {e}")
                 callback("ERROR", {"message": str(e)})
                 time.sleep(5)
                 return initial_sent, resource_version
 
         try:
-            log.info(
-                f"Starting watch stream for {namespace} from resourceVersion={resource_version}"
-            )
             for event in w.stream(
                 api.custom_api.list_namespaced_custom_object,
                 group=gvk["group"],
@@ -166,14 +127,12 @@ class InferenceServiceWatcher:
                 timeout_seconds=60,
             ):
                 if self._stop_event.is_set():
-                    log.info(f"Stop event set, breaking watch for {namespace}")
                     break
 
                 event_type = event.get("type")
                 obj = event.get("object")
 
                 if not event_type or not obj:
-                    log.warning(f"Received incomplete event: {event}")
                     continue
 
                 if isinstance(obj, dict):
@@ -183,8 +142,8 @@ class InferenceServiceWatcher:
                     try:
                         deployment_mode = utils.get_deployment_mode(obj)
                         obj["deploymentMode"] = deployment_mode
-                    except Exception as e:
-                        log.warning(f"Error getting deployment mode: {e}")
+                    except Exception:
+                        pass
 
                 callback(event_type, obj)
         finally:
@@ -194,7 +153,6 @@ class InferenceServiceWatcher:
 
     def _watch_single_thread(self, namespace: str, name: str, callback: Callable):
         """Thread function for watching a single resource."""
-        # Track state outside the loop so INITIAL is only sent once.
         initial_sent = False
         resource_version = None
 
@@ -218,9 +176,6 @@ class InferenceServiceWatcher:
                     )
 
                 if self._stop_event.is_set():
-                    log.info(
-                        f"Stop event detected after watch completion for {namespace}/{name}"
-                    )
                     break
 
             except Exception as e:
@@ -228,7 +183,6 @@ class InferenceServiceWatcher:
                     break
                 log.error(f"Error in single watch for {namespace}/{name}: {e}")
                 callback("ERROR", {"message": str(e)})
-                # Reset state so the next retry does a fresh initial fetch
                 initial_sent = False
                 resource_version = None
                 time.sleep(5)
@@ -242,11 +196,7 @@ class InferenceServiceWatcher:
         initial_sent: bool,
         resource_version: Optional[str],
     ) -> tuple:
-        """Perform one iteration of the single-resource watch within request context.
-
-        Sends INITIAL only when initial_sent is False, then streams watch events
-        from resource_version. Returns the updated (initial_sent, resource_version).
-        """
+        """Perform one iteration of the single-resource watch within request context."""
         w = watch.Watch()
 
         if not initial_sent:
@@ -284,20 +234,17 @@ class InferenceServiceWatcher:
                 obj = event.get("object")
 
                 if not event_type or not obj:
-                    log.warning(f"Received incomplete event: {event}")
                     continue
 
                 if isinstance(obj, dict):
-                    # Track the latest resourceVersion so the stream resumes
-                    # from the right point after a timeout.
                     rv = obj.get("metadata", {}).get("resourceVersion")
                     if rv:
                         resource_version = rv
                     try:
                         deployment_mode = utils.get_deployment_mode(obj)
                         obj["deploymentMode"] = deployment_mode
-                    except Exception as e:
-                        log.warning(f"Error getting deployment mode: {e}")
+                    except Exception:
+                        pass
 
                 callback(event_type, obj)
         finally:
@@ -307,10 +254,7 @@ class InferenceServiceWatcher:
 
     def stop(self):
         """Stop the watcher."""
-        log.debug("Setting stop event for watcher")
         self._stop_event.set()
-        # Don't wait for thread to join - it will exit on next watch timeout
-        # The thread is daemon so it will be cleaned up automatically
 
 
 class EventWatcher:
@@ -355,25 +299,16 @@ class EventWatcher:
             w = watch.Watch()
             try:
                 if not initial_sent:
-                    try:
-                        initial_events = v1.list_namespaced_event(
-                            namespace, field_selector=field_selector
-                        )
-                        events_list = [
-                            api.object_to_dict(event) for event in initial_events.items
-                        ]
-                        resource_version = initial_events.metadata.resource_version
-                        callback("INITIAL", {"items": events_list})
-                        initial_sent = True
-                    except Exception as e:
-                        log.error(
-                            f"Error fetching initial events for {namespace}/{name}: {e}"
-                        )
-                        callback("ERROR", {"message": str(e)})
-                        time.sleep(5)
-                        continue
+                    initial_events = v1.list_namespaced_event(
+                        namespace, field_selector=field_selector
+                    )
+                    events_list = [
+                        api.object_to_dict(event) for event in initial_events.items
+                    ]
+                    resource_version = initial_events.metadata.resource_version
+                    callback("INITIAL", {"items": events_list})
+                    initial_sent = True
 
-                # Watch for new events on the specific resource
                 for event in w.stream(
                     v1.list_namespaced_event,
                     namespace=namespace,
@@ -388,17 +323,13 @@ class EventWatcher:
                     obj = event.get("object")
 
                     if not event_type or not obj:
-                        log.warning(f"Received incomplete event: {event}")
                         continue
 
-                    try:
-                        obj_dict = api.object_to_dict(obj)
-                        resource_version = obj_dict.get("metadata", {}).get(
-                            "resourceVersion", resource_version
-                        )
-                        callback(event_type, obj_dict)
-                    except Exception as e:
-                        log.error(f"Error processing event: {e}")
+                    obj_dict = api.object_to_dict(obj)
+                    resource_version = obj_dict.get("metadata", {}).get(
+                        "resourceVersion", resource_version
+                    )
+                    callback(event_type, obj_dict)
 
             except Exception as e:
                 if self._stop_event.is_set():
@@ -487,7 +418,6 @@ class LogWatcher:
         self, namespace: str, name: str, components: List[str], callback: Callable
     ):
         """Helper method to fetch and stream logs within request context."""
-        # Get the InferenceService
         gvk = versions.inference_service_gvk()
         svc = api.get_custom_rsrc(**gvk, namespace=namespace, name=name)
 
@@ -527,7 +457,6 @@ class LogWatcher:
         if callback:
             callback("UPDATE", {"logs": logs_response})
 
-        # Poll every 3 seconds (matching original behavior)
         time.sleep(3)
 
     def stop(self):

@@ -207,7 +207,8 @@ describe('Models Web App - Model Edit Tests', () => {
           }
         }
 
-        (win as unknown as CypressWindowWithExtensions).EventSource = FakeEventSource;
+        (win as unknown as CypressWindowWithExtensions).EventSource =
+          FakeEventSource;
       },
     });
   });

@@ -46,12 +46,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       text: 'EDIT',
       icon: 'edit',
       fn: () => {
-        console.log('[Debug] EDIT button clicked. Setting isEditing = true.'); // Add log
-        // Make a copy of current isvc so polling update doesn't affect editing
-        this.editingIsvc = JSON.parse(JSON.stringify(this.inferenceService)); // Use deep copy
+        this.editingIsvc = JSON.parse(JSON.stringify(this.inferenceService));
         this.isEditing = true;
-        console.log('[Debug] isEditing is now:', this.isEditing); // Add log
-        console.log('[Debug] editingIsvc data:', this.editingIsvc); // Add log
       },
     }),
     new ToolbarButton({
@@ -86,7 +82,6 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Handle route params
     this.route.params.subscribe(params => {
-      console.log($localize`Using namespace: ${params.namespace}`);
       this.ns.updateSelectedNamespace(params.namespace);
 
       this.serverName = params.name;
@@ -110,36 +105,22 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
               this.updateInferenceService(event.object);
               this.loadOwnedObjects(event.object);
             } else if (event.type === 'DELETED') {
-              // Resource was deleted, navigate back to list
-              console.log('InferenceService deleted, navigating to index');
               this.router.navigate(['/']);
             } else if (event.type === 'ERROR') {
-              console.error('SSE error event received:', event.message);
               this.startPolling();
             }
           },
           error => {
-            console.error(
-              'SSE connection error, falling back to polling:',
-              error,
-            );
             this.startPolling();
           },
         );
     });
 
-    // don't show a METRICS tab if Grafana is not exposed
-    console.log($localize`Checking if Grafana endpoint is exposed`);
     this.configService.getConfig().subscribe(
       config => {
         this.checkGrafanaAvailability(config.grafanaPrefix);
       },
-      error => {
-        console.error(
-          'Failed to load configuration for ServerInfoComponent:',
-          error,
-        );
-        // Use default prefix as fallback
+      () => {
         this.checkGrafanaAvailability('/grafana');
       },
     );
@@ -184,7 +165,6 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   public cancelEdit() {
-    console.log('[Debug] cancelEdit called. Setting isEditing = false.'); // Add log
     this.isEditing = false;
   }
 
@@ -243,10 +223,6 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   private getBackendObjects() {
-    console.log(
-      $localize`Fetching info for InferenceService ${this.namespace}/${this.serverName}`,
-    );
-
     this.backend
       .getInferenceService(this.namespace, this.serverName)
       .subscribe(inferenceService => {
@@ -303,13 +279,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         )
         .pipe(
           map(objects => [component, objects]),
-          catchError(error => {
-            console.error(
-              `Error fetching ModelMesh objects for ${component}:`,
-              error,
-            );
-            return of([component, {}]);
-          }),
+          catchError(() => of([component, {}])),
         );
     } else if (deploymentMode === 'Standard') {
       // Handle Standard mode
@@ -321,13 +291,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         )
         .pipe(
           map(objects => [component, objects]),
-          catchError(error => {
-            console.error(
-              `Error fetching Standard objects for ${component}:`,
-              error,
-            );
-            return of([component, {}]);
-          }),
+          catchError(() => of([component, {}])),
         );
     } else {
       // Handle Serverless mode
@@ -388,21 +352,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       .pipe(timeout(1000))
       .subscribe({
         next: resp => {
-          if (!Array.isArray(resp)) {
-            console.log(
-              $localize`Response from the Grafana endpoint was not as expected.`,
-            );
-            this.grafanaFound = false;
-            return;
-          }
-
-          console.log(
-            $localize`Grafana endpoint detected. Will expose a metrics tab.`,
-          );
-          this.grafanaFound = true;
+          this.grafanaFound = Array.isArray(resp);
         },
         error: () => {
-          console.log($localize`Could not detect a Grafana endpoint.`);
           this.grafanaFound = false;
         },
       });

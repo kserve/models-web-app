@@ -20,21 +20,15 @@ def event_stream(client_queue, timeout=5):
         client_queue: Queue to receive events from
         timeout: Timeout for queue polling (seconds)
     """
-    log.info("event_stream() called")
     try:
         while True:
             try:
-                log.debug(
-                    f"Calling client_queue.get() with timeout={timeout}, qsize={client_queue.qsize()}"
-                )
                 message = client_queue.get(timeout=timeout)
-                log.info(f"Got message from queue: {message[:100]}...")
                 yield message
             except Empty:
-                log.debug("Queue empty, sending heartbeat")
                 yield ": heartbeat\n\n"
     except GeneratorExit:
-        log.info("Client disconnected from SSE stream")
+        pass
 
 
 @bp.route("/api/sse/namespaces/<namespace>/inferenceservices")
@@ -54,21 +48,15 @@ def stream_inference_services(namespace):
         watcher = InferenceServiceWatcher(app=current_app._get_current_object())
         return watcher.watch_namespace(ns, callback)
 
-    log.info(f"About to register namespace watch for {namespace}")
     sse_manager.register_namespace_watch(namespace, client_queue, watcher_factory)
-    log.info(f"Registered namespace watch for {namespace}, returning Response")
 
     def generate():
-        log.info(f"Generator started for {namespace}")
         try:
             for event in event_stream(client_queue):
-                log.debug(f"Yielding event for {namespace}")
                 yield event
         finally:
-            log.info(f"Generator finished for {namespace}")
             sse_manager.unregister_namespace_watch(namespace, client_queue)
 
-    log.info(f"Creating Response object for {namespace}")
     return Response(
         generate(),
         mimetype="text/event-stream",

@@ -48,7 +48,7 @@ export class MWANamespaceService {
     }
 
     return this.http
-      .get<{ namespaces: string[] }>('/api/config/namespaces')
+      .get<{ namespaces: string[] }>('api/config/namespaces')
       .pipe(
         catchError(error => {
           console.error('Error fetching namespace config:', error);

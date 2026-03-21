@@ -6,7 +6,8 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA } from '@angular/core';
-import { NamespaceService, SnackBarService } from 'kubeflow';
+import { NamespaceService, SnackBarService, DashboardState } from 'kubeflow';
+import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { of, throwError } from 'rxjs';
 import { GraphFormComponent } from './graph-form.component';
 import { MWABackendService } from 'src/app/services/backend.service';
@@ -40,6 +41,7 @@ describe('GraphFormComponent (Jest)', () => {
   let mockLocation: any;
   let mockActivatedRoute: any;
   let mockNamespaceService: any;
+  let mockMWANamespaceService: any;
 
   beforeEach(async () => {
     mockBackendService = {
@@ -50,6 +52,12 @@ describe('GraphFormComponent (Jest)', () => {
 
     mockNamespaceService = {
       getSelectedNamespace: jest.fn().mockReturnValue(of('kubeflow-user')),
+      dashboardConnected$: of(DashboardState.Disconnected),
+    };
+
+    mockMWANamespaceService = {
+      getSelectedNamespace: jest.fn().mockReturnValue(of('kubeflow-user')),
+      initialize: jest.fn().mockReturnValue(of('')),
     };
 
     mockSnackBar = {
@@ -78,6 +86,7 @@ describe('GraphFormComponent (Jest)', () => {
       providers: [
         { provide: MWABackendService, useValue: mockBackendService },
         { provide: NamespaceService, useValue: mockNamespaceService },
+        { provide: MWANamespaceService, useValue: mockMWANamespaceService },
         { provide: SnackBarService, useValue: mockSnackBar },
         { provide: Location, useValue: mockLocation },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },

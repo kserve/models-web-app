@@ -34,6 +34,7 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
   env = environment;
 
   namespaceSubscription = new Subscription();
+  dashboardSubscription = new Subscription();
   pollingSubscription = new Subscription();
 
   currentNamespace: string | string[];
@@ -73,28 +74,49 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Reset the poller whenever the selected namespace changes
-    this.namespaceSubscription = this.mwaNamespace
-      .getSelectedNamespace()
-      .subscribe(namespace => {
-        if (!namespace) {
-          return;
+    this.dashboardSubscription = this.namespaceService.dashboardConnected$.subscribe(
+      dashboardState => {
+        this.namespaceSubscription.unsubscribe();
+
+        if (dashboardState === DashboardState.Disconnected) {
+          // Standalone mode: use MWANamespaceService for namespace selection
+          this.namespaceSubscription = this.mwaNamespace
+            .getSelectedNamespace()
+            .subscribe(selectedNamespace => {
+              if (!selectedNamespace) {
+                return;
+              }
+              this.currentNamespace = selectedNamespace;
+              this.poll(selectedNamespace);
+              this.newGraphButton.namespaceChanged(
+                selectedNamespace,
+                $localize`InferenceGraph`,
+              );
+            });
+          this.mwaNamespace.initialize().subscribe();
+        } else {
+          // Kubeflow mode: use the central dashboard NamespaceService
+          this.namespaceSubscription = this.namespaceService
+            .getSelectedNamespace()
+            .subscribe(selectedNamespace => {
+              if (!selectedNamespace) {
+                return;
+              }
+              this.currentNamespace = selectedNamespace;
+              this.poll(selectedNamespace);
+              this.newGraphButton.namespaceChanged(
+                selectedNamespace,
+                $localize`InferenceGraph`,
+              );
+            });
         }
-
-        this.currentNamespace = namespace;
-        this.poll(namespace);
-        this.newGraphButton.namespaceChanged(
-          namespace,
-          $localize`InferenceGraph`,
-        );
-      });
-
-    // Initialize after setting up the subscription
-    this.mwaNamespace.initialize().subscribe();
+      },
+    );
   }
 
   ngOnDestroy() {
     this.namespaceSubscription.unsubscribe();
+    this.dashboardSubscription.unsubscribe();
     this.pollingSubscription.unsubscribe();
   }
 

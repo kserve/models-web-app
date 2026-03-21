@@ -65,7 +65,7 @@ describe('IndexComponent', () => {
         { provide: MWANamespaceService, useValue: MWANamespaceServiceStub },
         { provide: SnackBarService, useValue: {} },
         { provide: Clipboard, useValue: {} },
-        { provide: PollerService, useValue: {} },
+        { provide: PollerService, useValue: { exponential: () => of() } },
       ],
     }).compileComponents();
   }));

@@ -57,6 +57,16 @@ jobs:
           type=sha
           # Add 'latest' tag for master branch pushes
           type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+    - name: Extract version from git tag
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "version=" >> $GITHUB_OUTPUT
+        fi
     - name: Build and push multi-architecture OCI image
       uses: docker/build-push-action@v5
       with:
@@ -68,3 +78,5 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=${{ steps.version.outputs.version }}

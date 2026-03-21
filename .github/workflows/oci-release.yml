@@ -61,12 +61,15 @@ jobs:
       id: version
       run: |
         if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          # For tag builds: use the clean tag version
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
         else
-          echo "version=" >> $GITHUB_OUTPUT
+          # For branch builds: use git describe to derive version from history
+          VERSION=$(git describe --tags --always)
+          VERSION="${VERSION#v}"
         fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
     - name: Build and push multi-architecture OCI image
       uses: docker/build-push-action@v5
       with:

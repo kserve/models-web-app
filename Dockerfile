@@ -36,12 +36,18 @@ FROM node:22-bookworm-slim AS frontend
 
 WORKDIR /src
 COPY ./frontend/package*.json ./
+
 ENV NODE_OPTIONS=--openssl-legacy-provider
 RUN npm install --legacy-peer-deps
 COPY --from=frontend-kubeflow-lib /src/dist/kubeflow/ ./node_modules/kubeflow/
 
 COPY ./frontend/ .
-RUN npm run build -- --output-path=./dist/default --configuration=production
+# Accept version as build argument and update package.json
+ARG VERSION
+RUN if [ -n "$VERSION" ]; then \
+        npm pkg set version="$VERSION"; \
+    fi
+RUN npm run build -- --output-path=./dist/default
 
 # Web App
 FROM python:3.12-slim

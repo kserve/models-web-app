@@ -10,12 +10,12 @@ import {
   ConfirmDialogService,
   SnackBarService,
   PollerService,
+  KubeflowModule,
+  DashboardState,
 } from 'kubeflow';
 import { CommonModule } from '@angular/common';
-import { KubeflowModule } from 'kubeflow';
 import { IndexComponent } from './index.component';
 import { of } from 'rxjs';
-import { DashboardState } from 'kubeflow';
 
 let MWABackendServiceStub: Partial<MWABackendService>;
 let NamespaceServiceStub: Partial<NamespaceService>;

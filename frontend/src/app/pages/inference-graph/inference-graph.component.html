@@ -6,7 +6,10 @@
   >
     <!-- Standalone mode: use custom namespace selector when Kubeflow dashboard is not connected -->
     <app-namespace-select
-      *ngIf="(namespaceService.dashboardConnected$ | async) === dashboardDisconnectedState"
+      *ngIf="
+        (namespaceService.dashboardConnected$ | async) ===
+        dashboardDisconnectedState
+      "
     ></app-namespace-select>
   </lib-title-actions-toolbar>
 

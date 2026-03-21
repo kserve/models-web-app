@@ -35,11 +35,12 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.dashboardSubscription = this.namespaceService.dashboardConnected$.subscribe(
-      dashboardState => {
+    this.dashboardSubscription =
+      this.namespaceService.dashboardConnected$.subscribe(dashboardState => {
         this.namespaceSubscription.unsubscribe();
 
         if (dashboardState === DashboardState.Disconnected) {
+          this.mwaNamespace.initialize().subscribe();
           this.namespaceSubscription = this.mwaNamespace
             .getSelectedNamespace()
             .subscribe(namespace => {
@@ -52,8 +53,7 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
               this.namespace = namespace;
             });
         }
-      },
-    );
+      });
   }
 
   ngOnDestroy() {

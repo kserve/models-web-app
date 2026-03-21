@@ -74,8 +74,8 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.dashboardSubscription = this.namespaceService.dashboardConnected$.subscribe(
-      dashboardState => {
+    this.dashboardSubscription =
+      this.namespaceService.dashboardConnected$.subscribe(dashboardState => {
         this.namespaceSubscription.unsubscribe();
 
         if (dashboardState === DashboardState.Disconnected) {
@@ -110,8 +110,7 @@ export class InferenceGraphComponent implements OnInit, OnDestroy {
               );
             });
         }
-      },
-    );
+      });
   }
 
   ngOnDestroy() {

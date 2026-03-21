@@ -52,11 +52,12 @@ spec:
   ) {}
 
   ngOnInit() {
-    this.dashboardSubscription = this.namespaceService.dashboardConnected$.subscribe(
-      dashboardState => {
+    this.dashboardSubscription =
+      this.namespaceService.dashboardConnected$.subscribe(dashboardState => {
         this.namespaceSubscription.unsubscribe();
 
         if (dashboardState === DashboardState.Disconnected) {
+          this.mwaNamespace.initialize().subscribe();
           this.namespaceSubscription = this.mwaNamespace
             .getSelectedNamespace()
             .subscribe(namespace => {
@@ -69,8 +70,7 @@ spec:
               this.namespace = namespace;
             });
         }
-      },
-    );
+      });
 
     this.route.params.subscribe(params => {
       if (params['namespace'] && params['name']) {

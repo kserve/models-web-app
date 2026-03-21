@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, take, tap } from 'rxjs/operators';
 import { SnackBarService, SnackBarConfig, SnackType } from 'kubeflow';
 
 export interface MWANamespaceConfig {
@@ -48,7 +48,7 @@ export class MWANamespaceService {
     }
 
     return this.http
-      .get<{ namespaces: string[] }>('/api/config/namespaces')
+      .get<{ namespaces: string[] }>('api/config/namespaces')
       .pipe(
         catchError(error => {
           console.error('Error fetching namespace config:', error);
@@ -132,6 +132,7 @@ export class MWANamespaceService {
    */
   public initialize(): Observable<string> {
     return this.getNamespaceConfig().pipe(
+      take(1),
       map(config => {
         // Return the auto-selected namespace or empty string
         return config.autoSelectedNamespace || this._selectedNamespace$.value;

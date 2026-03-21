@@ -10,9 +10,10 @@ import {
   ConfirmDialogService,
   SnackBarService,
   PollerService,
+  KubeflowModule,
+  DashboardState,
 } from 'kubeflow';
 import { CommonModule } from '@angular/common';
-import { KubeflowModule } from 'kubeflow';
 import { IndexComponent } from './index.component';
 import { of } from 'rxjs';
 
@@ -28,6 +29,7 @@ MWABackendServiceStub = {
 NamespaceServiceStub = {
   getSelectedNamespace: () => of(),
   getSelectedNamespace2: () => of(),
+  dashboardConnected$: of(DashboardState.Disconnected),
 };
 
 MWANamespaceServiceStub = {
@@ -63,7 +65,7 @@ describe('IndexComponent', () => {
         { provide: MWANamespaceService, useValue: MWANamespaceServiceStub },
         { provide: SnackBarService, useValue: {} },
         { provide: Clipboard, useValue: {} },
-        { provide: PollerService, useValue: {} },
+        { provide: PollerService, useValue: { exponential: () => of() } },
       ],
     }).compileComponents();
   }));

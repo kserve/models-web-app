@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   NamespaceService,
+  DashboardState,
   SnackBarConfig,
   SnackBarService,
   SnackType,
@@ -9,28 +10,55 @@ import {
 import { load } from 'js-yaml';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { MWABackendService } from 'src/app/services/backend.service';
+import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-submit-form',
   templateUrl: './submit-form.component.html',
   styleUrls: ['./submit-form.component.scss'],
 })
-export class SubmitFormComponent implements OnInit {
+export class SubmitFormComponent implements OnInit, OnDestroy {
   yaml = '';
   namespace!: string;
   applying = false;
 
+  private namespaceSubscription = new Subscription();
+  private dashboardSubscription = new Subscription();
+
   constructor(
     private router: Router,
     private namespaceService: NamespaceService,
+    private mwaNamespace: MWANamespaceService,
     private snack: SnackBarService,
     private backend: MWABackendService,
   ) {}
 
   ngOnInit() {
-    this.namespaceService.getSelectedNamespace().subscribe(namespace => {
-      this.namespace = namespace;
-    });
+    this.dashboardSubscription =
+      this.namespaceService.dashboardConnected$.subscribe(dashboardState => {
+        this.namespaceSubscription.unsubscribe();
+
+        if (dashboardState === DashboardState.Disconnected) {
+          this.mwaNamespace.initialize().subscribe();
+          this.namespaceSubscription = this.mwaNamespace
+            .getSelectedNamespace()
+            .subscribe(namespace => {
+              this.namespace = namespace;
+            });
+        } else {
+          this.namespaceSubscription = this.namespaceService
+            .getSelectedNamespace()
+            .subscribe(namespace => {
+              this.namespace = namespace;
+            });
+        }
+      });
+  }
+
+  ngOnDestroy() {
+    this.namespaceSubscription.unsubscribe();
+    this.dashboardSubscription.unsubscribe();
   }
 
   navigateBack() {

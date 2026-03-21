@@ -12,6 +12,7 @@ import {
   PollerService,
   STATUS_TYPE,
   DIALOG_RESP,
+  DashboardState,
 } from 'kubeflow';
 import { InferenceGraphComponent } from './inference-graph.component';
 import { of, Subject } from 'rxjs';
@@ -66,6 +67,7 @@ describe('InferenceGraphComponent (Jest)', () => {
 
     mockNamespaceService = {
       getSelectedNamespace: jest.fn().mockReturnValue(of('kubeflow-user')),
+      dashboardConnected$: of(DashboardState.Disconnected),
     };
 
     mockMWANamespaceService = {

@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import {
   NamespaceService,
+  DashboardState,
   SnackBarConfig,
   SnackBarService,
   SnackType,
@@ -10,13 +11,15 @@ import {
 import { load, dump } from 'js-yaml';
 import { InferenceGraphK8s } from 'src/app/types/kfserving/v1alpha1';
 import { MWABackendService } from 'src/app/services/backend.service';
+import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-graph-form',
   templateUrl: './graph-form.component.html',
   styleUrls: ['./graph-form.component.scss'],
 })
-export class GraphFormComponent implements OnInit {
+export class GraphFormComponent implements OnInit, OnDestroy {
   yaml = `apiVersion: serving.kserve.io/v1alpha1
 kind: InferenceGraph
 metadata:
@@ -35,19 +38,39 @@ spec:
   graphName!: string;
   isLoading = false;
 
+  private namespaceSubscription = new Subscription();
+  private dashboardSubscription = new Subscription();
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private location: Location,
     private namespaceService: NamespaceService,
+    private mwaNamespace: MWANamespaceService,
     private snack: SnackBarService,
     private backend: MWABackendService,
   ) {}
 
   ngOnInit() {
-    this.namespaceService.getSelectedNamespace().subscribe(namespace => {
-      this.namespace = namespace;
-    });
+    this.dashboardSubscription =
+      this.namespaceService.dashboardConnected$.subscribe(dashboardState => {
+        this.namespaceSubscription.unsubscribe();
+
+        if (dashboardState === DashboardState.Disconnected) {
+          this.mwaNamespace.initialize().subscribe();
+          this.namespaceSubscription = this.mwaNamespace
+            .getSelectedNamespace()
+            .subscribe(namespace => {
+              this.namespace = namespace;
+            });
+        } else {
+          this.namespaceSubscription = this.namespaceService
+            .getSelectedNamespace()
+            .subscribe(namespace => {
+              this.namespace = namespace;
+            });
+        }
+      });
 
     this.route.params.subscribe(params => {
       if (params['namespace'] && params['name']) {
@@ -57,6 +80,11 @@ spec:
         this.loadGraphForEditing();
       }
     });
+  }
+
+  ngOnDestroy() {
+    this.namespaceSubscription.unsubscribe();
+    this.dashboardSubscription.unsubscribe();
   }
 
   private loadGraphForEditing() {

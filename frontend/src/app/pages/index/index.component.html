@@ -1,14 +1,9 @@
 <div class="lib-content-wrapper">
   <lib-title-actions-toolbar title="Endpoints" [buttons]="buttons" i18n-title>
-    <!-- Use our custom namespace selector -->
-    <app-namespace-select></app-namespace-select>
-
-    <!-- Fallback to original Kubeflow namespace selector for dashboard disconnected state -->
-    <lib-namespace-select
+    <!-- Standalone mode: use custom namespace selector when Kubeflow dashboard is not connected -->
+    <app-namespace-select
       *ngIf="(ns.dashboardConnected$ | async) === dashboardDisconnectedState"
-      style="display: none"
-    >
-    </lib-namespace-select>
+    ></app-namespace-select>
   </lib-title-actions-toolbar>
 
   <!--scrollable page content-->

@@ -1,0 +1,122 @@
+name: Test KServe Models Web Application
+on:
+  pull_request:
+    paths:
+      - .github/workflows/test-manifests.yaml
+      - manifests/kustomize/**
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  KF_PROFILE: kubeflow-user-example-com
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout kserve/models-web-app
+        uses: actions/checkout@v5
+
+      - name: Checkout kubeflow/manifests
+        uses: actions/checkout@v5
+        with:
+          repository: kubeflow/manifests
+          path: kubeflow-manifests
+
+      - name: Install KinD, Create KinD cluster and Install kustomize
+        run: ./kubeflow-manifests/tests/install_KinD_create_KinD_cluster_install_kustomize.sh
+
+      - name: Create Kubeflow Namespace
+        working-directory: kubeflow-manifests
+        run: kustomize build common/kubeflow-namespace/base | kubectl apply -f -
+
+      - name: Install Certificate Manager
+        working-directory: kubeflow-manifests
+        run: ./tests/cert_manager_install.sh
+
+      - name: Install Istio CNI
+        working-directory: kubeflow-manifests
+        run: ./tests/istio-cni_install.sh
+
+      - name: Install OAuth2 Proxy
+        working-directory: kubeflow-manifests
+        run: ./tests/oauth2-proxy_install.sh
+
+      - name: Install Kubeflow Istio Resources
+        working-directory: kubeflow-manifests
+        run: kustomize build common/istio/kubeflow-istio-resources/base | kubectl apply -f -
+
+      - name: Install Multi-Tenancy
+        working-directory: kubeflow-manifests
+        run: ./tests/multi_tenancy_install.sh
+
+      - name: Install Knative
+        working-directory: kubeflow-manifests
+        run: ./tests/knative_install.sh
+
+      - name: Install KServe (core + ClusterServingRuntimes)
+        working-directory: kubeflow-manifests
+        run: ./tests/kserve_install.sh
+
+      - name: Override models web app with THIS PR manifests
+        run: |
+          kustomize build manifests/kustomize/overlays/kubeflow | \
+            kubectl apply --server-side --force-conflicts -f -
+          kubectl rollout status deployment/kserve-models-web-application \
+            -n kubeflow --timeout=120s
+          kubectl wait --for=condition=Available \
+            deployment/kserve-models-web-application \
+            -n kubeflow --timeout=60s
+
+      - name: Create KF Profile
+        working-directory: kubeflow-manifests
+        run: ./tests/kubeflow_profile_install.sh
+
+      - name: Setup python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: Port-forward the istio-ingress gateway
+        working-directory: kubeflow-manifests
+        run: ./tests/port_forward_gateway.sh
+
+      - name: Wait for Istio configurations to propagate
+        run: |
+          kubectl wait --for=condition=Available --timeout=120s \
+            deployment/cluster-local-gateway -n istio-system
+          sleep 60
+
+      - name: Run KServe tests
+        working-directory: kubeflow-manifests
+        run: ./tests/kserve_test.sh "${KF_PROFILE}"
+
+      - name: Apply Pod Security Standards
+        working-directory: kubeflow-manifests
+        run: ./tests/PSS_enable.sh
+
+      - name: Collect Logs on Failure
+        if: failure() || cancelled()
+        run: |
+          mkdir -p logs
+          kubectl get all --all-namespaces > logs/resources.txt
+          kubectl get events --all-namespaces \
+            --sort-by=.metadata.creationTimestamp > logs/events.txt
+          for ns in kubeflow istio-system cert-manager auth kubeflow-user-example-com; do
+            kubectl describe pods -n $ns > logs/$ns-pods.txt
+            for pod in $(kubectl get pods -n $ns \
+                -o jsonpath='{.items[*].metadata.name}'); do
+              kubectl logs -n $ns $pod --tail=100 \
+                > logs/$ns-$pod.txt 2>&1 || true
+            done
+          done
+
+      - name: Upload Diagnostic Logs
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: kserve-models-web-app-test-logs
+          path: logs/

@@ -1,18 +1,156 @@
 <div class="edit-component">
-  <div
-    #editorWrapper
-    style="border: 1px solid #ccc"
-    [style.width]="editorStyle.width"
-    [style.height]="editorStyle.height"
-    [style.fontSize]="editorStyle.fontSize"
-  ></div>
+  <form [formGroup]="editForm" class="edit-form">
+    <div class="form-section">
+      <h3 i18n>Model Info</h3>
 
-  <div style="margin-top: 10px">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label i18n>Model Name</mat-label>
+        <input matInput formControlName="modelName" readonly />
+        <mat-hint i18n>Name cannot be changed after creation</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label i18n>Model Framework</mat-label>
+        <mat-select formControlName="modelFramework">
+          <mat-option *ngFor="let fw of frameworks" [value]="fw.value">
+            {{ fw.viewValue }}
+          </mat-option>
+        </mat-select>
+        <mat-error
+          *ngIf="editForm.get('modelFramework')?.hasError('required')"
+          i18n
+          >Framework is required</mat-error
+        >
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label i18n>Framework Version</mat-label>
+        <input
+          matInput
+          formControlName="frameworkVersion"
+          placeholder="e.g. 2 (optional)"
+          i18n-placeholder
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label i18n>Storage URI</mat-label>
+        <input
+          matInput
+          formControlName="storageUri"
+          placeholder="gs://bucket/path or s3://bucket/path"
+          i18n-placeholder
+        />
+        <mat-hint i18n>Supports gs://, s3://, https://, and pvc paths</mat-hint>
+        <mat-error *ngIf="editForm.get('storageUri')?.hasError('required')" i18n
+          >Storage URI is required</mat-error
+        >
+        <mat-error *ngIf="editForm.get('storageUri')?.hasError('pattern')" i18n
+          >Invalid URI scheme</mat-error
+        >
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label i18n>Runtime</mat-label>
+        <input
+          matInput
+          formControlName="runtime"
+          placeholder="e.g. kserve-sklearnserver (optional)"
+          i18n-placeholder
+        />
+        <mat-hint i18n
+          >Leave empty to let KServe auto-select based on framework</mat-hint
+        >
+      </mat-form-field>
+    </div>
+
+    <div class="form-section">
+      <h3 i18n>Scaling</h3>
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label i18n>Min Replicas</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="minReplicas"
+            min="0"
+            max="100"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label i18n>Max Replicas</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="maxReplicas"
+            min="1"
+            max="100"
+          />
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3 i18n>Resource Allocation</h3>
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label i18n>GPU (nvidia.com/gpu)</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="gpuCount"
+            min="0"
+            max="16"
+          />
+        </mat-form-field>
+        <div class="spacer"></div>
+        <mat-form-field appearance="outline">
+          <mat-label i18n>CPU Request</mat-label>
+          <input
+            matInput
+            formControlName="cpuRequest"
+            placeholder="e.g. 500m or 1"
+            i18n-placeholder
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label i18n>CPU Limit</mat-label>
+          <input
+            matInput
+            formControlName="cpuLimit"
+            placeholder="e.g. 1 or 2"
+            i18n-placeholder
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label i18n>Memory Request</mat-label>
+          <input
+            matInput
+            formControlName="memoryRequest"
+            placeholder="e.g. 512Mi"
+            i18n-placeholder
+          />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label i18n>Memory Limit</mat-label>
+          <input
+            matInput
+            formControlName="memoryLimit"
+            placeholder="e.g. 1Gi"
+            i18n-placeholder
+          />
+        </mat-form-field>
+      </div>
+    </div>
+  </form>
+
+  <div class="button-bar">
     <button
       mat-raised-button
       color="primary"
       (click)="submit()"
-      [disabled]="applying"
+      [disabled]="applying || editForm.invalid"
     >
       <mat-spinner
         *ngIf="applying"

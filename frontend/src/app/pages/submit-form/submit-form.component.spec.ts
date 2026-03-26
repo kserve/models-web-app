@@ -46,7 +46,7 @@ describe('SubmitFormComponent', () => {
         NoopAnimationsModule,
         MatInputModule,
         MatFormFieldModule,
-        MatSelectModule
+        MatSelectModule,
       ],
       providers: [
         { provide: MWABackendService, useValue: MWABackendServiceStub },

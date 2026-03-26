@@ -24,19 +24,24 @@ class InferenceServiceRequest(BaseModel):
 
     # --- Model identity ---
     name: str = Field(
-        ..., min_length=1, max_length=253,
+        ...,
+        min_length=1,
+        max_length=253,
         description="Kubernetes-valid name (lowercase, numbers, hyphens)",
     )
     framework: str = Field(..., description="Model framework")
     framework_version: Optional[str] = Field(
-        None, description="Framework version (e.g. '2')",
+        None,
+        description="Framework version (e.g. '2')",
     )
     storage_uri: str = Field(
-        ..., min_length=1,
+        ...,
+        min_length=1,
         description="Model artifact URI (gs://, s3://, https://, pvc://)",
     )
     runtime: Optional[str] = Field(
-        None, description="Explicit ServingRuntime name",
+        None,
+        description="Explicit ServingRuntime name",
     )
 
     # --- Scaling ---
@@ -47,7 +52,9 @@ class InferenceServiceRequest(BaseModel):
     gpu: int = Field(0, ge=0, le=16, description="Number of GPUs")
     cpu_request: Optional[str] = Field(None, description="CPU request (e.g. 500m)")
     cpu_limit: Optional[str] = Field(None, description="CPU limit (e.g. 1)")
-    memory_request: Optional[str] = Field(None, description="Memory request (e.g. 512Mi)")
+    memory_request: Optional[str] = Field(
+        None, description="Memory request (e.g. 512Mi)"
+    )
     memory_limit: Optional[str] = Field(None, description="Memory limit (e.g. 1Gi)")
 
     @field_validator("name")

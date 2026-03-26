@@ -14,7 +14,7 @@
       <h3 i18n>Model Info</h3>
 
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label i18n>Model Name *</mat-label>
+        <mat-label i18n>Model Name</mat-label>
         <input
           matInput
           formControlName="modelName"
@@ -22,7 +22,9 @@
           i18n-placeholder
         />
         <mat-hint i18n>Lowercase letters, numbers, and hyphens only</mat-hint>
-        <mat-error *ngIf="deployForm.get('modelName')?.hasError('required')" i18n
+        <mat-error
+          *ngIf="deployForm.get('modelName')?.hasError('required')"
+          i18n
           >Model name is required</mat-error
         >
         <mat-error *ngIf="deployForm.get('modelName')?.hasError('pattern')" i18n
@@ -31,7 +33,7 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label i18n>Model Framework *</mat-label>
+        <mat-label i18n>Model Framework</mat-label>
         <mat-select formControlName="modelFramework">
           <mat-option *ngFor="let fw of frameworks" [value]="fw.value">
             {{ fw.viewValue }}
@@ -55,7 +57,7 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label i18n>Storage URI *</mat-label>
+        <mat-label i18n>Storage URI</mat-label>
         <input
           matInput
           formControlName="storageUri"
@@ -63,10 +65,14 @@
           i18n-placeholder
         />
         <mat-hint i18n>Supports gs://, s3://, https://, and pvc paths</mat-hint>
-        <mat-error *ngIf="deployForm.get('storageUri')?.hasError('required')" i18n
+        <mat-error
+          *ngIf="deployForm.get('storageUri')?.hasError('required')"
+          i18n
           >Storage URI is required</mat-error
         >
-        <mat-error *ngIf="deployForm.get('storageUri')?.hasError('pattern')" i18n
+        <mat-error
+          *ngIf="deployForm.get('storageUri')?.hasError('pattern')"
+          i18n
           >Invalid URI scheme</mat-error
         >
       </mat-form-field>

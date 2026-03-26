@@ -1,8 +1,19 @@
 # Models web application
 
-This web application is responsible for allowing the user to manipulate the Model Servers (Endpoints) in his Kubeflow cluster. To achieve this it provides a user friendly way to handle the lifecycle of `InferenceService` CRs.
+This web application is responsible for allowing users to manage KServe inference resources in a Kubeflow cluster. It provides a user-friendly way to handle the lifecycle of both `InferenceService` and `InferenceGraph` custom resources.
 
-The web application currently works with `v1beta1` versions of `InferenceService` objects.
+## Supported Resources
+
+- `InferenceService` resources in `serving.kserve.io/v1beta1`
+- `InferenceGraph` resources in `serving.kserve.io/v1alpha1`
+
+## Current Scope
+
+`InferenceService` and `InferenceGraph` are both first-class resources in the application, but they do not currently share the exact same UI surface.
+
+- `InferenceService` remains the primary model server management flow, including the main list/details experience and service-specific operational views.
+- `InferenceGraph` is available through dedicated list, create, edit, and details routes.
+- `InferenceGraph` details currently focus on graph overview, events, and YAML rather than the full set of `InferenceService` operational views.
 
 ## Documentation
 

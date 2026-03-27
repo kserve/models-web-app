@@ -211,6 +211,127 @@ describe('Models Web App - Model Edit Tests', () => {
     });
   });
 
+  it('should display pre-populated form fields from new-style model spec', () => {
+    const newStyleModel = {
+      metadata: {
+        name: 'test-sklearn-model',
+        namespace: 'kubeflow-user',
+        creationTimestamp: '2024-01-15T10:30:00Z',
+        resourceVersion: '67890',
+        uid: 'test-uid-456',
+      },
+      spec: {
+        predictor: {
+          minReplicas: 2,
+          maxReplicas: 5,
+          model: {
+            modelFormat: {
+              name: 'tensorflow',
+              version: '2',
+            },
+            storageUri: 'gs://test-bucket/tf-saved-model',
+            runtime: 'kserve-tensorflow-serving',
+            resources: {
+              requests: { cpu: '500m', memory: '512Mi' },
+              limits: { cpu: '2', memory: '2Gi', 'nvidia.com/gpu': '1' },
+            },
+          },
+        },
+      },
+      status: {
+        conditions: [
+          {
+            type: 'Ready',
+            status: 'True',
+            lastTransitionTime: '2024-01-15T10:35:00Z',
+          },
+        ],
+        url: 'http://test-sklearn-model.kubeflow-user.example.com',
+        components: {
+          predictor: {
+            latestCreatedRevision: 'test-sklearn-model-predictor-00001',
+          },
+        },
+      },
+    };
+
+    // Override the default inference service mock with the new-style model
+    // and re-visit the page so the new intercept takes effect
+    // (beforeEach already visited with the legacy model)
+    cy.intercept(
+      'GET',
+      '/api/namespaces/kubeflow-user/inferenceservices/test-sklearn-model',
+      {
+        statusCode: 200,
+        body: { inferenceService: newStyleModel },
+      },
+    ).as('getInferenceService');
+
+    cy.visit('/details/kubeflow-user/test-sklearn-model');
+    waitForPageLoad();
+
+    // Enter edit mode
+    cy.get('lib-title-actions-toolbar').within(() => {
+      cy.get('button').contains('EDIT').click();
+    });
+
+    // Wait for edit form
+    cy.get('app-edit form.edit-form', { timeout: 10000 }).should('be.visible');
+
+    // Verify form fields are pre-populated from the new-style model spec
+    cy.get('app-edit').within(() => {
+      // Model name read-only
+      cy.get('input[formControlName="modelName"]').should(
+        'have.value',
+        'test-sklearn-model',
+      );
+
+      // Framework from model.modelFormat.name
+      cy.get('mat-select[formControlName="modelFramework"]').should(
+        'contain',
+        'TensorFlow',
+      );
+
+      // Storage URI from model.storageUri
+      cy.get('input[formControlName="storageUri"]').should(
+        'have.value',
+        'gs://test-bucket/tf-saved-model',
+      );
+
+      // Framework version from model.modelFormat.version
+      cy.get('input[formControlName="frameworkVersion"]').should(
+        'have.value',
+        '2',
+      );
+
+      // Runtime from model.runtime
+      cy.get('input[formControlName="runtime"]').should(
+        'have.value',
+        'kserve-tensorflow-serving',
+      );
+
+      // Scaling from predictor level
+      cy.get('input[formControlName="minReplicas"]').should('have.value', '2');
+      cy.get('input[formControlName="maxReplicas"]').should('have.value', '5');
+
+      // Resources from model.resources
+      cy.get('input[formControlName="cpuRequest"]').should(
+        'have.value',
+        '500m',
+      );
+      cy.get('input[formControlName="memoryRequest"]').should(
+        'have.value',
+        '512Mi',
+      );
+      cy.get('input[formControlName="cpuLimit"]').should('have.value', '2');
+      cy.get('input[formControlName="memoryLimit"]').should(
+        'have.value',
+        '2Gi',
+      );
+      cy.get('input[formControlName="gpuCount"]').should('have.value', '1');
+    });
+  });
+
   it('should successfully submit edited model', () => {
     // Mock successful update
     cy.intercept(

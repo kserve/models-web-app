@@ -5,18 +5,23 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 SUPPORTED_FRAMEWORKS = {
     "sklearn",
+    "xgboost",
     "tensorflow",
     "pytorch",
-    "xgboost",
-    "huggingface",
-    "onnx",
     "triton",
+    "onnx",
+    "pmml",
+    "lightgbm",
+    "paddle",
+    "huggingface",
     "custom",
 }
 
 STORAGE_URI_PATTERN = re.compile(r"^(gs|s3|https?|pvc)://")
-K8S_NAME_PATTERN = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
-K8S_RESOURCE_PATTERN = re.compile(r"^[0-9]+(\.[0-9]+)?(m|Ki|Mi|Gi|Ti)?$")
+K8S_NAME_PATTERN = re.compile(r"^[a-z0-9]([-.a-z0-9]*[a-z0-9])?$")
+K8S_RESOURCE_PATTERN = re.compile(
+    r"^[0-9]+(\.[0-9]+)?" r"([munpf]|[kMGTPE]i?|[KMGTPE]|[eE][0-9]+)?$"
+)
 
 
 class InferenceServiceRequest(BaseModel):

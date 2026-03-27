@@ -8,7 +8,6 @@ import {
   SnackBarService,
   SnackType,
 } from 'kubeflow';
-import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { Subscription } from 'rxjs';
@@ -34,6 +33,7 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
     { value: 'lightgbm', viewValue: $localize`LightGBM` },
     { value: 'paddle', viewValue: $localize`PaddlePaddle` },
     { value: 'huggingface', viewValue: $localize`HuggingFace` },
+    { value: 'custom', viewValue: $localize`Custom` },
   ];
 
   private namespaceSubscription = new Subscription();

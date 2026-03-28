@@ -1,7 +1,10 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SnackBarService, SnackType } from 'kubeflow';
-import { InferenceServiceK8s } from '../../../types/kfserving/v1beta1';
+import {
+  InferenceServiceK8s,
+  PredictorSpec,
+} from '../../../types/kfserving/v1beta1';
 import { MWABackendService } from '../../../services/backend.service';
 
 @Component({
@@ -32,6 +35,7 @@ export class EditComponent implements OnInit {
     { value: 'lightgbm', viewValue: $localize`LightGBM` },
     { value: 'paddle', viewValue: $localize`PaddlePaddle` },
     { value: 'huggingface', viewValue: $localize`HuggingFace` },
+    { value: 'custom', viewValue: $localize`Custom` },
   ];
 
   constructor(
@@ -127,7 +131,18 @@ export class EditComponent implements OnInit {
       resources = (predictor.model as any).resources || {};
     } else {
       // Legacy style: spec.predictor.<framework>
-      const legacyTypes = [
+      const legacyTypes: (keyof Pick<
+        PredictorSpec,
+        | 'sklearn'
+        | 'xgboost'
+        | 'tensorflow'
+        | 'pytorch'
+        | 'triton'
+        | 'onnx'
+        | 'pmml'
+        | 'lightgbm'
+        | 'huggingface'
+      >)[] = [
         'sklearn',
         'xgboost',
         'tensorflow',
@@ -136,15 +151,15 @@ export class EditComponent implements OnInit {
         'onnx',
         'pmml',
         'lightgbm',
-        'paddle',
         'huggingface',
       ];
       for (const type of legacyTypes) {
-        if (predictor[type]) {
+        const spec = predictor[type];
+        if (spec) {
           framework = type;
-          storageUri = predictor[type].storageUri || '';
-          frameworkVersion = predictor[type].runtimeVersion || '';
-          resources = predictor[type].resources || {};
+          storageUri = spec.storageUri || '';
+          frameworkVersion = spec.runtimeVersion || '';
+          resources = (spec as any).resources || {};
           break;
         }
       }
@@ -195,7 +210,7 @@ export class EditComponent implements OnInit {
       return;
     }
 
-    const cr: any = {
+    const customResource = {
       apiVersion: 'serving.kserve.io/v1beta1',
       kind: 'InferenceService',
       metadata: {
@@ -216,26 +231,28 @@ export class EditComponent implements OnInit {
           },
         },
       },
-    };
+    } as InferenceServiceK8s;
 
     // Strip Kubernetes-managed metadata fields that shouldn't be sent
-    delete cr.metadata.creationTimestamp;
-    delete cr.metadata.finalizers;
-    delete cr.metadata.generation;
-    delete cr.metadata.managedFields;
-    delete cr.metadata.selfLink;
-    delete cr.metadata.uid;
-    if (cr.metadata.annotations) {
-      delete cr.metadata.annotations[
+    delete customResource.metadata!.creationTimestamp;
+    delete customResource.metadata!.finalizers;
+    delete customResource.metadata!.generation;
+    delete customResource.metadata!.managedFields;
+    delete customResource.metadata!.selfLink;
+    delete customResource.metadata!.uid;
+    if (customResource.metadata!.annotations) {
+      delete customResource.metadata!.annotations[
         'kubectl.kubernetes.io/last-applied-configuration'
       ];
     }
 
     if (v.frameworkVersion) {
-      cr.spec.predictor.model.modelFormat.version = String(v.frameworkVersion);
+      customResource.spec!.predictor.model!.modelFormat.version = String(
+        v.frameworkVersion,
+      );
     }
     if (v.runtime) {
-      cr.spec.predictor.model.runtime = v.runtime;
+      customResource.spec!.predictor.model!.runtime = v.runtime;
     }
 
     const resources: any = {};
@@ -251,11 +268,15 @@ export class EditComponent implements OnInit {
     if (Object.keys(requests).length > 0) resources.requests = requests;
     if (Object.keys(limits).length > 0) resources.limits = limits;
     if (Object.keys(resources).length > 0) {
-      cr.spec.predictor.model.resources = resources;
+      (customResource.spec!.predictor.model as any).resources = resources;
     }
 
     this.backend
-      .editInferenceService(this.originalNamespace, this.originalName, cr)
+      .editInferenceService(
+        this.originalNamespace,
+        this.originalName,
+        customResource,
+      )
       .subscribe({
         next: () => {
           this.snack.open({

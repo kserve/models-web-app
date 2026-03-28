@@ -12,8 +12,11 @@
       <mat-form-field appearance="outline" class="full-width">
         <mat-label i18n>Model Framework</mat-label>
         <mat-select formControlName="modelFramework">
-          <mat-option *ngFor="let fw of frameworks" [value]="fw.value">
-            {{ fw.viewValue }}
+          <mat-option
+            *ngFor="let frameworkOption of frameworks"
+            [value]="frameworkOption.value"
+          >
+            {{ frameworkOption.viewValue }}
           </mat-option>
         </mat-select>
         <mat-error

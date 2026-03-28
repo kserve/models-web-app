@@ -12,6 +12,14 @@ from .validators import InferenceServiceRequest
 log = logging.getLogger(__name__)
 
 
+def _safe_int(value, default=0):
+    """Parse a value as int, returning *default* on failure."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 @bp.route("/api/namespaces/<namespace>/inferenceservices", methods=["POST"])
 @decorators.request_is_json_type
 @decorators.required_body_params("apiVersion", "kind", "metadata", "spec")
@@ -85,7 +93,7 @@ def post_inference_service(namespace):
         "runtime": runtime,
         "min_replicas": predictor.get("minReplicas", 1),
         "max_replicas": predictor.get("maxReplicas", 1),
-        "gpu": int(lim_resources.get("nvidia.com/gpu", 0)),
+        "gpu": _safe_int(lim_resources.get("nvidia.com/gpu", 0)),
         "cpu_request": req_resources.get("cpu"),
         "cpu_limit": lim_resources.get("cpu"),
         "memory_request": req_resources.get("memory"),

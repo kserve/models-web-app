@@ -21,7 +21,9 @@
           placeholder="e.g. my-sklearn-model"
           i18n-placeholder
         />
-        <mat-hint i18n>Lowercase letters, numbers, and hyphens only</mat-hint>
+        <mat-hint i18n
+          >Lowercase letters, numbers, hyphens, and dots only</mat-hint
+        >
         <mat-error
           *ngIf="deployForm.get('modelName')?.hasError('required')"
           i18n
@@ -35,8 +37,11 @@
       <mat-form-field appearance="outline" class="full-width">
         <mat-label i18n>Model Framework</mat-label>
         <mat-select formControlName="modelFramework">
-          <mat-option *ngFor="let fw of frameworks" [value]="fw.value">
-            {{ fw.viewValue }}
+          <mat-option
+            *ngFor="let frameworkOption of frameworks"
+            [value]="frameworkOption.value"
+          >
+            {{ frameworkOption.viewValue }}
           </mat-option>
         </mat-select>
         <mat-error

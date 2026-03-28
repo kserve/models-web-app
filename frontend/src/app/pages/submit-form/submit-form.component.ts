@@ -8,6 +8,7 @@ import {
   SnackBarService,
   SnackType,
 } from 'kubeflow';
+import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { Subscription } from 'rxjs';
@@ -52,7 +53,7 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
         '',
         [
           Validators.required,
-          Validators.pattern('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'),
+          Validators.pattern('^[a-z0-9]([-.a-z0-9]*[a-z0-9])?$'),
         ],
       ],
       modelFramework: ['', Validators.required],
@@ -125,7 +126,7 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const customResource: any = {
+    const customResource = {
       apiVersion: 'serving.kserve.io/v1beta1',
       kind: 'InferenceService',
       metadata: {
@@ -144,15 +145,15 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
           },
         },
       },
-    };
+    } as InferenceServiceK8s;
 
     if (v.frameworkVersion) {
-      customResource.spec.predictor.model.modelFormat.version = String(
+      customResource.spec!.predictor.model!.modelFormat.version = String(
         v.frameworkVersion,
       );
     }
     if (v.runtime) {
-      customResource.spec.predictor.model.runtime = v.runtime;
+      customResource.spec!.predictor.model!.runtime = v.runtime;
     }
 
     const resources: any = {};
@@ -168,7 +169,7 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
     if (Object.keys(requests).length > 0) resources.requests = requests;
     if (Object.keys(limits).length > 0) resources.limits = limits;
     if (Object.keys(resources).length > 0) {
-      customResource.spec.predictor.model!.resources = resources;
+      (customResource.spec!.predictor.model as any).resources = resources;
     }
 
     this.backend.postInferenceService(customResource).subscribe({

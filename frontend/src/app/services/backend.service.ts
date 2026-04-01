@@ -271,6 +271,18 @@ export class MWABackendService extends BackendService {
       .pipe(catchError(error => this.handleError(error)));
   }
 
+  public patchInferenceService(
+    namespace: string,
+    name: string,
+    patch: any,
+  ): Observable<MWABackendResponse> {
+    const url = `api/namespaces/${namespace}/inferenceservices/${name}`;
+
+    return this.http
+      .patch<MWABackendResponse>(url, patch)
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
   public editInferenceGraph(
     namespace: string,
     name: string,

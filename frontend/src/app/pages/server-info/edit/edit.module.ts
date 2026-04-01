@@ -1,8 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
-import { KubeflowModule } from 'kubeflow';
+import { EditorModule, KubeflowModule } from 'kubeflow';
 import { EditComponent } from './edit.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -16,6 +17,8 @@ import { MatSelectModule } from '@angular/material/select';
     CommonModule,
     ReactiveFormsModule,
     KubeflowModule,
+    EditorModule,
+    MatCheckboxModule,
     MatDividerModule,
     MatButtonModule,
     MatProgressSpinnerModule,

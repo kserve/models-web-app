@@ -333,9 +333,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should successfully submit edited model', () => {
-    // Mock successful update
+    // Mock successful PATCH update
     cy.intercept(
-      'PUT',
+      'PATCH',
       '/api/namespaces/kubeflow-user/inferenceservices/test-sklearn-model',
       {
         statusCode: 200,
@@ -368,14 +368,19 @@ describe('Models Web App - Model Edit Tests', () => {
       cy.get('button').contains('Submit').click();
     });
 
-    // Verify API call was made with correct body
+    // Verify PATCH was sent with a merge-patch body (only changed fields)
     cy.wait('@updateInferenceService').then(interception => {
       const body = interception.request.body;
-      expect(body.metadata.name).to.equal('test-sklearn-model');
-      expect(body.metadata.resourceVersion).to.equal('12345');
+      // Should NOT contain metadata (PATCH doesn't need it)
+      expect(body).to.not.have.property('metadata');
+      expect(body).to.not.have.property('apiVersion');
+      expect(body).to.not.have.property('kind');
+      // Should contain only the changed storageUri
       expect(body.spec.predictor.model.storageUri).to.equal(
         'gs://test-bucket/updated-sklearn-model',
       );
+      // Legacy key should be nulled out (original used spec.predictor.sklearn)
+      expect(body.spec.predictor.sklearn).to.be.null;
     });
 
     // Verify success notification
@@ -414,9 +419,9 @@ describe('Models Web App - Model Edit Tests', () => {
   });
 
   it('should handle edit submission errors gracefully', () => {
-    // Mock failed update
+    // Mock failed PATCH update
     cy.intercept(
-      'PUT',
+      'PATCH',
       '/api/namespaces/kubeflow-user/inferenceservices/test-sklearn-model',
       {
         statusCode: 500,
@@ -437,7 +442,14 @@ describe('Models Web App - Model Edit Tests', () => {
     // Wait for edit form
     cy.get('app-edit form.edit-form', { timeout: 10000 }).should('be.visible');
 
-    // Submit without changes (test error handling)
+    // Make a change so the patch is non-empty
+    cy.get('app-edit').within(() => {
+      cy.get('input[formControlName="storageUri"]')
+        .clear()
+        .type('gs://test-bucket/error-test-model');
+    });
+
+    // Submit the change
     cy.get('app-edit').within(() => {
       cy.get('button').contains('Submit').click();
     });

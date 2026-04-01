@@ -1,5 +1,28 @@
 <div class="edit-component">
-  <form [formGroup]="editForm" class="edit-form">
+  <div class="yaml-toggle">
+    <mat-checkbox
+      [checked]="yamlMode"
+      (change)="toggleYamlMode($event.checked)"
+      i18n
+    >
+      Paste YAML
+    </mat-checkbox>
+  </div>
+
+  <!-- YAML Editor Mode -->
+  <div *ngIf="yamlMode" class="yaml-editor-wrapper">
+    <lib-monaco-editor
+      [text]="yamlText"
+      (textChange)="yamlText = $event"
+      language="yaml"
+      [readOnly]="false"
+      [height]="500"
+      [width]="760"
+    ></lib-monaco-editor>
+  </div>
+
+  <!-- Structured Form Mode -->
+  <form *ngIf="!yamlMode" [formGroup]="editForm" class="edit-form">
     <div class="form-section">
       <h3 i18n>Model Info</h3>
 
@@ -153,7 +176,11 @@
       mat-raised-button
       color="primary"
       (click)="submit()"
-      [disabled]="applying || editForm.invalid"
+      [disabled]="
+        applying ||
+        (!yamlMode && editForm.invalid) ||
+        (yamlMode && !yamlText.trim())
+      "
     >
       <mat-spinner
         *ngIf="applying"

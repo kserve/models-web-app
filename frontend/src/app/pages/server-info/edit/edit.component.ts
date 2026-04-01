@@ -6,6 +6,7 @@ import {
   PredictorSpec,
 } from '../../../types/kfserving/v1beta1';
 import { MWABackendService } from '../../../services/backend.service';
+import { dump, load } from 'js-yaml';
 
 @Component({
   selector: 'app-edit',
@@ -19,10 +20,36 @@ export class EditComponent implements OnInit {
   editForm: FormGroup;
   applying = false;
 
+  /** When true the structured form is hidden and a YAML editor is shown. */
+  yamlMode = false;
+  yamlText = '';
+
   private originalName: string;
   private originalNamespace: string;
-  private resourceVersion: string;
-  private preservedMetadata: any;
+
+  /**
+   * The legacy predictor key detected on the original InferenceService
+   * (e.g. 'sklearn', 'tensorflow'). When present the patch must null it
+   * out so the old and new spec shapes don't coexist.
+   */
+  private originalLegacyKey: string | null = null;
+
+  /** Snapshot of every form value at init time, used to compute the diff. */
+  private initialValues: Record<string, any>;
+
+  /**
+   * Kubernetes-managed metadata fields that should be stripped when
+   * the user submits raw YAML via PUT.
+   */
+  private static readonly MANAGED_METADATA_FIELDS = [
+    'uid',
+    'selfLink',
+    'creationTimestamp',
+    'generation',
+    'managedFields',
+    'ownerReferences',
+    'finalizers',
+  ];
 
   frameworks = [
     { value: 'sklearn', viewValue: $localize`Scikit-learn` },
@@ -47,12 +74,6 @@ export class EditComponent implements OnInit {
   ngOnInit() {
     this.originalName = this.inferenceService.metadata.name;
     this.originalNamespace = this.inferenceService.metadata.namespace;
-    this.resourceVersion = this.inferenceService.metadata.resourceVersion;
-
-    // Preserve the full metadata so we don't lose annotations, labels, etc.
-    this.preservedMetadata = JSON.parse(
-      JSON.stringify(this.inferenceService.metadata),
-    );
 
     const info = this.extractPredictorInfo();
 
@@ -79,6 +100,22 @@ export class EditComponent implements OnInit {
       memoryRequest: [info.memoryRequest || ''],
       memoryLimit: [info.memoryLimit || ''],
     });
+
+    // Snapshot so we can diff later
+    this.initialValues = this.editForm.getRawValue();
+  }
+
+  /** Toggle between structured form and YAML editor. */
+  toggleYamlMode(checked: boolean) {
+    this.yamlMode = checked;
+    if (checked) {
+      // Pre-populate the editor with the current InferenceService YAML,
+      // stripping managed metadata so the user sees a clean document.
+      const cleanObj = this.stripManagedMetadata(
+        JSON.parse(JSON.stringify(this.inferenceService)),
+      );
+      this.yamlText = dump(cleanObj, { lineWidth: -1 });
+    }
   }
 
   /**
@@ -160,6 +197,7 @@ export class EditComponent implements OnInit {
           storageUri = spec.storageUri || '';
           frameworkVersion = spec.runtimeVersion || '';
           resources = (spec as any).resources || {};
+          this.originalLegacyKey = type;
           break;
         }
       }
@@ -189,14 +227,244 @@ export class EditComponent implements OnInit {
     };
   }
 
+  /**
+   * Build a Kubernetes merge-patch document containing only the fields
+   * that the user actually changed.
+   */
+  private buildPatch(): any | null {
+    const v = this.editForm.getRawValue();
+    const init = this.initialValues;
+
+    const predictor: any = {};
+    const model: any = {};
+    const modelFormat: any = {};
+    const resources: any = {};
+    const requests: any = {};
+    const limits: any = {};
+    let hasModelChanges = false;
+    let hasFormatChanges = false;
+    let hasResourceChanges = false;
+    let hasRequestChanges = false;
+    let hasLimitChanges = false;
+    let hasPredictorChanges = false;
+
+    // --- Model format ---
+    if (v.modelFramework !== init.modelFramework) {
+      modelFormat.name = v.modelFramework;
+      hasFormatChanges = true;
+    }
+    if (v.frameworkVersion !== init.frameworkVersion) {
+      modelFormat.version = v.frameworkVersion || undefined;
+      hasFormatChanges = true;
+    }
+    if (hasFormatChanges) {
+      // Always send both name + version when format changes
+      modelFormat.name = v.modelFramework;
+      if (v.frameworkVersion) {
+        modelFormat.version = String(v.frameworkVersion);
+      }
+      model.modelFormat = modelFormat;
+      hasModelChanges = true;
+    }
+
+    // --- Storage URI ---
+    if (v.storageUri !== init.storageUri) {
+      model.storageUri = v.storageUri;
+      hasModelChanges = true;
+    }
+
+    // --- Runtime ---
+    if (v.runtime !== init.runtime) {
+      model.runtime = v.runtime || undefined;
+      hasModelChanges = true;
+    }
+
+    // --- Resources ---
+    if (v.cpuRequest !== init.cpuRequest) {
+      requests.cpu = v.cpuRequest || undefined;
+      hasRequestChanges = true;
+    }
+    if (v.memoryRequest !== init.memoryRequest) {
+      requests.memory = v.memoryRequest || undefined;
+      hasRequestChanges = true;
+    }
+    if (v.cpuLimit !== init.cpuLimit) {
+      limits.cpu = v.cpuLimit || undefined;
+      hasLimitChanges = true;
+    }
+    if (v.memoryLimit !== init.memoryLimit) {
+      limits.memory = v.memoryLimit || undefined;
+      hasLimitChanges = true;
+    }
+    if (v.gpuCount !== init.gpuCount) {
+      limits['nvidia.com/gpu'] =
+        v.gpuCount > 0 ? String(v.gpuCount) : undefined;
+      hasLimitChanges = true;
+    }
+
+    if (hasRequestChanges) {
+      resources.requests = requests;
+      hasResourceChanges = true;
+    }
+    if (hasLimitChanges) {
+      resources.limits = limits;
+      hasResourceChanges = true;
+    }
+    if (hasResourceChanges) {
+      model.resources = resources;
+      hasModelChanges = true;
+    }
+
+    if (hasModelChanges) {
+      predictor.model = model;
+      hasPredictorChanges = true;
+    }
+
+    // --- Scaling (lives on predictor, not model) ---
+    if (v.minReplicas !== init.minReplicas) {
+      predictor.minReplicas = v.minReplicas;
+      hasPredictorChanges = true;
+    }
+    if (v.maxReplicas !== init.maxReplicas) {
+      predictor.maxReplicas = v.maxReplicas;
+      hasPredictorChanges = true;
+    }
+
+    // --- Legacy key cleanup ---
+    if (this.originalLegacyKey) {
+      predictor[this.originalLegacyKey] = null;
+      hasPredictorChanges = true;
+
+      if (!predictor.model) {
+        predictor.model = {};
+      }
+      if (!predictor.model.modelFormat) {
+        predictor.model.modelFormat = {
+          name: v.modelFramework,
+        };
+        if (v.frameworkVersion) {
+          predictor.model.modelFormat.version = String(v.frameworkVersion);
+        }
+      }
+      if (!predictor.model.storageUri) {
+        predictor.model.storageUri = v.storageUri;
+      }
+    }
+
+    if (!hasPredictorChanges) {
+      return null; // Nothing changed
+    }
+
+    return {
+      spec: {
+        predictor,
+      },
+    };
+  }
+
+  /**
+   * Strip Kubernetes-managed metadata fields that should not be sent
+   * in a PUT request from the YAML editor.
+   */
+  private stripManagedMetadata(obj: any): any {
+    if (obj?.metadata) {
+      for (const field of EditComponent.MANAGED_METADATA_FIELDS) {
+        delete obj.metadata[field];
+      }
+    }
+    // Also strip status — it's server-managed
+    delete obj.status;
+    return obj;
+  }
+
   submit() {
+    if (this.yamlMode) {
+      this.submitYaml();
+    } else {
+      this.submitForm();
+    }
+  }
+
+  private submitYaml() {
+    this.applying = true;
+
+    let parsed: any;
+    try {
+      parsed = load(this.yamlText);
+    } catch (e: any) {
+      this.snack.open({
+        data: {
+          msg: $localize`Invalid YAML: ${e.message}`,
+          snackType: SnackType.Error,
+        },
+        duration: 8000,
+      });
+      this.applying = false;
+      return;
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      this.snack.open({
+        data: {
+          msg: $localize`YAML must be a valid object`,
+          snackType: SnackType.Error,
+        },
+        duration: 8000,
+      });
+      this.applying = false;
+      return;
+    }
+
+    // Ensure required top-level keys
+    for (const key of ['apiVersion', 'kind', 'metadata', 'spec']) {
+      if (!parsed[key]) {
+        this.snack.open({
+          data: {
+            msg: $localize`Missing required field: ${key}`,
+            snackType: SnackType.Error,
+          },
+          duration: 8000,
+        });
+        this.applying = false;
+        return;
+      }
+    }
+
+    // Strip managed metadata to avoid conflicts
+    this.stripManagedMetadata(parsed);
+
+    // Ensure the namespace and name are correct
+    parsed.metadata.namespace = this.originalNamespace;
+    parsed.metadata.name = this.originalName;
+
+    // Use PUT (full replacement) for raw YAML submissions
+    this.backend
+      .editInferenceService(this.originalNamespace, this.originalName, parsed)
+      .subscribe({
+        next: () => {
+          this.snack.open({
+            data: {
+              msg: $localize`InferenceService successfully updated`,
+              snackType: SnackType.Success,
+            },
+          });
+          this.cancelEdit.emit(true);
+        },
+        error: err => {
+          this.applying = false;
+          this.handleError(err, $localize`Failed to update InferenceService`);
+        },
+      });
+  }
+
+  private submitForm() {
     if (this.editForm.invalid) {
       this.editForm.markAllAsTouched();
       return;
     }
 
     this.applying = true;
-    const v = this.editForm.getRawValue(); // getRawValue includes disabled fields
+    const v = this.editForm.getRawValue();
 
     if (v.minReplicas > v.maxReplicas) {
       this.snack.open({
@@ -210,73 +478,22 @@ export class EditComponent implements OnInit {
       return;
     }
 
-    const customResource = {
-      apiVersion: 'serving.kserve.io/v1beta1',
-      kind: 'InferenceService',
-      metadata: {
-        ...this.preservedMetadata,
-        name: this.originalName,
-        namespace: this.originalNamespace,
-        resourceVersion: this.resourceVersion,
-      },
-      spec: {
-        predictor: {
-          minReplicas: v.minReplicas,
-          maxReplicas: v.maxReplicas,
-          model: {
-            modelFormat: {
-              name: v.modelFramework,
-            },
-            storageUri: v.storageUri,
-          },
+    const patch = this.buildPatch();
+
+    if (patch === null) {
+      this.snack.open({
+        data: {
+          msg: $localize`No changes detected`,
+          snackType: SnackType.Warning,
         },
-      },
-    } as InferenceServiceK8s;
-
-    // Strip Kubernetes-managed metadata fields that shouldn't be sent
-    delete customResource.metadata!.creationTimestamp;
-    delete customResource.metadata!.finalizers;
-    delete customResource.metadata!.generation;
-    delete customResource.metadata!.managedFields;
-    delete customResource.metadata!.selfLink;
-    delete customResource.metadata!.uid;
-    if (customResource.metadata!.annotations) {
-      delete customResource.metadata!.annotations[
-        'kubectl.kubernetes.io/last-applied-configuration'
-      ];
-    }
-
-    if (v.frameworkVersion) {
-      customResource.spec!.predictor.model!.modelFormat.version = String(
-        v.frameworkVersion,
-      );
-    }
-    if (v.runtime) {
-      customResource.spec!.predictor.model!.runtime = v.runtime;
-    }
-
-    const resources: any = {};
-    const requests: any = {};
-    const limits: any = {};
-
-    if (v.cpuRequest) requests.cpu = v.cpuRequest;
-    if (v.memoryRequest) requests.memory = v.memoryRequest;
-    if (v.cpuLimit) limits.cpu = v.cpuLimit;
-    if (v.memoryLimit) limits.memory = v.memoryLimit;
-    if (v.gpuCount > 0) limits['nvidia.com/gpu'] = String(v.gpuCount);
-
-    if (Object.keys(requests).length > 0) resources.requests = requests;
-    if (Object.keys(limits).length > 0) resources.limits = limits;
-    if (Object.keys(resources).length > 0) {
-      (customResource.spec!.predictor.model as any).resources = resources;
+        duration: 4000,
+      });
+      this.applying = false;
+      return;
     }
 
     this.backend
-      .editInferenceService(
-        this.originalNamespace,
-        this.originalName,
-        customResource,
-      )
+      .patchInferenceService(this.originalNamespace, this.originalName, patch)
       .subscribe({
         next: () => {
           this.snack.open({
@@ -289,26 +506,30 @@ export class EditComponent implements OnInit {
         },
         error: err => {
           this.applying = false;
-          let errorMsg = $localize`Failed to update InferenceService`;
-          if (err?.error?.log) {
-            errorMsg = err.error.log;
-          } else if (err?.error?.message) {
-            errorMsg = err.error.message;
-          } else if (err?.error?.error) {
-            errorMsg = err.error.error;
-          } else if (typeof err?.error === 'string') {
-            errorMsg = err.error;
-          } else if (err?.message) {
-            errorMsg = $localize`Failed to update InferenceService: ${err.message}`;
-          }
-          this.snack.open({
-            data: {
-              msg: errorMsg,
-              snackType: SnackType.Error,
-            },
-            duration: 16000,
-          });
+          this.handleError(err, $localize`Failed to update InferenceService`);
         },
       });
+  }
+
+  private handleError(err: any, defaultMsg: string) {
+    let errorMsg = defaultMsg;
+    if (err?.error?.log) {
+      errorMsg = err.error.log;
+    } else if (err?.error?.message) {
+      errorMsg = err.error.message;
+    } else if (err?.error?.error) {
+      errorMsg = err.error.error;
+    } else if (typeof err?.error === 'string') {
+      errorMsg = err.error;
+    } else if (err?.message) {
+      errorMsg = $localize`Failed to update InferenceService: ${err.message}`;
+    }
+    this.snack.open({
+      data: {
+        msg: errorMsg,
+        snackType: SnackType.Error,
+      },
+      duration: 16000,
+    });
   }
 }

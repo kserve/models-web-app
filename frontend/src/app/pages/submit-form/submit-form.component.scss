@@ -36,6 +36,35 @@
   display: none;
 }
 
+.yaml-toggle {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+}
+
+.yaml-editor-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  min-height: 540px;
+
+  ::ng-deep lib-monaco-editor {
+    display: block;
+    width: 100%;
+    height: 500px;
+
+    > div {
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+    }
+  }
+}
+
 /* Material overrides to make the form look cleaner */
 ::ng-deep .mat-form-field-wrapper {
   padding-bottom: 1.25em;

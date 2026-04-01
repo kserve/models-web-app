@@ -12,6 +12,7 @@ import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { Subscription } from 'rxjs';
+import { load, dump } from 'js-yaml';
 
 @Component({
   selector: 'app-submit-form',
@@ -22,6 +23,10 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
   namespace!: string;
   applying = false;
   deployForm: FormGroup;
+
+  /** When true the structured form is hidden and a YAML editor is shown. */
+  yamlMode = false;
+  yamlText = '';
 
   frameworks = [
     { value: 'sklearn', viewValue: $localize`Scikit-learn` },
@@ -104,7 +109,115 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
     this.router.navigate(['']);
   }
 
+  /** Toggle between structured form and YAML editor. */
+  toggleYamlMode(checked: boolean) {
+    this.yamlMode = checked;
+    if (checked && !this.yamlText) {
+      // Provide a starter template
+      this.yamlText = dump(
+        {
+          apiVersion: 'serving.kserve.io/v1beta1',
+          kind: 'InferenceService',
+          metadata: {
+            name: 'my-model',
+          },
+          spec: {
+            predictor: {
+              model: {
+                modelFormat: { name: 'sklearn' },
+                storageUri: 'gs://bucket/path',
+              },
+            },
+          },
+        },
+        { lineWidth: -1 },
+      );
+    }
+  }
+
+  /** Whether the create button should be disabled. */
+  get createDisabled(): boolean {
+    if (this.yamlMode) {
+      return !this.yamlText.trim();
+    }
+    return this.deployForm.invalid;
+  }
+
   submit() {
+    if (this.yamlMode) {
+      this.submitYaml();
+    } else {
+      this.submitForm();
+    }
+  }
+
+  private submitYaml() {
+    this.applying = true;
+
+    let parsed: any;
+    try {
+      parsed = load(this.yamlText);
+    } catch (e: any) {
+      this.snack.open({
+        data: {
+          msg: $localize`Invalid YAML: ${e.message}`,
+          snackType: SnackType.Error,
+        },
+        duration: 8000,
+      });
+      this.applying = false;
+      return;
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      this.snack.open({
+        data: {
+          msg: $localize`YAML must be a valid object`,
+          snackType: SnackType.Error,
+        },
+        duration: 8000,
+      });
+      this.applying = false;
+      return;
+    }
+
+    // Ensure required top-level keys
+    for (const key of ['apiVersion', 'kind', 'metadata', 'spec']) {
+      if (!parsed[key]) {
+        this.snack.open({
+          data: {
+            msg: $localize`Missing required field: ${key}`,
+            snackType: SnackType.Error,
+          },
+          duration: 8000,
+        });
+        this.applying = false;
+        return;
+      }
+    }
+
+    // Set namespace from the dashboard selector
+    parsed.metadata.namespace = this.namespace;
+
+    this.backend.postInferenceService(parsed).subscribe({
+      next: () => {
+        this.snack.open({
+          data: {
+            msg: $localize`InferenceService created successfully.`,
+            snackType: SnackType.Success,
+          },
+          duration: 3000,
+        });
+        this.applying = false;
+        this.navigateBack();
+      },
+      error: err => {
+        this.handleError(err, $localize`Failed to create InferenceService`);
+      },
+    });
+  }
+
+  private submitForm() {
     if (this.deployForm.invalid) {
       this.deployForm.markAllAsTouched();
       return;
@@ -174,42 +287,44 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
 
     this.backend.postInferenceService(customResource).subscribe({
       next: () => {
-        const config: SnackBarConfig = {
+        this.snack.open({
           data: {
             msg: $localize`InferenceService created successfully.`,
             snackType: SnackType.Success,
           },
           duration: 3000,
-        };
-        this.snack.open(config);
+        });
         this.applying = false;
         this.navigateBack();
       },
       error: err => {
-        let errorMsg = $localize`Failed to create InferenceService`;
-
-        if (err?.error?.log) {
-          errorMsg = err.error.log;
-        } else if (err?.error?.message) {
-          errorMsg = err.error.message;
-        } else if (err?.error?.error) {
-          errorMsg = err.error.error;
-        } else if (typeof err?.error === 'string') {
-          errorMsg = err.error;
-        } else if (err?.statusText) {
-          errorMsg = $localize`Server error: ${err.statusText}`;
-        }
-
-        const config: SnackBarConfig = {
-          data: {
-            msg: errorMsg,
-            snackType: SnackType.Error,
-          },
-          duration: 16000,
-        };
-        this.snack.open(config);
-        this.applying = false;
+        this.handleError(err, $localize`Failed to create InferenceService`);
       },
     });
+  }
+
+  private handleError(err: any, defaultMsg: string) {
+    let errorMsg = defaultMsg;
+
+    if (err?.error?.log) {
+      errorMsg = err.error.log;
+    } else if (err?.error?.message) {
+      errorMsg = err.error.message;
+    } else if (err?.error?.error) {
+      errorMsg = err.error.error;
+    } else if (typeof err?.error === 'string') {
+      errorMsg = err.error;
+    } else if (err?.statusText) {
+      errorMsg = $localize`Server error: ${err.statusText}`;
+    }
+
+    this.snack.open({
+      data: {
+        msg: errorMsg,
+        snackType: SnackType.Error,
+      },
+      duration: 16000,
+    });
+    this.applying = false;
   }
 }

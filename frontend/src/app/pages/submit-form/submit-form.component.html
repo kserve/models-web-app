@@ -9,7 +9,35 @@
   >
   </lib-title-actions-toolbar>
 
-  <form [formGroup]="deployForm" class="deploy-form" (ngSubmit)="submit()">
+  <div class="yaml-toggle">
+    <mat-checkbox
+      [checked]="yamlMode"
+      (change)="toggleYamlMode($event.checked)"
+      i18n
+    >
+      Paste YAML
+    </mat-checkbox>
+  </div>
+
+  <!-- YAML Editor Mode -->
+  <div *ngIf="yamlMode" class="yaml-editor-wrapper">
+    <lib-monaco-editor
+      [text]="yamlText"
+      (textChange)="yamlText = $event"
+      language="yaml"
+      [readOnly]="false"
+      [height]="500"
+      [width]="760"
+    ></lib-monaco-editor>
+  </div>
+
+  <!-- Structured Form Mode -->
+  <form
+    *ngIf="!yamlMode"
+    [formGroup]="deployForm"
+    class="deploy-form"
+    (ngSubmit)="submit()"
+  >
     <div class="form-section">
       <h3 i18n>Model Info</h3>
 
@@ -180,7 +208,7 @@
   <lib-submit-bar
     [allowYAMLEditing]="false"
     [isApplying]="applying"
-    [createDisabled]="deployForm.invalid"
+    [createDisabled]="createDisabled"
     (create)="submit()"
     (cancel)="navigateBack()"
   ></lib-submit-bar>

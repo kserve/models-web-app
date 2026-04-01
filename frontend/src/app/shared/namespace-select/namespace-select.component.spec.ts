@@ -11,20 +11,27 @@ import { MWANamespaceService } from '../../services/mwa-namespace.service';
 describe('NamespaceSelectComponent', () => {
   let component: NamespaceSelectComponent;
   let fixture: ComponentFixture<NamespaceSelectComponent>;
-  let mockService: jasmine.SpyObj<MWANamespaceService>;
+  let mockService: {
+    getNamespaceConfig$: jest.Mock;
+    getSelectedNamespace: jest.Mock;
+    shouldHideNamespaceSelector: jest.Mock;
+    getSelectableNamespaces: jest.Mock;
+    initialize: jest.Mock;
+    setSelectedNamespace: jest.Mock;
+  };
 
   beforeEach(waitForAsync(() => {
-    mockService = jasmine.createSpyObj('MWANamespaceService', [
-      'getNamespaceConfig$',
-      'getSelectedNamespace',
-      'shouldHideNamespaceSelector',
-      'getSelectableNamespaces',
-      'initialize',
-      'setSelectedNamespace',
-    ]);
+    mockService = {
+      getNamespaceConfig$: jest.fn(),
+      getSelectedNamespace: jest.fn(),
+      shouldHideNamespaceSelector: jest.fn(),
+      getSelectableNamespaces: jest.fn(),
+      initialize: jest.fn(),
+      setSelectedNamespace: jest.fn(),
+    };
 
     // Setup mock returns
-    mockService.getNamespaceConfig$.and.returnValue(
+    mockService.getNamespaceConfig$.mockReturnValue(
       of({
         namespaces: ['ns1', 'ns2'],
         allowedNamespaces: ['ns1', 'ns2'],
@@ -32,10 +39,10 @@ describe('NamespaceSelectComponent', () => {
         autoSelectedNamespace: undefined,
       }),
     );
-    mockService.getSelectedNamespace.and.returnValue(of('ns1'));
-    mockService.shouldHideNamespaceSelector.and.returnValue(of(false));
-    mockService.getSelectableNamespaces.and.returnValue(of(['ns1', 'ns2']));
-    mockService.initialize.and.returnValue(of('ns1'));
+    mockService.getSelectedNamespace.mockReturnValue(of('ns1'));
+    mockService.shouldHideNamespaceSelector.mockReturnValue(of(false));
+    mockService.getSelectableNamespaces.mockReturnValue(of(['ns1', 'ns2']));
+    mockService.initialize.mockReturnValue(of('ns1'));
 
     TestBed.configureTestingModule({
       declarations: [NamespaceSelectComponent],

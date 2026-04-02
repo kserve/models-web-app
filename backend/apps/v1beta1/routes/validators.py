@@ -4,7 +4,6 @@ from typing import Optional
 from flask import jsonify
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
-
 SUPPORTED_FRAMEWORKS = {
     "sklearn",
     "xgboost",

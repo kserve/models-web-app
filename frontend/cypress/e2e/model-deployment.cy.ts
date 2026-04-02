@@ -1,15 +1,26 @@
-import { Interception } from 'cypress/types/net-stubbing';
-
 describe('Models Web App - Model Deployment Tests', () => {
   beforeEach(() => {
     // Load fixture data
     cy.fixture('namespaces').as('namespacesData');
     cy.fixture('inference-services').as('inferenceServicesData');
 
+    // Mock the configuration API
+    cy.intercept('GET', '/api/config', {
+      statusCode: 200,
+      body: {
+        grafanaPrefix: '/grafana',
+        grafanaCpuMemoryDb: 'db/knative-serving-revision-cpu-and-memory-usage',
+        grafanaHttpRequestsDb: 'db/knative-serving-revision-http-requests',
+      },
+    }).as('getConfig');
+
     // Set up default intercepts for all tests
-    cy.intercept('GET', '/api/config/namespaces', { fixture: 'namespaces' }).as(
-      'getNamespaces',
-    );
+    cy.intercept('GET', '/api/config/namespaces', {
+      statusCode: 200,
+      body: {
+        namespaces: ['kubeflow-user'],
+      },
+    }).as('getNamespaces');
 
     // Default empty response for inference services
     cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
@@ -18,65 +29,69 @@ describe('Models Web App - Model Deployment Tests', () => {
     }).as('getInferenceServicesEmpty');
   });
 
-  // Helper function to initialize namespace service with a selected namespace
-  const initializeNamespaceService = (namespace: string = 'kubeflow-user') => {
-    cy.window().then((win: any) => {
-      // Get the namespace service instance and initialize it
-      if (win.ng) {
-        cy.get('app-submit-form').then($el => {
-          const element = $el[0];
-          try {
-            const injector = win.ng.getInjector(element);
-            const namespaceService = injector.get('NamespaceService');
-            if (namespaceService && namespaceService.updateSelectedNamespace) {
-              namespaceService.updateSelectedNamespace(namespace);
-            }
-          } catch (e) {
-            console.log('Failed to initialize namespace service:', e);
-          }
-        });
-      }
-    });
+  /**
+   * Map from form 'value' keys to their display labels as shown in the
+   * mat-option list. Extracted from the frameworks[] array defined in
+   * submit-form.component.ts.
+   */
+  const frameworkDisplayNames: Record<string, string> = {
+    sklearn: 'Scikit-learn',
+    xgboost: 'XGBoost',
+    tensorflow: 'TensorFlow',
+    pytorch: 'PyTorch',
+    triton: 'Triton',
+    onnx: 'ONNX',
+    pmml: 'PMML',
+    lightgbm: 'LightGBM',
+    paddle: 'PaddlePaddle',
+    huggingface: 'HuggingFace',
   };
 
-  const setMonacoEditorValue = (value: string) => {
-    cy.get('app-submit-form', { timeout: 15000 }).should('exist');
+  /**
+   * Helper to fill the deployment form with provided values.
+   * Values are extracted from the same model specs that the old YAML-based
+   * tests used, so we exercise the same logical inputs.
+   */
+  const fillDeployForm = (opts: {
+    modelName: string;
+    modelFramework: string;
+    storageUri: string;
+    frameworkVersion?: string;
+    runtime?: string;
+    minReplicas?: number;
+    maxReplicas?: number;
+  }) => {
+    // Model Name
+    cy.get('input[formControlName="modelName"]').clear().type(opts.modelName);
 
-    cy.window().then((win: any) => {
-      cy.get('app-submit-form').then($el => {
-        const element = $el[0];
-        if (win.ng && win.ng.getComponent) {
-          try {
-            const component = win.ng.getComponent(element);
-            if (component) {
-              component.yaml = value;
-              if (win.ng.applyChanges) {
-                win.ng.applyChanges(element);
-              } else if (win.Zone) {
-                win.Zone.current.run(() => {
-                  try {
-                    const injector = win.ng.getInjector(element);
-                    const appRef = injector.get(
-                      win.ng.coreTokens?.ApplicationRef,
-                    );
-                    if (appRef) {
-                      appRef.tick();
-                    }
-                  } catch (e) {}
-                });
-              }
-            }
-          } catch (e) {
-            console.log('ng.getComponent failed:', e);
-          }
-        }
-      });
-    });
+    // Model Framework (mat-select) — select by display name
+    const displayName =
+      frameworkDisplayNames[opts.modelFramework] || opts.modelFramework;
+    cy.get('mat-select[formControlName="modelFramework"]').click();
+    cy.get('mat-option').contains(displayName).click();
 
-    // Verify the value was set by checking if CREATE button is enabled
-    cy.get('lib-submit-bar button')
-      .contains(/create/i)
-      .should('not.be.disabled');
+    // Storage URI
+    cy.get('input[formControlName="storageUri"]').clear().type(opts.storageUri);
+
+    // Optional fields
+    if (opts.frameworkVersion) {
+      cy.get('input[formControlName="frameworkVersion"]')
+        .clear()
+        .type(opts.frameworkVersion);
+    }
+    if (opts.runtime) {
+      cy.get('input[formControlName="runtime"]').clear().type(opts.runtime);
+    }
+    if (opts.minReplicas !== undefined) {
+      cy.get('input[formControlName="minReplicas"]')
+        .clear()
+        .type(String(opts.minReplicas));
+    }
+    if (opts.maxReplicas !== undefined) {
+      cy.get('input[formControlName="maxReplicas"]')
+        .clear()
+        .type(String(opts.maxReplicas));
+    }
   };
 
   it('should navigate to submit form via button and load all components', () => {
@@ -99,19 +114,30 @@ describe('Models Web App - Model Deployment Tests', () => {
     cy.get('lib-title-actions-toolbar').should('exist');
     cy.contains('New Endpoint').should('be.visible');
 
-    // Check that Monaco editor component exists
-    cy.get('lib-monaco-editor', { timeout: 15000 })
-      .should('exist')
-      .should('be.visible');
+    // Check that the structured form exists with its sections
+    cy.get('form.deploy-form').should('exist');
+    cy.contains('h3', 'Model Info').should('be.visible');
+    cy.contains('h3', 'Scaling').should('be.visible');
+    cy.contains('h3', 'Resource Allocation').should('be.visible');
 
-    // Check submit bar exists
+    // Check required form fields are present
+    cy.get('input[formControlName="modelName"]').should('exist');
+    cy.get('mat-select[formControlName="modelFramework"]').should('exist');
+    cy.get('input[formControlName="storageUri"]').should('exist');
+
+    // Check optional form fields are present
+    cy.get('input[formControlName="frameworkVersion"]').should('exist');
+    cy.get('input[formControlName="runtime"]').should('exist');
+    cy.get('input[formControlName="minReplicas"]').should('exist');
+    cy.get('input[formControlName="maxReplicas"]').should('exist');
+    cy.get('input[formControlName="gpuCount"]').should('exist');
+
+    // Check submit bar exists with CREATE and CANCEL buttons
     cy.get('lib-submit-bar', { timeout: 10000 }).should('exist');
-
-    // Check buttons in submit bar
     cy.get('lib-submit-bar').within(() => {
-      cy.get('button').should('have.length', 2); // Submit and Cancel buttons
-      cy.contains('button', /create/i).should('exist');
-      cy.contains('button', /cancel/i).should('exist');
+      cy.get('button').should('have.length', 2);
+      cy.get('button[data-cy-submit-bar-create]').should('exist');
+      cy.get('button[data-cy-submit-bar-cancel]').should('exist');
     });
 
     // Test navigation back
@@ -120,8 +146,11 @@ describe('Models Web App - Model Deployment Tests', () => {
     cy.get('app-index').should('exist');
   });
 
-  it('should successfully deploy a model with valid YAML', () => {
-    // Mock successful creation
+  it('should successfully deploy a model with valid form data', () => {
+    // Values extracted from the old test's YAML:
+    //   name: test-sklearn-model
+    //   sklearn → storageUri: gs://kfserving-examples/models/sklearn/iris
+    //   runtimeVersion: 0.24.1, protocolVersion: v1
     cy.intercept('POST', '/api/namespaces/*/inferenceservices', {
       statusCode: 201,
       body: {
@@ -130,7 +159,7 @@ describe('Models Web App - Model Deployment Tests', () => {
       },
     }).as('createInferenceService');
 
-    // Also mock the redirect list call
+    // Mock the redirect list call
     cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
       statusCode: 200,
       body: [
@@ -153,180 +182,71 @@ describe('Models Web App - Model Deployment Tests', () => {
     }).as('getInferenceServicesAfterCreate');
 
     cy.visit('/new');
-
-    // Wait for the page to load
     cy.get('app-submit-form', { timeout: 10000 }).should('exist');
 
-    // Wait for Monaco editor component to be visible
-    cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible');
-
-    // Initialize namespace service with kubeflow-user namespace
-    initializeNamespaceService('kubeflow-user');
-
-    const validYaml = `apiVersion: serving.kserve.io/v1beta1
-kind: InferenceService
-metadata:
-  name: test-sklearn-model
-spec:
-  predictor:
-    sklearn:
-      storageUri: gs://kfserving-examples/models/sklearn/iris
-      runtimeVersion: 0.24.1
-      protocolVersion: v1`;
-
-    // Set YAML value in Monaco editor AND ensure component properties are set
-    setMonacoEditorValue(validYaml);
-
-    // Also directly set the component properties to ensure they're properly initialized
-    cy.window().then((win: any) => {
-      if (win.ng) {
-        cy.get('app-submit-form').then($el => {
-          const element = $el[0];
-          try {
-            const component = win.ng.getComponent(element);
-            if (component) {
-              component.yaml = validYaml;
-              component.namespace = 'kubeflow-user';
-
-              // Force change detection
-              if (win.Zone) {
-                win.Zone.current.run(() => {
-                  const injector = win.ng.getInjector(element);
-                  const appRef = injector.get(win.ng.coreTokens.ApplicationRef);
-                  appRef.tick();
-                });
-              }
-            }
-          } catch (e) {
-            console.log('Failed to set component properties:', e);
-          }
-        });
-      }
+    // Fill form with the same values previously encoded in YAML
+    fillDeployForm({
+      modelName: 'test-sklearn-model',
+      modelFramework: 'sklearn',
+      storageUri: 'gs://kfserving-examples/models/sklearn/iris',
+      frameworkVersion: '0.24.1',
     });
 
-    // Debug: Check component state before submission
-    cy.window().then((win: any) => {
-      if (win.ng) {
-        cy.get('app-submit-form').then($el => {
-          const element = $el[0];
-          try {
-            const component = win.ng.getComponent(element);
-            if (component) {
-              console.log('Component YAML:', component.yaml);
-              console.log('Component namespace:', component.namespace);
-              console.log('Component applying:', component.applying);
-            }
-          } catch (e) {
-            console.log('Failed to debug component:', e);
-          }
-        });
-      }
+    // CREATE button should now be enabled
+    cy.get('button[data-cy-submit-bar-create]').should('not.be.disabled');
+
+    // Click submit
+    cy.get('button[data-cy-submit-bar-create]').click();
+
+    // Verify API call was made with expected structured JSON body
+    cy.wait('@createInferenceService').then(interception => {
+      const body = interception.request.body;
+      expect(body.metadata.name).to.equal('test-sklearn-model');
+      expect(body.spec.predictor.model.modelFormat.name).to.equal('sklearn');
+      expect(body.spec.predictor.model.storageUri).to.equal(
+        'gs://kfserving-examples/models/sklearn/iris',
+      );
+      expect(body.spec.predictor.model.modelFormat.version).to.equal('0.24.1');
     });
 
-    // Find and click the submit button
-    cy.get('lib-submit-bar button')
-      .contains(/submit|create/i)
-      .click();
-    cy.get<Interception[]>('@createInferenceService.all').then(
-      interceptions => {
-        if (interceptions.length === 0) {
-          cy.window().then((win: any) => {
-            if (win.ng) {
-              cy.get('app-submit-form').then($el => {
-                const element = $el[0];
-                try {
-                  const component = win.ng.getComponent(element);
-                  if (component && component.submit) {
-                    component.submit();
-                  }
-                } catch (e) {}
-              });
-            }
-          });
-        }
-      },
-    );
-
-    // Verify API call was made or that submission succeeded
-    cy.get<Interception[]>('@createInferenceService.all', {
-      timeout: 10000,
-    }).then(interceptions => {
-      if (interceptions.length > 0) {
-        const body = interceptions[0].request.body;
-        const bodyStr = typeof body === 'string' ? body : JSON.stringify(body);
-        expect(bodyStr).to.include('test-sklearn-model');
-      }
-    });
-
-    // Should navigate back to index page OR show success message
-    cy.url({ timeout: 5000 }).then(url => {
-      // Either navigated away from /new OR submission completed
-      if (url.includes('/new')) {
-        // If still on /new, check for success message or completion
-        cy.get('.mat-snack-bar-container', { timeout: 5000 })
-          .should('be.visible')
-          .then($el => {
-            const text = $el.text();
-            // Should show either success or no error
-            expect(text.toLowerCase()).not.to.include('error');
-          });
-      }
-    });
+    // Should navigate back to index page or show success
     cy.get('app-index, app-submit-form', { timeout: 10000 }).should('exist');
   });
 
-  it('should show error for invalid YAML syntax', () => {
-    // Mock error response for invalid YAML
-    cy.intercept('POST', '/api/namespaces/*/inferenceservices', {
-      statusCode: 400,
-      body: {
-        error: 'Invalid YAML: could not find expected ":"',
-      },
-    }).as('createInferenceServiceError');
-
+  it('should show validation errors for invalid form input', () => {
+    // The old test used invalid YAML syntax (name: test-model, then garbage).
+    // Instead we now test that the Angular reactive form validators prevent
+    // submission when invalid input is provided.
     cy.visit('/new');
-
-    // Wait for the page to load
     cy.get('app-submit-form', { timeout: 10000 }).should('exist');
 
-    // Wait for Monaco editor to be visible
-    cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible');
+    // Type an invalid model name (uppercase and special characters violate
+    // the pattern ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$)
+    cy.get('input[formControlName="modelName"]').type('INVALID_NAME!');
 
-    const invalidYaml = `apiVersion: serving.kserve.io/v1beta1
-kind: InferenceService
-metadata:
-  name: test-model
-  invalid: yaml: structure: [unclosed`;
+    // Storage URI with invalid scheme (must be gs://, s3://, https?://, pvc://)
+    cy.get('input[formControlName="storageUri"]').type('ftp://bad-scheme/model');
 
-    // Set invalid YAML in Monaco editor
-    setMonacoEditorValue(invalidYaml);
+    // Touch the framework field without selecting a value to trigger required error
+    cy.get('mat-select[formControlName="modelFramework"]').click();
+    cy.get('.cdk-overlay-backdrop').click({ force: true });
 
-    // Click submit button
-    cy.get('lib-submit-bar button')
-      .contains(/submit|create/i)
-      .click({ force: true });
+    // Click somewhere else to trigger validation
+    cy.get('input[formControlName="modelName"]').click();
 
-    // Should show error message in snackbar (check for YAML parsing error)
-    cy.get('.mat-snack-bar-container', { timeout: 10000 })
-      .should('be.visible')
-      .and($el => {
-        const text = $el.text().toLowerCase();
-        expect(text).to.satisfy((t: string) => {
-          return (
-            t.includes('yaml') || t.includes('parsing') || t.includes('error')
-          );
-        });
-      });
+    // CREATE button should be disabled due to validation errors
+    cy.get('button[data-cy-submit-bar-create]').should('be.disabled');
+
+    // Verify validation error messages are shown
+    cy.get('mat-error').should('have.length.greaterThan', 0);
 
     // Should stay on the same page
     cy.url().should('include', '/new');
-
-    // Verify no API call was made since YAML parsing failed client-side
-    cy.get('@createInferenceServiceError.all').should('have.length', 0);
   });
 
   it('should handle network errors gracefully', () => {
-    // Mock network error
+    // Values extracted from the old test's YAML:
+    //   name: test-model, sklearn, storageUri: gs://example/model
     cy.intercept('POST', '/api/namespaces/*/inferenceservices', {
       statusCode: 500,
       body: {
@@ -335,26 +255,20 @@ metadata:
     }).as('createInferenceServiceNetworkError');
 
     cy.visit('/new');
-
-    // Wait for the page to load
     cy.get('app-submit-form', { timeout: 10000 }).should('exist');
 
-    cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible');
+    // Fill form with the same values previously encoded in YAML
+    fillDeployForm({
+      modelName: 'test-model',
+      modelFramework: 'sklearn',
+      storageUri: 'gs://example/model',
+    });
 
-    const validYaml = `apiVersion: serving.kserve.io/v1beta1
-kind: InferenceService
-metadata:
-  name: test-model
-spec:
-  predictor:
-    sklearn:
-      storageUri: gs://example/model`;
+    // Submit the form
+    cy.get('button[data-cy-submit-bar-create]').click();
 
-    setMonacoEditorValue(validYaml);
-
-    cy.get('lib-submit-bar button')
-      .contains(/submit|create/i)
-      .click({ force: true });
+    // Wait for the failed API call
+    cy.wait('@createInferenceServiceNetworkError');
 
     // Should show error message in snackbar
     cy.get('.mat-snack-bar-container', { timeout: 10000 }).should('be.visible');
@@ -363,92 +277,77 @@ spec:
     cy.url().should('include', '/new');
   });
 
-  it('should validate required fields in YAML', () => {
-    cy.visit('/new');
-
+  it('should validate required form fields', () => {
+    // The old test submitted YAML without metadata.name.
+    // For the new form, we verify that submitting without filling required
+    // fields keeps the button disabled and shows errors.
     cy.intercept('POST', '/api/namespaces/*/inferenceservices').as(
       'createInferenceService',
     );
 
-    // Wait for the page to load
+    cy.visit('/new');
     cy.get('app-submit-form', { timeout: 10000 }).should('exist');
 
-    cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible');
+    // Without filling any fields, the CREATE button should be disabled
+    cy.get('button[data-cy-submit-bar-create]').should('be.disabled');
 
-    // YAML missing required metadata.name
-    const incompleteYaml = `apiVersion: serving.kserve.io/v1beta1
-kind: InferenceService
-metadata:
-  # name is missing
-spec:
-  predictor:
-    sklearn:
-      storageUri: gs://example/model`;
+    // Fill only storageUri (same value from old YAML: gs://example/model)
+    // but leave modelName and modelFramework empty
+    cy.get('input[formControlName="storageUri"]').type('gs://example/model');
 
-    setMonacoEditorValue(incompleteYaml);
+    // CREATE button should still be disabled (name + framework are required)
+    cy.get('button[data-cy-submit-bar-create]').should('be.disabled');
 
-    // The submit button might be disabled due to validation
-    // or clicking it should show an error
-    cy.get('lib-submit-bar').within(() => {
-      cy.contains('button', /submit|create/i).then($btn => {
-        if ($btn.prop('disabled')) {
-          // Button is correctly disabled
-          expect($btn).to.have.attr('disabled');
-        } else {
-          // Click and expect error
-          cy.wrap($btn).click({ force: true });
-          cy.get('@createInferenceService.all').should('have.length', 0); // No API call should be made
-        }
-      });
-    });
+    // No API call should have been made
+    cy.get('@createInferenceService.all').should('have.length', 0);
   });
 
-  it('should allow editing pre-filled template', () => {
+  it('should allow editing form values', () => {
+    // The old test first checked the Monaco editor had a pre-filled template,
+    // then set a custom YAML with name: custom-model, tensorflow,
+    // storageUri: gs://custom/model. We reproduce the same flow.
     cy.visit('/new');
-
-    // Wait for the page to load
     cy.get('app-submit-form', { timeout: 10000 }).should('exist');
 
-    // Check that Monaco editor has some pre-filled content
-    cy.get('lib-monaco-editor', { timeout: 15000 }).should('be.visible');
-
-    // Get the current value (if any)
-    cy.window().then((win: any) => {
-      if (win.monaco && win.monaco.editor) {
-        const editors = win.monaco.editor.getModels();
-        if (editors.length > 0) {
-          const currentValue = editors[0].getValue();
-          // If there's a template, it should contain some expected content
-          if (currentValue) {
-            expect(currentValue).to.include('apiVersion');
-            expect(currentValue).to.include('InferenceService');
-          }
-        }
-      }
+    // Fill initial values (original inputs from old test's first assertion)
+    fillDeployForm({
+      modelName: 'initial-model',
+      modelFramework: 'sklearn',
+      storageUri: 'gs://initial/model',
     });
 
-    // Now set a new value
-    const customYaml = `apiVersion: serving.kserve.io/v1beta1
-kind: InferenceService
-metadata:
-  name: custom-model
-spec:
-  predictor:
-    tensorflow:
-      storageUri: gs://custom/model`;
+    // Verify values are set
+    cy.get('input[formControlName="modelName"]').should(
+      'have.value',
+      'initial-model',
+    );
+    cy.get('input[formControlName="storageUri"]').should(
+      'have.value',
+      'gs://initial/model',
+    );
 
-    setMonacoEditorValue(customYaml);
+    // Now change values to the custom model (same as old test's YAML)
+    cy.get('input[formControlName="modelName"]').clear().type('custom-model');
 
-    // Verify the value was set
-    cy.window().then((win: any) => {
-      if (win.monaco && win.monaco.editor) {
-        const editors = win.monaco.editor.getModels();
-        if (editors.length > 0) {
-          const newValue = editors[0].getValue();
-          expect(newValue).to.include('custom-model');
-          expect(newValue).to.include('tensorflow');
-        }
-      }
-    });
+    cy.get('mat-select[formControlName="modelFramework"]').click();
+    cy.get('mat-option').contains('TensorFlow').click();
+
+    cy.get('input[formControlName="storageUri"]')
+      .clear()
+      .type('gs://custom/model');
+
+    // Verify updated values persisted
+    cy.get('input[formControlName="modelName"]').should(
+      'have.value',
+      'custom-model',
+    );
+    cy.get('input[formControlName="storageUri"]').should(
+      'have.value',
+      'gs://custom/model',
+    );
+    cy.get('mat-select[formControlName="modelFramework"]').should(
+      'contain',
+      'TensorFlow',
+    );
   });
 });

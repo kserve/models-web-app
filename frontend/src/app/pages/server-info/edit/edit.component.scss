@@ -1,22 +1,81 @@
-ace {
-  display: block;
-  border: 1px solid #e0e0e0;
-  width: 100%;
-}
-
 .edit-component {
   margin-top: 1rem;
+}
 
-  button[mat-raised-button][color='primary'] {
-    background-color: #1976d2;
-    color: white;
+.edit-form {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.form-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
   }
 }
 
-.waiting-button-wrapper {
-  display: flex;
+.full-width {
+  width: 100%;
 }
 
-.waiting-button-wrapper .mat-spinner {
-  margin: auto 0.2rem;
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.spacer {
+  display: none;
+}
+
+.yaml-toggle {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+}
+
+.yaml-editor-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  min-height: 540px;
+
+  ::ng-deep lib-monaco-editor {
+    display: block;
+    width: 100%;
+    height: 500px;
+
+    > div {
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+    }
+  }
+}
+
+.button-bar {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+}
+
+/* Material overrides to make the form look cleaner */
+::ng-deep .mat-form-field-wrapper {
+  padding-bottom: 1.25em;
 }

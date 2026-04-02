@@ -34,8 +34,8 @@ export interface InferenceServiceK8s extends K8sObject {
  */
 export interface InferenceServiceSpec {
   predictor: PredictorSpec;
-  explainer: ExplainerSpec;
-  transformer: TransformerSpec;
+  explainer?: ExplainerSpec;
+  transformer?: TransformerSpec;
 }
 
 export enum PredictorType {

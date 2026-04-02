@@ -4,4 +4,4 @@ from flask import Blueprint
 
 bp = Blueprint("default_routes", __name__)
 
-from . import get, post, put  # noqa: F401, E402
+from . import get, patch, post, put  # noqa: F401, E402

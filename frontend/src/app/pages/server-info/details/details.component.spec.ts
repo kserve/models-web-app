@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import {
   DateTimeModule,
   DetailsListModule,
@@ -165,6 +166,7 @@ describe('DetailsComponent', () => {
         MatSnackBarModule,
         SharedModule,
       ],
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   }));
 

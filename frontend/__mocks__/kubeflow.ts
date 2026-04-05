@@ -1,5 +1,6 @@
 // Mock for Kubeflow imports used in getK8sObjectUiStatus function
 import { throwError } from 'rxjs';
+import { NgModule } from '@angular/core';
 
 export enum STATUS_TYPE {
   UNINITIALIZED = 'Uninitialized',
@@ -212,6 +213,25 @@ export class DateTimeValue {
   }
 }
 
+// ComponentValue class for table columns
+export class ComponentValue {
+  component: any;
+
+  constructor(config: any) {
+    this.component = config.component;
+  }
+}
+
+// ActionListValue class for table columns
+export class ActionListValue {
+  constructor(config: any) {}
+}
+
+// ActionIconValue class for table columns
+export class ActionIconValue {
+  constructor(config: any) {}
+}
+
 export interface ModelSpec extends PredictorExtensionSpec {
   modelFormat: {
     name: string;
@@ -242,3 +262,31 @@ export interface PredictorSpec {
   }>;
   [key: string]: any;
 }
+
+// Mock Angular modules
+@NgModule({})
+export class KubeflowModule {}
+
+@NgModule({})
+export class ResourceTableModule {}
+
+@NgModule({})
+export class DetailsListModule {}
+
+@NgModule({})
+export class EditorModule {}
+
+@NgModule({})
+export class PanelModule {}
+
+@NgModule({})
+export class LoadingSpinnerModule {}
+
+@NgModule({})
+export class HeadingSubheadingRowModule {}
+
+@NgModule({})
+export class DateTimeModule {}
+
+@NgModule({})
+export class ConditionsTableModule {}

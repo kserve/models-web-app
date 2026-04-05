@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { ComponentOverviewComponent } from './component.component';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import {
   KubeflowModule,
   ConditionsTableModule,
@@ -22,6 +23,7 @@ describe('ComponentOverviewComponent', () => {
         DetailsListModule,
         HeadingSubheadingRowModule,
       ],
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   }));
 

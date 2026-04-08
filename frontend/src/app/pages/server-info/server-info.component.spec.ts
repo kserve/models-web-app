@@ -3,20 +3,21 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CommonModule } from '@angular/common';
-import { KubeflowModule } from 'kubeflow';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { OverviewModule } from './overview/overview.module';
-import { DetailsModule } from './details/details.module';
-import { MetricsModule } from './metrics/metrics.module';
-import { LogsModule } from './logs/logs.module';
-import { YamlsModule } from './yamls/yamls.module';
+import { ConfigService } from 'src/app/services/config.service';
+import { of } from 'rxjs';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import {
+  NamespaceService,
+  SnackBarService,
+  ConfirmDialogService,
+} from 'kubeflow';
+import { MWABackendService } from 'src/app/services/backend.service';
 
 import { ServerInfoComponent } from './server-info.component';
-import { of } from 'rxjs';
-import { EventsModule } from './events/events.module';
 
 let ActivatedRouteStub: Partial<ActivatedRoute>;
 
@@ -36,19 +37,31 @@ describe('ServerInfoComponent', () => {
         HttpClientTestingModule,
         RouterTestingModule,
         CommonModule,
-        KubeflowModule,
         MatIconModule,
         MatDividerModule,
         MatTabsModule,
         MatProgressSpinnerModule,
-        OverviewModule,
-        DetailsModule,
-        MetricsModule,
-        LogsModule,
-        YamlsModule,
-        EventsModule,
       ],
-      providers: [{ provide: ActivatedRoute, useValue: ActivatedRouteStub }],
+      providers: [
+        { provide: ActivatedRoute, useValue: ActivatedRouteStub },
+        {
+          provide: ConfigService,
+          useValue: {
+            grafanaEndpoints: [],
+            getConfig: () => of({ grafanaEndpoints: [] }),
+          },
+        },
+        {
+          provide: NamespaceService,
+          useValue: {
+            getSelectedNamespace: () => of('default'),
+          },
+        },
+        MWABackendService,
+        SnackBarService,
+        ConfirmDialogService,
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   }));
 

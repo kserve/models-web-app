@@ -178,7 +178,9 @@ export class EditComponent implements OnInit {
         | 'onnx'
         | 'pmml'
         | 'lightgbm'
+        | 'paddle'
         | 'huggingface'
+        | 'custom'
       >)[] = [
         'sklearn',
         'xgboost',
@@ -188,7 +190,9 @@ export class EditComponent implements OnInit {
         'onnx',
         'pmml',
         'lightgbm',
+        'paddle',
         'huggingface',
+        'custom',
       ];
       for (const type of legacyTypes) {
         const spec = predictor[type];
@@ -254,7 +258,7 @@ export class EditComponent implements OnInit {
       hasFormatChanges = true;
     }
     if (v.frameworkVersion !== init.frameworkVersion) {
-      modelFormat.version = v.frameworkVersion || undefined;
+      modelFormat.version = v.frameworkVersion || null;
       hasFormatChanges = true;
     }
     if (hasFormatChanges) {
@@ -275,30 +279,30 @@ export class EditComponent implements OnInit {
 
     // --- Runtime ---
     if (v.runtime !== init.runtime) {
-      model.runtime = v.runtime || undefined;
+      model.runtime = v.runtime || null;
       hasModelChanges = true;
     }
 
     // --- Resources ---
     if (v.cpuRequest !== init.cpuRequest) {
-      requests.cpu = v.cpuRequest || undefined;
+      requests.cpu = v.cpuRequest || null;
       hasRequestChanges = true;
     }
     if (v.memoryRequest !== init.memoryRequest) {
-      requests.memory = v.memoryRequest || undefined;
+      requests.memory = v.memoryRequest || null;
       hasRequestChanges = true;
     }
     if (v.cpuLimit !== init.cpuLimit) {
-      limits.cpu = v.cpuLimit || undefined;
+      limits.cpu = v.cpuLimit || null;
       hasLimitChanges = true;
     }
     if (v.memoryLimit !== init.memoryLimit) {
-      limits.memory = v.memoryLimit || undefined;
+      limits.memory = v.memoryLimit || null;
       hasLimitChanges = true;
     }
     if (v.gpuCount !== init.gpuCount) {
       limits['nvidia.com/gpu'] =
-        v.gpuCount > 0 ? String(v.gpuCount) : undefined;
+        v.gpuCount > 0 ? String(v.gpuCount) : null;
       hasLimitChanges = true;
     }
 

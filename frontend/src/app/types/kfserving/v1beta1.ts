@@ -47,6 +47,7 @@ export enum PredictorType {
   Xgboost = 'xgboost',
   Pmml = 'pmml',
   Lightgbm = 'lightgbm',
+  Paddle = 'paddle',
   MLFlow = 'mlflow',
   Huggingface = 'huggingface',
   Custom = 'custom',
@@ -61,8 +62,10 @@ export interface PredictorSpec extends V1PodSpec, ComponentExtensionSpec {
   onnx?: PredictorExtensionSpec;
   pmml?: PredictorExtensionSpec;
   lightgbm?: PredictorExtensionSpec;
+  paddle?: PredictorExtensionSpec;
   mlflow?: PredictorExtensionSpec;
   huggingface?: PredictorExtensionSpec;
+  custom?: PredictorExtensionSpec;
   model?: ModelSpec;
 }
 

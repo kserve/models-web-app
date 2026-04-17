@@ -6,14 +6,26 @@ namespace: kserve
 
 images:
   - name: kserve/models-web-app
-    newName: ghcr.io/kserve/models-web-app
-    newTag: 0.15.0
+    newName: localhost:32000/models-web-app
+    newTag: dev
+patches:
+  - target:
+      kind: Deployment
+      name: kserve-models-web-application
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+      - op: replace
+        path: /spec/template/spec/securityContext/runAsNonRoot
+        value: false
+      - op: remove
+        path: /spec/template/spec/containers/0/securityContext/runAsUser
 configMapGenerator:
   - literals:
       - APP_DISABLE_AUTH="True"
-      - GRAFANA_PREFIX="/grafana"
-      - GRAFANA_CPU_MEMORY_DB="db/knative-serving-revision-cpu-and-memory-usage"
-      - GRAFANA_HTTP_REQUESTS_DB="db/knative-serving-revision-http-requests"
+      - APP_PREFIX=/
+      - APP_SECURE_COOKIES="False"
     name: kserve-models-web-application-config
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

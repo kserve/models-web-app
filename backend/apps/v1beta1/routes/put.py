@@ -1,10 +1,12 @@
-from flask import request
+"""PUT routes for replacing InferenceService and InferenceGraph resources."""
 
+from flask import request
 
 from kubeflow.kubeflow.crud_backend import api, decorators, logging
 
 from ...common import versions
 from . import bp
+from .validators import validate_inference_service
 
 log = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ log = logging.getLogger(__name__)
 @decorators.request_is_json_type
 @decorators.required_body_params("apiVersion", "kind", "metadata", "spec")
 def replace_inference_service(namespace: str, inference_service: str):
+    """Handle full replacement of an InferenceService."""
     gvk = versions.inference_service_gvk()
     api.authz.ensure_authorized(
         "update",
@@ -25,6 +28,11 @@ def replace_inference_service(namespace: str, inference_service: str):
     )
 
     customResource = request.get_json()
+
+    result = validate_inference_service(customResource)
+    if isinstance(result, tuple):
+        return result
+    customResource = result
 
     api.custom_api.replace_namespaced_custom_object(
         group=gvk["group"],

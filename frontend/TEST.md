@@ -24,7 +24,7 @@ Jest is the unit test runner.
 Jest is configured in `jest.config.js`:
 
 - Setup file: `src/test-setup.jest.ts`
-- Test file patterns: `*.spec.ts` and `*.jest.spec.ts`
+- Test file pattern: `*.spec.ts`
 - Coverage output: `coverage-jest`
 
 ### Running Unit Tests
@@ -71,5 +71,5 @@ npm run e2e
 
 ## Test File Naming
 
-- Jest unit tests: `*.spec.ts` or `*.jest.spec.ts`
+- Unit tests: `*.spec.ts`
 - Cypress tests: `*.cy.ts`

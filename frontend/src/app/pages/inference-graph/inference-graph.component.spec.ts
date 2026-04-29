@@ -3,7 +3,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { RouterTestingModule } from '@angular/router/testing';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import {
@@ -119,7 +118,6 @@ describe('InferenceGraphComponent (Jest)', () => {
         { provide: PollerService, useValue: mockPoller },
         { provide: Router, useValue: mockRouter },
       ],
-      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
 
     fixture = TestBed.createComponent(InferenceGraphComponent);

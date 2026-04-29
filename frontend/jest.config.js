@@ -1,11 +1,10 @@
 module.exports = {
   preset: "jest-preset-angular",
   setupFilesAfterEnv: ["<rootDir>/src/test-setup.jest.ts"],
-  testMatch: ["**/*.spec.ts", "**/*.jest.spec.ts"],
+  testMatch: ["**/*.spec.ts"],
   collectCoverageFrom: [
     "src/**/*.ts",
     "!src/**/*.spec.ts",
-    "!src/**/*.jest.spec.ts",
     "!src/main.ts",
     "!src/polyfills.ts",
   ],
@@ -13,6 +12,8 @@ module.exports = {
   testEnvironment: "jsdom",
   moduleNameMapper: {
     "^kubeflow$": "<rootDir>/__mocks__/kubeflow.ts",
+    "^kubeflow/lib/(.*)$": "<rootDir>/__mocks__/kubeflow.ts",
+    "^kubeflow/(.*)$": "<rootDir>/__mocks__/kubeflow.ts",
     "^src/(.*)$": "<rootDir>/src/$1",
     "^@/(.*)$": "<rootDir>/src/$1",
   },

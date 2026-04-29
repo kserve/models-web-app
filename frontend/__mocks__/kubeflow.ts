@@ -1,11 +1,14 @@
-// Mock for Kubeflow imports used in getK8sObjectUiStatus function
-import { throwError } from 'rxjs';
+import { throwError, of, Observable, Subject } from 'rxjs';
+import { NgModule } from '@angular/core';
 
 export enum STATUS_TYPE {
   UNINITIALIZED = 'Uninitialized',
   TERMINATING = 'Terminating',
   WARNING = 'Warning',
   READY = 'Ready',
+  UNAVAILABLE = 'Unavailable',
+  WAITING = 'Waiting',
+  ERROR = 'Error',
 }
 
 // Interface for Kubernetes condition
@@ -14,6 +17,7 @@ export interface Condition {
   status: string;
   reason?: string;
   message?: string;
+  lastTransitionTime?: string;
 }
 
 // Interface for status object
@@ -26,10 +30,11 @@ export interface Status {
 // Interface for Kubernetes object
 export interface K8sObject {
   kind: string;
-  metadata: {
+  apiVersion?: string;
+  metadata?: {
     name?: string;
     namespace?: string;
-    deletionTimestamp?: string;
+    deletionTimestamp?: string | Date;
     [key: string]: any;
   };
   status?: {
@@ -70,29 +75,46 @@ export interface PredictorExtensionSpec {
 export class BackendService {
   constructor(public http?: any, public snack?: any) {}
 
-  handleError(error: any): any {
+  handleError(error: any, showSnackBar: boolean = true): any {
     return throwError(() => error);
+  }
+
+  getObjectsAllNamespaces(url: string, namespaces?: string[]): Observable<any> {
+    return of([]);
   }
 }
 
 // NamespaceService mock
 export class NamespaceService {
+  dashboardConnected$ = of(DashboardState.Connected);
+  
   getSelectedNamespace() {
-    return null;
+    return of('kubeflow-user');
   }
+  
+  getSelectedNamespace2() {
+    return of('kubeflow-user');
+  }
+  
   updateSelectedNamespace(ns: string) {}
 }
 
 // ConfirmDialogService mock
 export class ConfirmDialogService {
-  open() {
-    return null;
+  open(title: string, config: any) {
+    return {
+      componentInstance: {
+        applying$: new Subject<boolean>(),
+      },
+      afterClosed: () => of(DIALOG_RESP.ACCEPT),
+      close: (result?: any) => {},
+    };
   }
 }
 
 // SnackBarService mock
 export class SnackBarService {
-  open() {}
+  open(config: SnackBarConfig) {}
 }
 
 // SnackType enum
@@ -112,16 +134,49 @@ export interface SnackBarConfig {
   duration?: number;
 }
 
+// ListEntry interface for details list
+export interface ListEntry {
+  name: string;
+  value: any;
+}
+
+// ChipDescriptor interface
+export interface ChipDescriptor {
+  value: string;
+  color?: string;
+  tooltip?: string;
+}
+
 // DIALOG_RESP enum
 export enum DIALOG_RESP {
   ACCEPT = 'accept',
   CANCEL = 'cancel',
 }
 
+// DialogConfig interface
+export interface DialogConfig {
+  title?: string;
+  message?: string;
+  confirmText?: string;
+  cancelText?: string;
+  cancel?: string;
+  accept?: string;
+  applying?: string;
+  confirmColor?: string;
+  width?: string;
+  data?: any;
+  error?: any;
+}
+
 // PollerService mock
 export class PollerService {
-  exponential() {
-    return null;
+  exponential(request?: any) {
+    const backoff = new ExponentialBackoff({});
+    // Return an observable that has the backoff methods
+    const obs: any = of(null);
+    obs.start = () => of(null);
+    obs.reset = () => {};
+    return obs;
   }
 }
 
@@ -160,7 +215,11 @@ export class ExponentialBackoff {
   constructor(config: any) {}
 
   start() {
-    return { subscribe: () => {} };
+    return of(null);
+  }
+
+  reset() {
+    // Mock reset method
   }
 }
 
@@ -212,6 +271,55 @@ export class DateTimeValue {
   }
 }
 
+// TableConfig interface
+export interface TableConfig {
+  columns: any[];
+  data?: any[];
+  dynamicNamespaceColumn?: boolean;
+  sortByColumn?: string;
+  sortDirection?: string;
+}
+
+// TableColumn interface
+export interface TableColumn {
+  matHeaderCellDef: string;
+  matColumnDef: string;
+  value?: any;
+  textAlignment?: string;
+  sort?: boolean;
+}
+
+// ComponentValue class for table columns
+export class ComponentValue {
+  component: any;
+
+  constructor(config: any) {
+    this.component = config.component;
+  }
+}
+
+// ActionListValue class for table columns
+export class ActionListValue {
+  constructor(config: any) {}
+}
+
+// ActionIconValue class for table columns
+export class ActionIconValue {
+  constructor(config: any) {}
+}
+
+// TableColumnComponent for storage-uri-column
+export interface TableColumnComponent {
+  element?: any;
+  data?: any;
+}
+
+// Provide a base implementation that components can extend
+export abstract class BaseTableColumnComponent implements TableColumnComponent {
+  element?: any;
+  data?: any;
+}
+
 export interface ModelSpec extends PredictorExtensionSpec {
   modelFormat: {
     name: string;
@@ -242,3 +350,31 @@ export interface PredictorSpec {
   }>;
   [key: string]: any;
 }
+
+// Mock Angular modules
+@NgModule({})
+export class KubeflowModule {}
+
+@NgModule({})
+export class ResourceTableModule {}
+
+@NgModule({})
+export class DetailsListModule {}
+
+@NgModule({})
+export class EditorModule {}
+
+@NgModule({})
+export class PanelModule {}
+
+@NgModule({})
+export class LoadingSpinnerModule {}
+
+@NgModule({})
+export class HeadingSubheadingRowModule {}
+
+@NgModule({})
+export class DateTimeModule {}
+
+@NgModule({})
+export class ConditionsTableModule {}

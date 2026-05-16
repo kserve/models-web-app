@@ -49,6 +49,10 @@ jobs:
         working-directory: kubeflow-manifests
         run: kustomize build common/istio/kubeflow-istio-resources/base | kubectl apply -f -
 
+      - name: Install Profile Controller
+        working-directory: kubeflow-manifests
+        run: ./tests/profile_controller_install.sh
+
       - name: Install Multi-Tenancy
         working-directory: kubeflow-manifests
         run: ./tests/multi_tenancy_install.sh

@@ -53,15 +53,15 @@ jobs:
         working-directory: kubeflow-manifests
         run: ./tests/multi_tenancy_install.sh
 
-      - name: Install Knative
+      - name: Install Knative Serving
         working-directory: kubeflow-manifests
-        run: ./tests/knative_install.sh
+        run: ./tests/knative_serving_install.sh
 
       - name: Install KServe (core + ClusterServingRuntimes)
         working-directory: kubeflow-manifests
         run: ./tests/kserve_install.sh
 
-      - name: Override models web app with THIS PR manifests
+      - name: Override models web appLICATION with THIS PR manifests
         run: |
           kustomize build manifests/kustomize/overlays/kubeflow | \
             kubectl apply --server-side --force-conflicts -f -

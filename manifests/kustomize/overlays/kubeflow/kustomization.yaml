@@ -28,6 +28,12 @@ configurations:
 resources:
   - ../../base
 
+labels:
+  - includeSelectors: true
+    pairs:
+      app: kserve
+      app.kubernetes.io/name: kserve
+
 components:
   - ../../components/istio
 patches:

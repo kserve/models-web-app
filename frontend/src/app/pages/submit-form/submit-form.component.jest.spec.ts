@@ -3,10 +3,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { NamespaceService, SnackBarService } from 'kubeflow';
+import { DashboardState, NamespaceService, SnackBarService } from 'kubeflow';
 import { of, throwError } from 'rxjs';
 import { SubmitFormComponent } from './submit-form.component';
 import { MWABackendService } from 'src/app/services/backend.service';
+import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 
 const INFERENCE_SERVICE_YAML = `
 apiVersion: serving.kserve.io/v1beta1
@@ -33,7 +34,22 @@ spec:
     memory: 1Gi
 `.trim();
 
-const MULTI_DOC_YAML = `${INFERENCE_SERVICE_YAML}\n---\n${TRAINED_MODEL_YAML}`;
+const INFERENCE_GRAPH_YAML = `
+apiVersion: serving.kserve.io/v1alpha1
+kind: InferenceGraph
+metadata:
+  name: routing-graph
+spec:
+  nodes:
+    root:
+      routerType: Sequence
+      steps:
+        - serviceName: triton-mms
+`.trim();
+
+const MULTI_DOC_YAML = `${INFERENCE_SERVICE_YAML}
+---
+${TRAINED_MODEL_YAML}`;
 
 describe('SubmitFormComponent', () => {
   let component: SubmitFormComponent;
@@ -42,10 +58,13 @@ describe('SubmitFormComponent', () => {
   let mockSnack: { open: jest.Mock };
   let mockRouter: { navigate: jest.Mock };
 
+  const expectNoCreateRequest = () => {
+    expect(mockBackend.postKServeResources).not.toHaveBeenCalled();
+  };
+
   beforeEach(async () => {
     mockBackend = {
-      postInferenceService: jest.fn().mockReturnValue(of({})),
-      postTrainedModel: jest.fn().mockReturnValue(of({})),
+      postKServeResources: jest.fn().mockReturnValue(of({})),
     };
     mockSnack = { open: jest.fn() };
     mockRouter = { navigate: jest.fn() };
@@ -57,7 +76,17 @@ describe('SubmitFormComponent', () => {
         { provide: MWABackendService, useValue: mockBackend },
         {
           provide: NamespaceService,
-          useValue: { getSelectedNamespace: () => of('test-ns') },
+          useValue: {
+            dashboardConnected$: of(DashboardState.Disconnected),
+            getSelectedNamespace: jest.fn().mockReturnValue(of('dashboard-ns')),
+          },
+        },
+        {
+          provide: MWANamespaceService,
+          useValue: {
+            initialize: jest.fn().mockReturnValue(of('test-ns')),
+            getSelectedNamespace: jest.fn().mockReturnValue(of('test-ns')),
+          },
         },
         { provide: SnackBarService, useValue: mockSnack },
         { provide: Router, useValue: mockRouter },
@@ -70,231 +99,175 @@ describe('SubmitFormComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create and bind namespace from NamespaceService', () => {
+  it('should create and bind namespace from MWANamespaceService', () => {
     expect(component).toBeTruthy();
     expect(component.namespace).toBe('test-ns');
   });
 
-  describe('single-document YAML (backward compatibility)', () => {
-    it('should call postInferenceService once and navigate back on success', done => {
-      component.yaml = INFERENCE_SERVICE_YAML;
+  it('should submit single-document YAML through the batch endpoint', () => {
+    component.yaml = INFERENCE_SERVICE_YAML;
 
-      component.submit();
+    component.submit();
 
-      setTimeout(() => {
-        expect(mockBackend.postInferenceService).toHaveBeenCalledTimes(1);
-        expect(mockBackend.postTrainedModel).not.toHaveBeenCalled();
-        expect(mockRouter.navigate).toHaveBeenCalledWith(['']);
-        done();
-      }, 100);
-    });
-
-    it('should show "InferenceService created successfully." for single-doc', done => {
-      component.yaml = INFERENCE_SERVICE_YAML;
-
-      component.submit();
-
-      setTimeout(() => {
-        const msg = mockSnack.open.mock.calls[0][0].data.msg;
-        expect(msg).toBe('InferenceService created successfully.');
-        done();
-      }, 100);
-    });
+    expect(mockBackend.postKServeResources).toHaveBeenCalledTimes(1);
+    const [namespace, resources] =
+      mockBackend.postKServeResources.mock.calls[0];
+    expect(namespace).toBe('test-ns');
+    expect(resources.length).toBe(1);
+    expect(resources[0].kind).toBe('InferenceService');
+    expect(resources[0].metadata.namespace).toBe('test-ns');
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['']);
   });
 
-  describe('multi-document YAML', () => {
-    it('should call postInferenceService and postTrainedModel for each document', done => {
-      component.yaml = MULTI_DOC_YAML;
+  it('should show a single-resource success message', () => {
+    component.yaml = INFERENCE_SERVICE_YAML;
 
-      component.submit();
+    component.submit();
 
-      setTimeout(() => {
-        expect(mockBackend.postInferenceService).toHaveBeenCalledTimes(1);
-        expect(mockBackend.postTrainedModel).toHaveBeenCalledTimes(1);
-        expect(mockRouter.navigate).toHaveBeenCalledWith(['']);
-        done();
-      }, 100);
-    });
+    const msg = mockSnack.open.mock.calls[0][0].data.msg;
+    expect(msg).toBe('1 KServe resource created successfully.');
+  });
 
-    it('should show "N resources created successfully." for multi-doc', done => {
-      component.yaml = MULTI_DOC_YAML;
-
-      component.submit();
-
-      setTimeout(() => {
-        const msg = mockSnack.open.mock.calls[0][0].data.msg;
-        expect(msg).toBe('2 resources created successfully.');
-        done();
-      }, 100);
-    });
-
-    it('should inject the current namespace into every document before POSTing', done => {
-      component.namespace = 'production';
-      component.yaml = MULTI_DOC_YAML;
-
-      component.submit();
-
-      setTimeout(() => {
-        const svc = (mockBackend.postInferenceService as jest.Mock).mock
-          .calls[0][0];
-        expect(svc.metadata.namespace).toBe('production');
-
-        const tm = (mockBackend.postTrainedModel as jest.Mock).mock.calls[0][0];
-        expect(tm.metadata.namespace).toBe('production');
-        done();
-      }, 100);
-    });
-
-    it('should call postTrainedModel for each TrainedModel document', done => {
-      const twoTrainedModels = `${INFERENCE_SERVICE_YAML}
+  it('should preserve multi-document order and namespace all resources', () => {
+    component.namespace = 'production';
+    component.yaml = `${INFERENCE_SERVICE_YAML}
 ---
 ${TRAINED_MODEL_YAML}
 ---
-apiVersion: serving.kserve.io/v1alpha1
-kind: TrainedModel
+${INFERENCE_GRAPH_YAML}`;
+
+    component.submit();
+
+    const [namespace, resources] =
+      mockBackend.postKServeResources.mock.calls[0];
+    expect(namespace).toBe('production');
+    expect(resources.map(resource => resource.kind)).toEqual([
+      'InferenceService',
+      'TrainedModel',
+      'InferenceGraph',
+    ]);
+    expect(
+      resources.every(resource => resource.metadata.namespace === 'production'),
+    ).toBe(true);
+  });
+
+  it('should allow more than one InferenceService document', () => {
+    component.yaml = `${INFERENCE_SERVICE_YAML}
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
 metadata:
-  name: simple-string
+  name: second-model
 spec:
-  inferenceService: triton-mms
-  model:
-    framework: tensorflow
-    storageUri: gs://kfserving-examples/models/triton/simple_string
-    memory: 1Gi`;
+  predictor:
+    model:
+      modelFormat:
+        name: sklearn`;
 
-      component.yaml = twoTrainedModels;
+    component.submit();
 
-      component.submit();
-
-      setTimeout(() => {
-        expect(mockBackend.postInferenceService).toHaveBeenCalledTimes(1);
-        expect(mockBackend.postTrainedModel).toHaveBeenCalledTimes(2);
-        expect(mockRouter.navigate).toHaveBeenCalledWith(['']);
-        done();
-      }, 100);
-    });
+    const [, resources] = mockBackend.postKServeResources.mock.calls[0];
+    expect(resources.length).toBe(2);
+    expect(
+      resources.every(resource => resource.kind === 'InferenceService'),
+    ).toBe(true);
   });
 
-  describe('YAML parsing errors', () => {
-    it('should show a snackbar error and not call any API for malformed YAML', () => {
-      component.yaml = 'invalid: yaml: [[[unclosed';
+  it('should accept InferenceGraph documents', () => {
+    component.yaml = INFERENCE_GRAPH_YAML;
 
-      component.submit();
+    component.submit();
 
-      expect(mockSnack.open).toHaveBeenCalled();
-      const snackConfig = mockSnack.open.mock.calls[0][0];
-      expect(snackConfig.data.msg).toMatch(/yaml parsing error/i);
-      expect(mockBackend.postInferenceService).not.toHaveBeenCalled();
-      expect(component.applying).toBe(false);
-    });
-
-    it('should show an error for empty YAML', () => {
-      component.yaml = '';
-
-      component.submit();
-
-      expect(mockSnack.open).toHaveBeenCalled();
-      expect(mockBackend.postInferenceService).not.toHaveBeenCalled();
-    });
+    const [, resources] = mockBackend.postKServeResources.mock.calls[0];
+    expect(resources.length).toBe(1);
+    expect(resources[0].kind).toBe('InferenceGraph');
   });
 
-  describe('validation', () => {
-    it('should require at least one InferenceService document', () => {
-      component.yaml = TRAINED_MODEL_YAML;
+  it('should show a snackbar error and not call any API for malformed YAML', () => {
+    component.yaml = 'invalid: yaml: [[[unclosed';
 
-      component.submit();
+    component.submit();
 
-      expect(mockSnack.open).toHaveBeenCalled();
-      const msg = mockSnack.open.mock.calls[0][0].data.msg;
-      expect(msg).toContain(
-        'At least one InferenceService document is required',
-      );
-      expect(mockBackend.postInferenceService).not.toHaveBeenCalled();
-    });
+    const snackConfig = mockSnack.open.mock.calls[0][0];
+    expect(snackConfig.data.msg).toMatch(/yaml parsing error/i);
+    expectNoCreateRequest();
+    expect(component.applying).toBe(false);
+  });
 
-    it('should reject more than one InferenceService in a single submission', () => {
-      component.yaml = `${INFERENCE_SERVICE_YAML}\n---\n${INFERENCE_SERVICE_YAML}`;
+  it('should show an error for empty YAML', () => {
+    component.yaml = '';
 
-      component.submit();
+    component.submit();
 
-      expect(mockSnack.open).toHaveBeenCalled();
-      const msg = mockSnack.open.mock.calls[0][0].data.msg;
-      expect(msg).toContain('Only one InferenceService document is allowed');
-      expect(mockBackend.postInferenceService).not.toHaveBeenCalled();
-    });
+    expect(mockSnack.open.mock.calls[0][0].data.msg).toContain('YAML is empty');
+    expectNoCreateRequest();
+  });
 
-    it('should reject unsupported resource kinds', () => {
-      component.yaml = `apiVersion: apps/v1
+  it('should reject scalar YAML documents', () => {
+    component.yaml = 'hello';
+
+    component.submit();
+
+    expect(mockSnack.open.mock.calls[0][0].data.msg).toContain(
+      'resource must be an object',
+    );
+    expectNoCreateRequest();
+  });
+
+  it('should reject unsupported resource kinds', () => {
+    component.yaml = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-deploy
 spec:
   replicas: 1`;
 
-      component.submit();
+    component.submit();
 
-      expect(mockSnack.open).toHaveBeenCalled();
-      const msg = mockSnack.open.mock.calls[0][0].data.msg;
-      expect(msg).toContain('Unsupported resource kind');
-      expect(mockBackend.postInferenceService).not.toHaveBeenCalled();
-    });
-
-    it('should validate InferenceService missing spec.predictor', () => {
-      component.yaml = `apiVersion: serving.kserve.io/v1beta1
-kind: InferenceService
-metadata:
-  name: no-predictor
-spec: {}`;
-
-      component.submit();
-
-      expect(mockSnack.open).toHaveBeenCalled();
-      const msg = mockSnack.open.mock.calls[0][0].data.msg;
-      expect(msg).toContain('spec.predictor');
-      expect(mockBackend.postInferenceService).not.toHaveBeenCalled();
-    });
-
-    it('should validate TrainedModel missing spec.inferenceService', () => {
-      component.yaml = `${INFERENCE_SERVICE_YAML}
----
-apiVersion: serving.kserve.io/v1alpha1
-kind: TrainedModel
-metadata:
-  name: bad-model
-spec:
-  model:
-    framework: pytorch
-    storageUri: gs://example/model
-    memory: 1Gi`;
-
-      component.submit();
-
-      expect(mockSnack.open).toHaveBeenCalled();
-      const msg = mockSnack.open.mock.calls[0][0].data.msg;
-      expect(msg).toContain('spec.inferenceService');
-      expect(mockBackend.postInferenceService).not.toHaveBeenCalled();
-    });
+    expect(mockSnack.open.mock.calls[0][0].data.msg).toContain(
+      'unsupported resource',
+    );
+    expectNoCreateRequest();
   });
 
-  describe('backend error handling', () => {
-    it('should show snackbar error and not navigate when backend returns an error', done => {
-      mockBackend.postInferenceService = jest
-        .fn()
-        .mockReturnValue(
-          throwError(() => ({ error: { log: 'Cluster error' } })),
-        );
+  it('should validate generic required fields before submitting', () => {
+    component.yaml = `apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata: {}
+spec: {}`;
 
-      component.yaml = INFERENCE_SERVICE_YAML;
+    component.submit();
 
-      component.submit();
+    expect(mockSnack.open.mock.calls[0][0].data.msg).toContain('metadata.name');
+    expectNoCreateRequest();
+  });
 
-      setTimeout(() => {
-        expect(mockSnack.open).toHaveBeenCalled();
-        const msg = mockSnack.open.mock.calls[0][0].data.msg;
-        expect(msg).toBe('Cluster error');
-        expect(mockRouter.navigate).not.toHaveBeenCalled();
-        expect(component.applying).toBe(false);
-        done();
-      }, 100);
-    });
+  it('should validate missing spec before submitting', () => {
+    component.yaml = `apiVersion: serving.kserve.io/v1alpha1
+kind: TrainedModel
+metadata:
+  name: bad-model`;
+
+    component.submit();
+
+    expect(mockSnack.open.mock.calls[0][0].data.msg).toContain(
+      'missing required field spec',
+    );
+    expectNoCreateRequest();
+  });
+
+  it('should show backend errors and not navigate', () => {
+    mockBackend.postKServeResources = jest
+      .fn()
+      .mockReturnValue(
+        throwError(() => ({ error: { message: 'Cluster error' } })),
+      );
+    component.yaml = MULTI_DOC_YAML;
+
+    component.submit();
+
+    expect(mockSnack.open.mock.calls[0][0].data.msg).toBe('Cluster error');
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+    expect(component.applying).toBe(false);
   });
 });

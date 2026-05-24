@@ -3,18 +3,27 @@ import { Router } from '@angular/router';
 import {
   NamespaceService,
   DashboardState,
+  K8sObject,
   SnackBarConfig,
   SnackBarService,
   SnackType,
 } from 'kubeflow';
 import { loadAll } from 'js-yaml';
-import { forkJoin, Observable } from 'rxjs';
-import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
-import { TrainedModelK8s } from 'src/app/types/kfserving/v1alpha1';
+import { Subscription } from 'rxjs';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
-import { Subscription } from 'rxjs';
-import { MWABackendResponse } from 'src/app/types/backend';
+
+const SUPPORTED_KSERVE_RESOURCES = new Set([
+  'serving.kserve.io/v1beta1|InferenceService',
+  'serving.kserve.io/v1alpha1|InferenceGraph',
+  'serving.kserve.io/v1alpha1|TrainedModel',
+]);
+
+const SUPPORTED_KSERVE_RESOURCE_LABELS = [
+  'serving.kserve.io/v1beta1 InferenceService',
+  'serving.kserve.io/v1alpha1 InferenceGraph',
+  'serving.kserve.io/v1alpha1 TrainedModel',
+].join(', ');
 
 @Component({
   selector: 'app-submit-form',
@@ -71,6 +80,12 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
   submit() {
     this.applying = true;
 
+    if (!this.namespace) {
+      this.showError('No namespace selected.');
+      this.applying = false;
+      return;
+    }
+
     let docs: unknown[];
     try {
       docs = loadAll(this.yaml);
@@ -91,7 +106,7 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const validDocs = docs.filter(d => d != null);
+    const validDocs = docs.filter(doc => doc != null);
     if (validDocs.length === 0) {
       this.showError('YAML is empty or invalid');
       this.applying = false;
@@ -99,39 +114,22 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
     }
 
     const validationErrors: string[] = [];
-    const inferenceServices: InferenceServiceK8s[] = [];
-    const trainedModels: TrainedModelK8s[] = [];
+    const resources: K8sObject[] = [];
 
-    for (const doc of validDocs) {
-      const resource = doc as any;
-      const kind = resource?.kind;
-
-      if (kind === 'InferenceService') {
-        validationErrors.push(...this.validateInferenceService(resource));
-        inferenceServices.push(resource as InferenceServiceK8s);
-      } else if (kind === 'TrainedModel') {
-        validationErrors.push(...this.validateTrainedModel(resource));
-        trainedModels.push(resource as TrainedModelK8s);
-      } else {
+    validDocs.forEach((doc, index) => {
+      const documentIndex = index + 1;
+      if (!this.isResourceObject(doc)) {
         validationErrors.push(
-          `Unsupported resource kind: "${
-            kind || 'unknown'
-          }". Only InferenceService and TrainedModel are supported.`,
+          `Document ${documentIndex}: resource must be an object`,
         );
+      } else {
+        const resource = doc as K8sObject;
+        validationErrors.push(
+          ...this.validateResource(resource, documentIndex),
+        );
+        resources.push(resource);
       }
-    }
-
-    if (inferenceServices.length === 0) {
-      validationErrors.push(
-        'At least one InferenceService document is required.',
-      );
-    }
-
-    if (inferenceServices.length > 1) {
-      validationErrors.push(
-        'Only one InferenceService document is allowed per submission.',
-      );
-    }
+    });
 
     if (validationErrors.length > 0) {
       this.showError(validationErrors.join(' | '), 16000);
@@ -139,28 +137,15 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const requests: Observable<MWABackendResponse>[] = [];
+    resources.forEach(resource => this.setResourceNamespace(resource));
 
-    for (const svc of inferenceServices) {
-      svc.metadata!.namespace = this.namespace;
-      requests.push(this.backend.postInferenceService(svc));
-    }
-
-    for (const tm of trainedModels) {
-      if (!tm.metadata) {
-        tm.metadata = {};
-      }
-      tm.metadata.namespace = this.namespace;
-      requests.push(this.backend.postTrainedModel(tm));
-    }
-
-    forkJoin(requests).subscribe({
-      next: () => {
-        const total = inferenceServices.length + trainedModels.length;
+    this.backend.postKServeResources(this.namespace, resources).subscribe({
+      next: response => {
+        const total = response.createdResources?.length ?? resources.length;
         const msg =
           total === 1
-            ? 'InferenceService created successfully.'
-            : `${total} resources created successfully.`;
+            ? '1 KServe resource created successfully.'
+            : `${total} KServe resources created successfully.`;
         this.showSuccess(msg);
         this.applying = false;
         this.navigateBack();
@@ -186,47 +171,55 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  private validateInferenceService(resource: any): string[] {
+  private isResourceObject(doc: unknown): doc is K8sObject {
+    return typeof doc === 'object' && doc !== null && !Array.isArray(doc);
+  }
+
+  private validateResource(
+    resource: K8sObject,
+    documentIndex: number,
+  ): string[] {
     const errors: string[] = [];
-    if (!resource.apiVersion) {
-      errors.push('InferenceService: Missing required field: apiVersion');
+    const customResource = resource as any;
+    const apiVersion = customResource.apiVersion;
+    const kind = customResource.kind;
+    const metadata = customResource.metadata;
+
+    if (!apiVersion) {
+      errors.push(
+        `Document ${documentIndex}: missing required field apiVersion`,
+      );
     }
-    if (!resource.metadata) {
-      errors.push('InferenceService: Missing required field: metadata');
-    } else if (!resource.metadata.name) {
-      errors.push('InferenceService: Missing required field: metadata.name');
+    if (!kind) {
+      errors.push(`Document ${documentIndex}: missing required field kind`);
     }
-    if (!resource.spec) {
-      errors.push('InferenceService: Missing required field: spec');
-    } else if (!resource.spec.predictor) {
-      errors.push('InferenceService: Missing required field: spec.predictor');
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      errors.push(`Document ${documentIndex}: missing required field metadata`);
+    } else if (!metadata.name) {
+      errors.push(
+        `Document ${documentIndex}: missing required field metadata.name`,
+      );
+    }
+    if (customResource.spec == null) {
+      errors.push(`Document ${documentIndex}: missing required field spec`);
+    }
+
+    if (
+      apiVersion &&
+      kind &&
+      !SUPPORTED_KSERVE_RESOURCES.has(`${apiVersion}|${kind}`)
+    ) {
+      errors.push(
+        `Document ${documentIndex}: unsupported resource ${apiVersion} ${kind}. ` +
+          `Supported resources: ${SUPPORTED_KSERVE_RESOURCE_LABELS}`,
+      );
     }
     return errors;
   }
 
-  private validateTrainedModel(resource: any): string[] {
-    const errors: string[] = [];
-    if (!resource.apiVersion) {
-      errors.push('TrainedModel: Missing required field: apiVersion');
-    }
-    if (!resource.metadata) {
-      errors.push('TrainedModel: Missing required field: metadata');
-    } else if (!resource.metadata.name) {
-      errors.push('TrainedModel: Missing required field: metadata.name');
-    }
-    if (!resource.spec) {
-      errors.push('TrainedModel: Missing required field: spec');
-    } else {
-      if (!resource.spec.inferenceService) {
-        errors.push(
-          'TrainedModel: Missing required field: spec.inferenceService',
-        );
-      }
-      if (!resource.spec.model) {
-        errors.push('TrainedModel: Missing required field: spec.model');
-      }
-    }
-    return errors;
+  private setResourceNamespace(resource: K8sObject) {
+    const customResource = resource as any;
+    customResource.metadata.namespace = this.namespace;
   }
 
   private showError(msg: string, duration = 8000) {

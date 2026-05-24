@@ -4,10 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { InferenceServiceK8s } from '../types/kfserving/v1beta1';
-import {
-  InferenceGraphK8s,
-  TrainedModelK8s,
-} from '../types/kfserving/v1alpha1';
+import { InferenceGraphK8s } from '../types/kfserving/v1alpha1';
 import { MWABackendResponse, InferenceServiceLogs } from '../types/backend';
 import { EventObject } from '../types/event';
 
@@ -259,14 +256,14 @@ export class MWABackendService extends BackendService {
       .pipe(catchError(error => this.handleError(error)));
   }
 
-  public postTrainedModel(
-    trainedModel: TrainedModelK8s,
+  public postKServeResources(
+    namespace: string,
+    resources: K8sObject[],
   ): Observable<MWABackendResponse> {
-    const namespace = trainedModel.metadata!.namespace;
-    const url = `api/namespaces/${namespace}/trainedmodels`;
+    const url = `api/namespaces/${namespace}/kserve-resources`;
 
     return this.http
-      .post<MWABackendResponse>(url, trainedModel)
+      .post<MWABackendResponse>(url, { resources })
       .pipe(catchError(error => this.handleError(error)));
   }
 

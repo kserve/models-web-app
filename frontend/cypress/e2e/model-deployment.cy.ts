@@ -50,6 +50,7 @@ describe('Models Web App - Model Deployment Tests', () => {
             const component = win.ng.getComponent(element);
             if (component) {
               component.yaml = value;
+              component.namespace = 'kubeflow-user';
               if (win.ng.applyChanges) {
                 win.ng.applyChanges(element);
               } else if (win.Zone) {
@@ -233,25 +234,23 @@ spec:
     cy.get('lib-submit-bar button')
       .contains(/submit|create/i)
       .click();
-    cy.get<Interception[]>('@createKServeResources.all').then(
-      interceptions => {
-        if (interceptions.length === 0) {
-          cy.window().then((win: any) => {
-            if (win.ng) {
-              cy.get('app-submit-form').then($el => {
-                const element = $el[0];
-                try {
-                  const component = win.ng.getComponent(element);
-                  if (component && component.submit) {
-                    component.submit();
-                  }
-                } catch (e) {}
-              });
-            }
-          });
-        }
-      },
-    );
+    cy.get<Interception[]>('@createKServeResources.all').then(interceptions => {
+      if (interceptions.length === 0) {
+        cy.window().then((win: any) => {
+          if (win.ng) {
+            cy.get('app-submit-form').then($el => {
+              const element = $el[0];
+              try {
+                const component = win.ng.getComponent(element);
+                if (component && component.submit) {
+                  component.submit();
+                }
+              } catch (e) {}
+            });
+          }
+        });
+      }
+    });
 
     // Verify API call was made or that submission succeeded
     cy.get<Interception[]>('@createKServeResources.all', {

@@ -80,12 +80,6 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
   submit() {
     this.applying = true;
 
-    if (!this.namespace) {
-      this.showError('No namespace selected.');
-      this.applying = false;
-      return;
-    }
-
     let docs: unknown[];
     try {
       docs = loadAll(this.yaml);
@@ -133,6 +127,12 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
 
     if (validationErrors.length > 0) {
       this.showError(validationErrors.join(' | '), 16000);
+      this.applying = false;
+      return;
+    }
+
+    if (!this.namespace) {
+      this.showError('No namespace selected.');
       this.applying = false;
       return;
     }

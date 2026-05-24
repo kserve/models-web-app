@@ -204,11 +204,13 @@ spec:
     setComponentState(yaml);
     clickSubmit();
 
-    cy.wait('@createKServeResources', { timeout: 10000 });
-    cy.get('.mat-snack-bar-container', { timeout: 10000 })
-      .should('be.visible')
-      .invoke('text')
-      .should('match', /failed to create document 2/i);
+    cy.wait('@createKServeResources', { timeout: 10000 })
+      .its('response.body')
+      .should(body => {
+        expect(body.failedDocumentIndex).to.eq(2);
+        expect(body.createdResources).to.have.length(1);
+      });
+    cy.get('.mat-snack-bar-container', { timeout: 10000 }).should('be.visible');
     cy.url().should('include', '/new');
   });
 });

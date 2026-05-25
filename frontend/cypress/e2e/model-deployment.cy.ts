@@ -50,6 +50,7 @@ describe('Models Web App - Model Deployment Tests', () => {
             const component = win.ng.getComponent(element);
             if (component) {
               component.yaml = value;
+              component.namespace = 'kubeflow-user';
               if (win.ng.applyChanges) {
                 win.ng.applyChanges(element);
               } else if (win.Zone) {
@@ -97,7 +98,7 @@ describe('Models Web App - Model Deployment Tests', () => {
 
     // Check title and back button
     cy.get('lib-title-actions-toolbar').should('exist');
-    cy.contains('New Endpoint').should('be.visible');
+    cy.contains('New KServe Resources').should('be.visible');
 
     // Check that Monaco editor component exists
     cy.get('lib-monaco-editor', { timeout: 15000 })
@@ -122,13 +123,19 @@ describe('Models Web App - Model Deployment Tests', () => {
 
   it('should successfully deploy a model with valid YAML', () => {
     // Mock successful creation
-    cy.intercept('POST', '/api/namespaces/*/inferenceservices', {
+    cy.intercept('POST', '/api/namespaces/*/kserve-resources', {
       statusCode: 201,
       body: {
-        name: 'test-sklearn-model',
-        namespace: 'kubeflow-user',
+        createdResources: [
+          {
+            apiVersion: 'serving.kserve.io/v1beta1',
+            kind: 'InferenceService',
+            name: 'test-sklearn-model',
+            namespace: 'kubeflow-user',
+          },
+        ],
       },
-    }).as('createInferenceService');
+    }).as('createKServeResources');
 
     // Also mock the redirect list call
     cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
@@ -227,28 +234,26 @@ spec:
     cy.get('lib-submit-bar button')
       .contains(/submit|create/i)
       .click();
-    cy.get<Interception[]>('@createInferenceService.all').then(
-      interceptions => {
-        if (interceptions.length === 0) {
-          cy.window().then((win: any) => {
-            if (win.ng) {
-              cy.get('app-submit-form').then($el => {
-                const element = $el[0];
-                try {
-                  const component = win.ng.getComponent(element);
-                  if (component && component.submit) {
-                    component.submit();
-                  }
-                } catch (e) {}
-              });
-            }
-          });
-        }
-      },
-    );
+    cy.get<Interception[]>('@createKServeResources.all').then(interceptions => {
+      if (interceptions.length === 0) {
+        cy.window().then((win: any) => {
+          if (win.ng) {
+            cy.get('app-submit-form').then($el => {
+              const element = $el[0];
+              try {
+                const component = win.ng.getComponent(element);
+                if (component && component.submit) {
+                  component.submit();
+                }
+              } catch (e) {}
+            });
+          }
+        });
+      }
+    });
 
     // Verify API call was made or that submission succeeded
-    cy.get<Interception[]>('@createInferenceService.all', {
+    cy.get<Interception[]>('@createKServeResources.all', {
       timeout: 10000,
     }).then(interceptions => {
       if (interceptions.length > 0) {
@@ -277,12 +282,12 @@ spec:
 
   it('should show error for invalid YAML syntax', () => {
     // Mock error response for invalid YAML
-    cy.intercept('POST', '/api/namespaces/*/inferenceservices', {
+    cy.intercept('POST', '/api/namespaces/*/kserve-resources', {
       statusCode: 400,
       body: {
         error: 'Invalid YAML: could not find expected ":"',
       },
-    }).as('createInferenceServiceError');
+    }).as('createKServeResourcesError');
 
     cy.visit('/new');
 
@@ -322,17 +327,17 @@ metadata:
     cy.url().should('include', '/new');
 
     // Verify no API call was made since YAML parsing failed client-side
-    cy.get('@createInferenceServiceError.all').should('have.length', 0);
+    cy.get('@createKServeResourcesError.all').should('have.length', 0);
   });
 
   it('should handle network errors gracefully', () => {
     // Mock network error
-    cy.intercept('POST', '/api/namespaces/*/inferenceservices', {
+    cy.intercept('POST', '/api/namespaces/*/kserve-resources', {
       statusCode: 500,
       body: {
         error: 'Internal Server Error',
       },
-    }).as('createInferenceServiceNetworkError');
+    }).as('createKServeResourcesNetworkError');
 
     cy.visit('/new');
 
@@ -366,8 +371,8 @@ spec:
   it('should validate required fields in YAML', () => {
     cy.visit('/new');
 
-    cy.intercept('POST', '/api/namespaces/*/inferenceservices').as(
-      'createInferenceService',
+    cy.intercept('POST', '/api/namespaces/*/kserve-resources').as(
+      'createKServeResources',
     );
 
     // Wait for the page to load
@@ -397,7 +402,7 @@ spec:
         } else {
           // Click and expect error
           cy.wrap($btn).click({ force: true });
-          cy.get('@createInferenceService.all').should('have.length', 0); // No API call should be made
+          cy.get('@createKServeResources.all').should('have.length', 0); // No API call should be made
         }
       });
     });

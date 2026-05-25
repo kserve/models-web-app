@@ -256,6 +256,17 @@ export class MWABackendService extends BackendService {
       .pipe(catchError(error => this.handleError(error)));
   }
 
+  public postKServeResources(
+    namespace: string,
+    resources: K8sObject[],
+  ): Observable<MWABackendResponse> {
+    const url = `api/namespaces/${namespace}/kserve-resources`;
+
+    return this.http
+      .post<MWABackendResponse>(url, { resources })
+      .pipe(catchError(error => this.handleError(error)));
+  }
+
   /*
    * PUT
    */

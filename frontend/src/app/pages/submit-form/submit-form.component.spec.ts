@@ -13,7 +13,7 @@ let NamespaceServiceStub: Partial<NamespaceService>;
 let MWANamespaceServiceStub: Partial<MWANamespaceService>;
 
 MWABackendServiceStub = {
-  postInferenceService: () => of(),
+  postKServeResources: () => of(),
 };
 
 NamespaceServiceStub = {

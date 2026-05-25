@@ -8,6 +8,9 @@ export interface MWABackendResponse extends BackendResponse {
   inferenceService?: InferenceServiceK8s;
   inferenceGraphs?: InferenceGraphK8s[];
   inferenceGraph?: InferenceGraphK8s;
+  createdResources?: KServeResourceIdentity[];
+  failedDocumentIndex?: number;
+  failedResource?: KServeResourceIdentity;
   knativeService?: K8sObject;
   knativeConfiguration?: K8sObject;
   knativeRevision?: K8sObject;
@@ -21,6 +24,13 @@ export interface MWABackendResponse extends BackendResponse {
   modelmeshObjects?: ModelMeshObjects;
   logs?: string[];
   containers?: string[];
+}
+
+export interface KServeResourceIdentity {
+  apiVersion?: string;
+  kind?: string;
+  name?: string;
+  namespace?: string;
 }
 
 export interface InferenceServiceLogs {

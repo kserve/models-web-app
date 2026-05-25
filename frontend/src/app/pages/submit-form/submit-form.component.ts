@@ -3,15 +3,28 @@ import { Router } from '@angular/router';
 import {
   NamespaceService,
   DashboardState,
+  K8sObject,
   SnackBarConfig,
   SnackBarService,
   SnackType,
 } from 'kubeflow';
-import { load } from 'js-yaml';
-import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
+import { loadAll } from 'js-yaml';
+import { Subscription } from 'rxjs';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
-import { Subscription } from 'rxjs';
+import { KServeResourceIdentity } from 'src/app/types/backend';
+
+const SUPPORTED_KSERVE_RESOURCES = new Set([
+  'serving.kserve.io/v1beta1|InferenceService',
+  'serving.kserve.io/v1alpha1|InferenceGraph',
+  'serving.kserve.io/v1alpha1|TrainedModel',
+]);
+
+const SUPPORTED_KSERVE_RESOURCE_LABELS = [
+  'serving.kserve.io/v1beta1 InferenceService',
+  'serving.kserve.io/v1alpha1 InferenceGraph',
+  'serving.kserve.io/v1alpha1 TrainedModel',
+].join(', ');
 
 @Component({
   selector: 'app-submit-form',
@@ -68,9 +81,9 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
   submit() {
     this.applying = true;
 
-    let customResource: InferenceServiceK8s;
+    let docs: unknown[];
     try {
-      customResource = load(this.yaml) as InferenceServiceK8s;
+      docs = loadAll(this.yaml);
     } catch (e) {
       let msg = 'Could not parse the provided YAML';
 
@@ -83,109 +96,188 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
         }
       }
 
-      const config: SnackBarConfig = {
-        data: {
-          msg,
-          snackType: SnackType.Error,
-        },
-        duration: 16000,
-      };
-      this.snack.open(config);
+      this.showError(msg);
       this.applying = false;
       return;
     }
 
-    if (!customResource) {
-      const config: SnackBarConfig = {
-        data: {
-          msg: 'YAML is empty or invalid',
-          snackType: SnackType.Error,
-        },
-        duration: 8000,
-      };
-      this.snack.open(config);
+    const resourceDocs = docs
+      .map((doc, index) => ({ doc, documentIndex: index + 1 }))
+      .filter(({ doc }) => doc != null);
+
+    if (resourceDocs.length === 0) {
+      this.showError('YAML is empty or invalid');
       this.applying = false;
       return;
     }
 
     const validationErrors: string[] = [];
+    const resources: K8sObject[] = [];
 
-    if (!customResource.apiVersion) {
-      validationErrors.push('Missing required field: apiVersion');
-    }
-    if (!customResource.kind || customResource.kind !== 'InferenceService') {
-      validationErrors.push(
-        'Missing or invalid field: kind (must be "InferenceService")',
-      );
-    }
-    if (!customResource.metadata) {
-      validationErrors.push('Missing required field: metadata');
-    } else {
-      if (!customResource.metadata.name) {
-        validationErrors.push('Missing required field: metadata.name');
+    resourceDocs.forEach(({ doc, documentIndex }) => {
+      if (!this.isResourceObject(doc)) {
+        validationErrors.push(
+          `Document ${documentIndex}: resource must be an object`,
+        );
+      } else {
+        const resource = doc as K8sObject;
+        validationErrors.push(
+          ...this.validateResource(resource, documentIndex),
+        );
+        resources.push(resource);
       }
-    }
-    if (!customResource.spec) {
-      validationErrors.push('Missing required field: spec');
-    } else {
-      if (!customResource.spec.predictor) {
-        validationErrors.push('Missing required field: spec.predictor');
-      }
-    }
+    });
 
     if (validationErrors.length > 0) {
-      const config: SnackBarConfig = {
-        data: {
-          msg: validationErrors.join(' | '),
-          snackType: SnackType.Error,
-        },
-        duration: 16000,
-      };
-      this.snack.open(config);
+      this.showError(validationErrors.join(' | '), 16000);
       this.applying = false;
       return;
     }
 
-    customResource.metadata!.namespace = this.namespace;
+    if (!this.namespace) {
+      this.showError('No namespace selected.');
+      this.applying = false;
+      return;
+    }
 
-    this.backend.postInferenceService(customResource).subscribe({
-      next: () => {
-        const config: SnackBarConfig = {
-          data: {
-            msg: 'InferenceService created successfully.',
-            snackType: SnackType.Success,
-          },
-          duration: 3000,
-        };
-        this.snack.open(config);
+    resources.forEach(resource => this.setResourceNamespace(resource));
+
+    this.backend.postKServeResources(this.namespace, resources).subscribe({
+      next: response => {
+        const total = response.createdResources?.length ?? resources.length;
+        const msg =
+          total === 1
+            ? '1 KServe resource created successfully.'
+            : `${total} KServe resources created successfully.`;
+        this.showSuccess(msg);
         this.applying = false;
         this.navigateBack();
       },
       error: err => {
-        let errorMsg = 'Failed to create InferenceService';
-
-        if (err?.error?.log) {
-          errorMsg = err.error.log;
-        } else if (err?.error?.message) {
-          errorMsg = err.error.message;
-        } else if (err?.error?.error) {
-          errorMsg = err.error.error;
-        } else if (typeof err?.error === 'string') {
-          errorMsg = err.error;
-        } else if (err?.statusText) {
-          errorMsg = `Server error: ${err.statusText}`;
-        }
-
-        const config: SnackBarConfig = {
-          data: {
-            msg: errorMsg,
-            snackType: SnackType.Error,
-          },
-          duration: 16000,
-        };
-        this.snack.open(config);
+        this.showError(this.getCreateErrorMessage(err), 16000);
         this.applying = false;
       },
     });
+  }
+
+  private isResourceObject(doc: unknown): doc is K8sObject {
+    return typeof doc === 'object' && doc !== null && !Array.isArray(doc);
+  }
+
+  private validateResource(
+    resource: K8sObject,
+    documentIndex: number,
+  ): string[] {
+    const errors: string[] = [];
+    const customResource = resource as any;
+    const apiVersion = customResource.apiVersion;
+    const kind = customResource.kind;
+    const metadata = customResource.metadata;
+
+    if (!apiVersion) {
+      errors.push(
+        `Document ${documentIndex}: missing required field apiVersion`,
+      );
+    }
+    if (!kind) {
+      errors.push(`Document ${documentIndex}: missing required field kind`);
+    }
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      errors.push(`Document ${documentIndex}: missing required field metadata`);
+    } else if (!metadata.name) {
+      errors.push(
+        `Document ${documentIndex}: missing required field metadata.name`,
+      );
+    }
+    if (customResource.spec == null) {
+      errors.push(`Document ${documentIndex}: missing required field spec`);
+    }
+
+    if (
+      apiVersion &&
+      kind &&
+      !SUPPORTED_KSERVE_RESOURCES.has(`${apiVersion}|${kind}`)
+    ) {
+      errors.push(
+        `Document ${documentIndex}: unsupported resource ${apiVersion} ${kind}. ` +
+          `Supported resources: ${SUPPORTED_KSERVE_RESOURCE_LABELS}`,
+      );
+    }
+    return errors;
+  }
+
+  private setResourceNamespace(resource: K8sObject) {
+    const customResource = resource as any;
+    customResource.metadata.namespace = this.namespace;
+  }
+
+  private getCreateErrorMessage(err: any): string {
+    const baseMessage = this.getBackendErrorMessage(err);
+    const createdResources = err?.error?.createdResources;
+
+    if (!Array.isArray(createdResources) || createdResources.length === 0) {
+      return baseMessage;
+    }
+
+    const created = createdResources
+      .map(resource => this.formatResourceIdentity(resource))
+      .filter(Boolean)
+      .join(', ');
+
+    if (!created) {
+      return baseMessage;
+    }
+
+    return `${baseMessage} Already created: ${created}.`;
+  }
+
+  private getBackendErrorMessage(err: any): string {
+    if (err?.error?.log) {
+      return err.error.log;
+    }
+    if (err?.error?.message) {
+      return err.error.message;
+    }
+    if (err?.error?.error) {
+      return err.error.error;
+    }
+    if (typeof err?.error === 'string') {
+      return err.error;
+    }
+    if (err?.statusText) {
+      return `Server error: ${err.statusText}`;
+    }
+
+    return 'Failed to create resources';
+  }
+
+  private formatResourceIdentity(
+    resource: KServeResourceIdentity,
+  ): string | null {
+    if (!resource?.kind && !resource?.name) {
+      return null;
+    }
+
+    const kind = resource.kind || 'Resource';
+    const name = resource.name || '<unknown>';
+    const namespace = resource?.namespace ? ` in ${resource.namespace}` : '';
+
+    return `${kind}/${name}${namespace}`;
+  }
+
+  private showError(msg: string, duration = 8000) {
+    const config: SnackBarConfig = {
+      data: { msg, snackType: SnackType.Error },
+      duration,
+    };
+    this.snack.open(config);
+  }
+
+  private showSuccess(msg: string) {
+    const config: SnackBarConfig = {
+      data: { msg, snackType: SnackType.Success },
+      duration: 3000,
+    };
+    this.snack.open(config);
   }
 }

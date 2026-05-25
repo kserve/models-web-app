@@ -20,6 +20,24 @@ K8S_DEPLOYMENT = {"group": "apps", "version": "v1", "kind": "deployments"}
 K8S_SERVICE = {"group": "", "version": "v1", "kind": "services"}
 K8S_HPA = {"group": "autoscaling", "version": "v2", "kind": "horizontalpodautoscalers"}
 
+SUPPORTED_KSERVE_RESOURCES = {
+    ("serving.kserve.io/v1beta1", "InferenceService"): {
+        "group": "serving.kserve.io",
+        "version": "v1beta1",
+        "kind": "inferenceservices",
+    },
+    ("serving.kserve.io/v1alpha1", "InferenceGraph"): {
+        "group": "serving.kserve.io",
+        "version": "v1alpha1",
+        "kind": "inferencegraphs",
+    },
+    ("serving.kserve.io/v1alpha1", "TrainedModel"): {
+        "group": "serving.kserve.io",
+        "version": "v1alpha1",
+        "kind": "trainedmodels",
+    },
+}
+
 
 def inference_service_gvk():
     """
@@ -51,3 +69,16 @@ def inference_graph_gvk():
         "version": "v1alpha1",
         "kind": "inferencegraphs",
     }
+
+
+def kserve_resource_gvk(api_version, kind):
+    """Return the GVK for a supported KServe resource."""
+    return SUPPORTED_KSERVE_RESOURCES.get((api_version, kind))
+
+
+def supported_kserve_resource_names():
+    """Return a user-facing list of supported KServe resources."""
+    return [
+        f"{api_version} {kind}"
+        for api_version, kind in SUPPORTED_KSERVE_RESOURCES.keys()
+    ]

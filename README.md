@@ -7,6 +7,13 @@ This web application is responsible for allowing users to manage KServe inferenc
 - `InferenceService` resources in `serving.kserve.io/v1beta1`
 - `InferenceGraph` resources in `serving.kserve.io/v1alpha1`
 
+The create form also supports multi-document YAML for ordered creation of
+supported KServe resources. Multi-document creation currently accepts
+`InferenceService`, `InferenceGraph`, and `TrainedModel` resources. Resources are
+created in document order; if one creation fails, the app reports the failed
+document and any resources already created, but it does not roll back earlier
+successful creations.
+
 ## Current Scope
 
 `InferenceService` and `InferenceGraph` are both first-class resources in the application, but they do not currently share the exact same UI surface.

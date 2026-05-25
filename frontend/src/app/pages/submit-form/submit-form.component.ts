@@ -12,6 +12,7 @@ import { loadAll } from 'js-yaml';
 import { Subscription } from 'rxjs';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
+import { KServeResourceIdentity } from 'src/app/types/backend';
 
 const SUPPORTED_KSERVE_RESOURCES = new Set([
   'serving.kserve.io/v1beta1|InferenceService',
@@ -100,8 +101,11 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const validDocs = docs.filter(doc => doc != null);
-    if (validDocs.length === 0) {
+    const resourceDocs = docs
+      .map((doc, index) => ({ doc, documentIndex: index + 1 }))
+      .filter(({ doc }) => doc != null);
+
+    if (resourceDocs.length === 0) {
       this.showError('YAML is empty or invalid');
       this.applying = false;
       return;
@@ -110,8 +114,7 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
     const validationErrors: string[] = [];
     const resources: K8sObject[] = [];
 
-    validDocs.forEach((doc, index) => {
-      const documentIndex = index + 1;
+    resourceDocs.forEach(({ doc, documentIndex }) => {
       if (!this.isResourceObject(doc)) {
         validationErrors.push(
           `Document ${documentIndex}: resource must be an object`,
@@ -151,21 +154,7 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
         this.navigateBack();
       },
       error: err => {
-        let errorMsg = 'Failed to create resources';
-
-        if (err?.error?.log) {
-          errorMsg = err.error.log;
-        } else if (err?.error?.message) {
-          errorMsg = err.error.message;
-        } else if (err?.error?.error) {
-          errorMsg = err.error.error;
-        } else if (typeof err?.error === 'string') {
-          errorMsg = err.error;
-        } else if (err?.statusText) {
-          errorMsg = `Server error: ${err.statusText}`;
-        }
-
-        this.showError(errorMsg, 16000);
+        this.showError(this.getCreateErrorMessage(err), 16000);
         this.applying = false;
       },
     });
@@ -220,6 +209,60 @@ export class SubmitFormComponent implements OnInit, OnDestroy {
   private setResourceNamespace(resource: K8sObject) {
     const customResource = resource as any;
     customResource.metadata.namespace = this.namespace;
+  }
+
+  private getCreateErrorMessage(err: any): string {
+    const baseMessage = this.getBackendErrorMessage(err);
+    const createdResources = err?.error?.createdResources;
+
+    if (!Array.isArray(createdResources) || createdResources.length === 0) {
+      return baseMessage;
+    }
+
+    const created = createdResources
+      .map(resource => this.formatResourceIdentity(resource))
+      .filter(Boolean)
+      .join(', ');
+
+    if (!created) {
+      return baseMessage;
+    }
+
+    return `${baseMessage} Already created: ${created}.`;
+  }
+
+  private getBackendErrorMessage(err: any): string {
+    if (err?.error?.log) {
+      return err.error.log;
+    }
+    if (err?.error?.message) {
+      return err.error.message;
+    }
+    if (err?.error?.error) {
+      return err.error.error;
+    }
+    if (typeof err?.error === 'string') {
+      return err.error;
+    }
+    if (err?.statusText) {
+      return `Server error: ${err.statusText}`;
+    }
+
+    return 'Failed to create resources';
+  }
+
+  private formatResourceIdentity(
+    resource: KServeResourceIdentity,
+  ): string | null {
+    if (!resource?.kind && !resource?.name) {
+      return null;
+    }
+
+    const kind = resource.kind || 'Resource';
+    const name = resource.name || '<unknown>';
+    const namespace = resource?.namespace ? ` in ${resource.namespace}` : '';
+
+    return `${kind}/${name}${namespace}`;
   }
 
   private showError(msg: string, duration = 8000) {

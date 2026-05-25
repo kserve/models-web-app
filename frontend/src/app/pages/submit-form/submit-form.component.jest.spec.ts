@@ -230,6 +230,24 @@ spec:
     expectNoCreateRequest();
   });
 
+  it('should preserve original document numbers when skipping empty documents', () => {
+    component.yaml = `---
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deploy
+spec:
+  replicas: 1`;
+
+    component.submit();
+
+    expect(mockSnack.open.mock.calls[0][0].data.msg).toContain(
+      'Document 2: unsupported resource',
+    );
+    expectNoCreateRequest();
+  });
+
   it('should validate generic required fields before submitting', () => {
     component.yaml = `apiVersion: serving.kserve.io/v1beta1
 kind: InferenceService
@@ -267,6 +285,36 @@ metadata:
     component.submit();
 
     expect(mockSnack.open.mock.calls[0][0].data.msg).toBe('Cluster error');
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+    expect(component.applying).toBe(false);
+  });
+
+  it('should show already-created resources for backend partial failures', () => {
+    mockBackend.postKServeResources = jest.fn().mockReturnValue(
+      throwError(() => ({
+        error: {
+          message: 'Failed to create document 2 (TrainedModel/cifar10): denied',
+          createdResources: [
+            {
+              apiVersion: 'serving.kserve.io/v1beta1',
+              kind: 'InferenceService',
+              name: 'triton-mms',
+              namespace: 'test-ns',
+            },
+          ],
+        },
+      })),
+    );
+    component.yaml = MULTI_DOC_YAML;
+
+    component.submit();
+
+    const msg = mockSnack.open.mock.calls[0][0].data.msg;
+    expect(msg).toContain(
+      'Failed to create document 2 (TrainedModel/cifar10): denied',
+    );
+    expect(msg).toContain('Already created: InferenceService/triton-mms');
+    expect(msg).toContain('test-ns');
     expect(mockRouter.navigate).not.toHaveBeenCalled();
     expect(component.applying).toBe(false);
   });

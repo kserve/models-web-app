@@ -38,6 +38,13 @@ def _exception_message(exc):
     return str(exc)
 
 
+def _exception_status_code(exc):
+    status_code = getattr(exc, "status", None) or getattr(exc, "code", None)
+    if not isinstance(status_code, int) or status_code < 400:
+        return 500
+    return status_code
+
+
 def _error_response(message, status_code=400, **extra):
     payload = {"message": message}
     payload.update({key: value for key, value in extra.items() if value is not None})
@@ -205,18 +212,16 @@ def post_kserve_resources(namespace):
         message = validation_error.pop("message")
         return _error_response(message, **validation_error)
 
-    for _, _, gvk in resources:
-        api.authz.ensure_authorized(
-            "create",
-            group=gvk["group"],
-            version=gvk["version"],
-            resource=gvk["kind"],
-            namespace=namespace,
-        )
-
     created_resources = []
     for document_index, resource, gvk in resources:
         try:
+            api.authz.ensure_authorized(
+                "create",
+                group=gvk["group"],
+                version=gvk["version"],
+                resource=gvk["kind"],
+                namespace=namespace,
+            )
             api.create_custom_rsrc(**gvk, data=resource, namespace=namespace)
             created_resources.append(_resource_identity(resource, namespace))
         except Exception as exc:
@@ -225,14 +230,11 @@ def post_kserve_resources(namespace):
                 document_index,
                 _resource_label(resource),
             )
-            status_code = getattr(exc, "status", 500)
-            if not isinstance(status_code, int) or status_code < 400:
-                status_code = 500
 
             return _error_response(
                 "Failed to create document %s (%s): %s"
                 % (document_index, _resource_label(resource), _exception_message(exc)),
-                status_code,
+                _exception_status_code(exc),
                 failedDocumentIndex=document_index,
                 failedResource=_resource_identity(resource, namespace),
                 createdResources=created_resources,

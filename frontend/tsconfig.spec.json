@@ -3,19 +3,21 @@
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
     "types": [
-      "jasmine",
       "jest",
       "node"
-    ]
+    ],
+    "paths": {
+      "kubeflow": ["__mocks__/kubeflow.ts"],
+      "kubeflow/*": ["__mocks__/kubeflow.ts"]
+    }
   },
   "files": [
-    "src/test.ts",
     "src/polyfills.ts",
-    "src/test-setup.jest.ts",
+    "src/test-setup.jest.ts"
   ],
   "include": [
     "src/**/*.spec.ts",
     "src/**/*.d.ts",
-    "src/**/*.jest.spec.ts",
-  ],
+    "__mocks__/**/*.ts"
+  ]
 }

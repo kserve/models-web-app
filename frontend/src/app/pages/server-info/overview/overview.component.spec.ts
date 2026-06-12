@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import {
   ConditionsTableModule,
   DetailsListModule,
@@ -31,6 +32,7 @@ describe('OverviewComponent', () => {
         ConditionsTableModule,
         HeadingSubheadingRowModule,
       ],
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   }));
 

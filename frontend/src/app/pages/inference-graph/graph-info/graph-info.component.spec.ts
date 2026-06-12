@@ -174,7 +174,7 @@ describe('GraphInfoComponent (Jest)', () => {
     ]);
   });
 
-  it('should show delete confirmation dialog when delete button is clicked', () => {
+  it('should invoke delete confirmation dialog handler when delete button is clicked', () => {
     component.buttonsConfig[1].fn();
     expect(mockConfirmDialog.open).toHaveBeenCalled();
   });

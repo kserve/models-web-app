@@ -360,30 +360,55 @@ def _get_k8s_object(namespace, name, group, version, kind):
 def get_component_latest_pod(
     svc: Dict, component: str
 ) -> Union[api.client.V1Pod, None]:
-    """Get pod of the latest Knative revision for the given component.
+    """Get the latest pod for the given component.
+
+    For Serverless (Knative) deployments the pod is looked up via the Knative
+    revision label.  For Standard (RawDeployment) deployments there are no
+    Knative revisions, so we fall back to a label-selector lookup using the
+    ``serving.kubeflow.org/inferenceservice`` and ``component`` labels.
 
     Return:
         Latest pod: k8s V1Pod
     """
     namespace = svc["metadata"]["namespace"]
+    svc_name = svc["metadata"]["name"]
 
+    # --- Serverless (Knative) path ---
     latest_revision = get_component_latest_revision(svc, component)
 
-    if latest_revision is None:
+    if latest_revision is not None:
+        pods = api.list_pods(namespace, auth=False).items
+
+        for pod in pods:
+            if KNATIVE_REVISION_LABEL not in pod.metadata.labels:
+                continue
+
+            if pod.metadata.labels[KNATIVE_REVISION_LABEL] != latest_revision:
+                continue
+
+            return pod
+
+        log.info(f"No pods are found for inference service: {svc_name}")
         return None
 
-    pods = api.list_pods(namespace, auth=False).items
+    # --- Standard (RawDeployment) fallback ---
+    # Standard mode pods carry `serving.kubeflow.org/inferenceservice=<name>`
+    # and `component=<component>` labels instead of Knative revision labels.
+    log.info(
+        f"No Knative revision found for {svc_name}/{component}, "
+        "falling back to label-selector lookup for Standard mode"
+    )
+    label_selector = (
+        f"serving.kubeflow.org/inferenceservice={svc_name},component={component}"
+    )
+    pods = api.v1_core.list_namespaced_pod(
+        namespace, label_selector=label_selector
+    ).items
 
-    for pod in pods:
-        if KNATIVE_REVISION_LABEL not in pod.metadata.labels:
-            continue
+    if pods:
+        return pods[-1]
 
-        if pod.metadata.labels[KNATIVE_REVISION_LABEL] != latest_revision:
-            continue
-
-        return pod
-
-    log.info(f"No pods are found for inference service: {svc['metadata']['name']}")
+    log.info(f"No pods are found for inference service: {svc_name}")
     return None
 
 

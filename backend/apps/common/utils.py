@@ -406,7 +406,12 @@ def get_component_latest_pod(
     ).items
 
     if pods:
-        return pods[-1]
+        return max(
+            pods,
+            key=lambda pod: pod.metadata.creation_timestamp.timestamp()
+            if pod.metadata.creation_timestamp
+            else 0,
+        )
 
     log.info(f"No pods are found for inference service: {svc_name}")
     return None

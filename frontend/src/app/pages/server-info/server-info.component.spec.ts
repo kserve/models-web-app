@@ -8,7 +8,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ConfigService } from 'src/app/services/config.service';
-import { of } from 'rxjs';
+import { of, Subscription } from 'rxjs';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import {
   NamespaceService,
@@ -73,5 +73,15 @@ describe('ServerInfoComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should close SSE subscription before polling fallback starts', () => {
+    const teardown = jest.fn();
+    (component as any).sseSubscription = new Subscription(teardown);
+
+    (component as any).startPolling();
+
+    expect(teardown).toHaveBeenCalled();
+    (component as any).pollingSubscription.unsubscribe();
   });
 });

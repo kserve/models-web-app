@@ -198,6 +198,7 @@ export class IndexComponent implements OnInit, OnDestroy {
   }
 
   private fallbackToPolling(ns: string | string[]) {
+    this.sseSubscription?.unsubscribe();
     const request = this.backend.getInferenceServices(ns);
 
     this.pollingSubscription?.unsubscribe();

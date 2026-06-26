@@ -132,6 +132,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   private startPolling() {
+    this.sseSubscription?.unsubscribe();
     this.pollingSubscription?.unsubscribe();
     this.pollingSubscription = this.poller.start().subscribe(() => {
       this.getBackendObjects();

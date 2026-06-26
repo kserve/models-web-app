@@ -91,6 +91,7 @@ export class EventsComponent implements OnDestroy {
   }
 
   private fallbackToPolling(inferenceService: InferenceServiceK8s) {
+    this.sseSubscription?.unsubscribe();
     const request = this.backend.getInferenceServiceEvents(inferenceService);
 
     this.pollingSubscription = this.poller

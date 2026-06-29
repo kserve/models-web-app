@@ -23,6 +23,8 @@ class InferenceServiceWatcher:
         self._stop_event = threading.Event()
         self._thread = None
         self._app = app
+        self._active_watch = None
+        self._watch_lock = threading.Lock()
 
     def watch_namespace(self, namespace: str, callback: Callable):
         """
@@ -100,11 +102,18 @@ class InferenceServiceWatcher:
     ) -> tuple:
         """Perform one iteration of the namespace watch within request context."""
         w = watch.Watch()
+        self._set_active_watch(w)
 
         if not initial_sent:
             try:
                 initial_list = api.list_custom_rsrc(**gvk, namespace=namespace)
                 items = initial_list.get("items", [])
+                for item in items:
+                    try:
+                        deployment_mode = utils.get_deployment_mode(item)
+                        item["deploymentMode"] = deployment_mode
+                    except Exception:
+                        pass
                 resource_version = initial_list.get("metadata", {}).get(
                     "resourceVersion"
                 )
@@ -148,6 +157,7 @@ class InferenceServiceWatcher:
                 callback(event_type, obj)
         finally:
             w.stop()
+            self._clear_active_watch(w)
 
         return initial_sent, resource_version
 
@@ -198,6 +208,7 @@ class InferenceServiceWatcher:
     ) -> tuple:
         """Perform one iteration of the single-resource watch within request context."""
         w = watch.Watch()
+        self._set_active_watch(w)
 
         if not initial_sent:
             try:
@@ -249,12 +260,28 @@ class InferenceServiceWatcher:
                 callback(event_type, obj)
         finally:
             w.stop()
+            self._clear_active_watch(w)
 
         return initial_sent, resource_version
 
     def stop(self):
         """Stop the watcher."""
         self._stop_event.set()
+        with self._watch_lock:
+            active_watch = self._active_watch
+        if active_watch:
+            active_watch.stop()
+        if self._thread and self._thread is not threading.current_thread():
+            self._thread.join(timeout=5)
+
+    def _set_active_watch(self, active_watch):
+        with self._watch_lock:
+            self._active_watch = active_watch
+
+    def _clear_active_watch(self, active_watch):
+        with self._watch_lock:
+            if self._active_watch is active_watch:
+                self._active_watch = None
 
 
 class EventWatcher:
@@ -269,6 +296,8 @@ class EventWatcher:
         self._stop_event = threading.Event()
         self._thread = None
         self._app = app
+        self._active_watch = None
+        self._watch_lock = threading.Lock()
 
     def watch_events(self, namespace: str, name: str, callback: Callable):
         """
@@ -291,12 +320,13 @@ class EventWatcher:
     def _watch_events_thread(self, namespace: str, name: str, callback: Callable):
         """Thread function for watching events."""
         v1 = client.CoreV1Api()
-        field_selector = f"involvedObject.name={name}"
+        field_selector = api.events_field_selector("InferenceService", name)
         initial_sent = False
         resource_version = None
 
         while not self._stop_event.is_set():
             w = watch.Watch()
+            self._set_active_watch(w)
             try:
                 if not initial_sent:
                     initial_events = v1.list_namespaced_event(
@@ -336,15 +366,31 @@ class EventWatcher:
                     break
                 log.error(f"Error watching events for {namespace}/{name}: {e}")
                 callback("ERROR", {"message": str(e)})
+                initial_sent = False
+                resource_version = None
                 time.sleep(5)
             finally:
                 w.stop()
+                self._clear_active_watch(w)
 
     def stop(self):
         """Stop the event watcher."""
         self._stop_event.set()
-        if self._thread:
+        with self._watch_lock:
+            active_watch = self._active_watch
+        if active_watch:
+            active_watch.stop()
+        if self._thread and self._thread is not threading.current_thread():
             self._thread.join(timeout=5)
+
+    def _set_active_watch(self, active_watch):
+        with self._watch_lock:
+            self._active_watch = active_watch
+
+    def _clear_active_watch(self, active_watch):
+        with self._watch_lock:
+            if self._active_watch is active_watch:
+                self._active_watch = None
 
 
 class LogWatcher:

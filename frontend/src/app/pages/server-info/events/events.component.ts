@@ -46,6 +46,7 @@ export class EventsComponent implements OnDestroy {
   private poll(inferenceService: InferenceServiceK8s) {
     this.pollingSubscription?.unsubscribe();
     this.sseSubscription?.unsubscribe();
+    this.events = [];
 
     if (!inferenceService) {
       return;

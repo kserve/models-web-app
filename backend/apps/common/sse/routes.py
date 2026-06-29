@@ -120,13 +120,13 @@ def stream_events(namespace, name):
     client_queue = Queue(maxsize=500)
 
     def callback(event_type, obj):
-        event_data = {
-            "type": event_type,
-            "object": obj if "items" not in obj else None,
-            "items": obj.get("items") if "items" in obj else None,
-        }
-        message = f"data: {json.dumps(event_data)}\n\n"
         try:
+            event_data = {
+                "type": event_type,
+                "object": obj if "items" not in obj else None,
+                "items": obj.get("items") if "items" in obj else None,
+            }
+            message = f"data: {json.dumps(event_data)}\n\n"
             client_queue.put_nowait(message)
         except Full:
             log.warning(f"Client queue full, dropping event type={event_type}")
@@ -177,13 +177,13 @@ def stream_logs(namespace, name):
         )
 
     def callback(event_type, obj):
-        event_data = {
-            "type": event_type,
-            "logs": obj.get("logs") if "logs" in obj else None,
-            "message": obj.get("message") if "message" in obj else None,
-        }
-        message = f"data: {json.dumps(event_data)}\n\n"
         try:
+            event_data = {
+                "type": event_type,
+                "logs": obj.get("logs") if "logs" in obj else None,
+                "message": obj.get("message") if "message" in obj else None,
+            }
+            message = f"data: {json.dumps(event_data)}\n\n"
             client_queue.put_nowait(message)
         except Full:
             log.warning(f"Client queue full, dropping log event type={event_type}")

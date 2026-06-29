@@ -64,9 +64,14 @@ export class SSEService {
           return;
         }
 
-        const data: WatchEvent<T> = JSON.parse(event.data);
-        observer.next(data);
-        reconnectAttempts = 0;
+        try {
+          const data: WatchEvent<T> = JSON.parse(event.data);
+          observer.next(data);
+          reconnectAttempts = 0;
+        } catch (parseError) {
+          observer.error(parseError);
+          eventSource.close();
+        }
       };
 
       eventSource.onerror = (error: Event) => {

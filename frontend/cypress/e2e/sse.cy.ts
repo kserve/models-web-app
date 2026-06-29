@@ -38,11 +38,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
   };
   beforeEach(() => {
     cy.on('uncaught:exception', err => {
-      if (
-        err.message.includes('403') ||
-        err.message.includes('Forbidden') ||
-        err.message.includes('Cannot read properties')
-      ) {
+      if (err.message.includes('403') || err.message.includes('Forbidden')) {
         return false;
       }
       return true;
@@ -68,25 +64,12 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
 
       cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
         statusCode: 200,
-        body: [mockInferenceService],
+        body: { inferenceServices: [mockInferenceService] },
       });
 
       cy.visit('/');
       cy.wait('@config');
       cy.contains('Endpoints').should('be.visible');
-    });
-
-    it('should have SSE endpoints defined in backend', () => {
-      const sseEndpoints = [
-        '/api/sse/namespaces/kubeflow-user/inferenceservices',
-        '/api/sse/namespaces/kubeflow-user/inferenceservices/test-model',
-        '/api/sse/namespaces/kubeflow-user/inferenceservices/test-model/events',
-        '/api/sse/namespaces/kubeflow-user/inferenceservices/test-model/logs',
-      ];
-
-      expect(sseEndpoints).to.have.lengthOf(4);
-      expect(sseEndpoints[0]).to.include('sse');
-      expect(sseEndpoints[1]).to.include('sse');
     });
   });
 
@@ -106,7 +89,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
 
       cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
         statusCode: 200,
-        body: [mockInferenceService],
+        body: { inferenceServices: [mockInferenceService] },
       }).as('getServices');
 
       cy.visit('/');
@@ -140,7 +123,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
 
       cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
         statusCode: 200,
-        body: [mockInferenceService, service2],
+        body: { inferenceServices: [mockInferenceService, service2] },
       }).as('services');
 
       cy.visit('/');
@@ -167,7 +150,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
 
       cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
         statusCode: 200,
-        body: [],
+        body: { inferenceServices: [] },
       });
 
       cy.visit('/');
@@ -201,7 +184,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
       // Polling API works
       cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
         statusCode: 200,
-        body: [mockInferenceService],
+        body: { inferenceServices: [mockInferenceService] },
       }).as('fallbackPolling');
 
       cy.visit('/');
@@ -238,7 +221,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
 
       cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
         statusCode: 200,
-        body: [mockInferenceService],
+        body: { inferenceServices: [mockInferenceService] },
       }).as('polling');
 
       cy.visit('/');
@@ -249,20 +232,6 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
       cy.wait(500);
 
       cy.get('lib-table').should('be.visible');
-    });
-  });
-
-  describe('SSE Endpoints Documentation', () => {
-    it('should have all required SSE endpoints defined', () => {
-      const expectedEndpoints = [
-        '/api/sse/namespaces/{namespace}/inferenceservices',
-        '/api/sse/namespaces/{namespace}/inferenceservices/{name}',
-        '/api/sse/namespaces/{namespace}/inferenceservices/{name}/events',
-        '/api/sse/namespaces/{namespace}/inferenceservices/{name}/logs',
-      ];
-
-      expect(expectedEndpoints).to.have.lengthOf(4);
-      expect(expectedEndpoints[0]).to.include('sse');
     });
   });
 
@@ -280,7 +249,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
 
       cy.intercept('GET', '/api/namespaces/kubeflow-user/inferenceservices', {
         statusCode: 200,
-        body: [mockInferenceService],
+        body: { inferenceServices: [mockInferenceService] },
       }).as('servicesList');
 
       cy.visit('/');
@@ -309,7 +278,7 @@ describe('Models Web App - Server-Sent Events (SSE) Tests', () => {
 
       cy.intercept('GET', '/api/namespaces/kubeflow-user/inferenceservices', {
         statusCode: 200,
-        body: [mockInferenceService],
+        body: { inferenceServices: [mockInferenceService] },
       });
 
       cy.visit('/');

@@ -33,7 +33,9 @@ class SSEConnectionManager:
             watcher_factory: Factory function to create a watcher if needed
         """
         watch_key = f"ns:{namespace}"
-        queue_id = id(client_queue)
+        start_watcher = False
+        watcher_token = None
+        callback = None
 
         with self._lock:
             if watch_key not in self._namespace_clients:
@@ -41,13 +43,31 @@ class SSEConnectionManager:
 
             self._namespace_clients[watch_key].add(client_queue)
 
-            def callback(event_type, obj):
-                self._broadcast_to_client(client_queue, event_type, obj)
-
-            watcher = watcher_factory(namespace, callback)
             if watch_key not in self._namespace_watchers:
-                self._namespace_watchers[watch_key] = {}
-            self._namespace_watchers[watch_key][queue_id] = watcher
+                watcher_token = object()
+                self._namespace_watchers[watch_key] = watcher_token
+                start_watcher = True
+
+                def callback(event_type, obj):
+                    self._broadcast_to_clients(
+                        self._namespace_clients, watch_key, event_type, obj
+                    )
+
+        if start_watcher:
+            watcher = watcher_factory(namespace, callback)
+            watcher_to_stop = None
+
+            with self._lock:
+                if (
+                    self._namespace_watchers.get(watch_key) is watcher_token
+                    and watch_key in self._namespace_clients
+                ):
+                    self._namespace_watchers[watch_key] = watcher
+                else:
+                    watcher_to_stop = watcher
+
+            if watcher_to_stop and hasattr(watcher_to_stop, "stop"):
+                watcher_to_stop.stop()
 
     def register_single_watch(
         self, namespace: str, name: str, client_queue: Queue, watcher_factory: Callable
@@ -62,6 +82,9 @@ class SSEConnectionManager:
             watcher_factory: Factory function to create a watcher if needed
         """
         watch_key = f"single:{namespace}:{name}"
+        start_watcher = False
+        watcher_token = None
+        callback = None
 
         with self._lock:
             if watch_key not in self._single_clients:
@@ -69,13 +92,31 @@ class SSEConnectionManager:
 
             self._single_clients[watch_key].add(client_queue)
 
-            def callback(event_type, obj):
-                self._broadcast_to_client(client_queue, event_type, obj)
-
-            watcher = watcher_factory(namespace, name, callback)
             if watch_key not in self._single_watchers:
-                self._single_watchers[watch_key] = {}
-            self._single_watchers[watch_key][id(client_queue)] = watcher
+                watcher_token = object()
+                self._single_watchers[watch_key] = watcher_token
+                start_watcher = True
+
+                def callback(event_type, obj):
+                    self._broadcast_to_clients(
+                        self._single_clients, watch_key, event_type, obj
+                    )
+
+        if start_watcher:
+            watcher = watcher_factory(namespace, name, callback)
+            watcher_to_stop = None
+
+            with self._lock:
+                if (
+                    self._single_watchers.get(watch_key) is watcher_token
+                    and watch_key in self._single_clients
+                ):
+                    self._single_watchers[watch_key] = watcher
+                else:
+                    watcher_to_stop = watcher
+
+            if watcher_to_stop and hasattr(watcher_to_stop, "stop"):
+                watcher_to_stop.stop()
 
     def unregister_namespace_watch(self, namespace: str, client_queue: Queue):
         """
@@ -86,27 +127,15 @@ class SSEConnectionManager:
             client_queue: The client's queue to remove
         """
         watch_key = f"ns:{namespace}"
-        queue_id = id(client_queue)
         watcher_to_stop = None
 
         with self._lock:
             if watch_key in self._namespace_clients:
                 self._namespace_clients[watch_key].discard(client_queue)
 
-                if (
-                    watch_key in self._namespace_watchers
-                    and queue_id in self._namespace_watchers[watch_key]
-                ):
-                    watcher_to_stop = self._namespace_watchers[watch_key][queue_id]
-                    del self._namespace_watchers[watch_key][queue_id]
-
                 if not self._namespace_clients[watch_key]:
                     del self._namespace_clients[watch_key]
-                if (
-                    watch_key in self._namespace_watchers
-                    and not self._namespace_watchers[watch_key]
-                ):
-                    del self._namespace_watchers[watch_key]
+                    watcher_to_stop = self._namespace_watchers.pop(watch_key, None)
 
         if watcher_to_stop and hasattr(watcher_to_stop, "stop"):
             watcher_to_stop.stop()
@@ -121,30 +150,40 @@ class SSEConnectionManager:
             client_queue: The client's queue to remove
         """
         watch_key = f"single:{namespace}:{name}"
-        queue_id = id(client_queue)
         watcher_to_stop = None
 
         with self._lock:
             if watch_key in self._single_clients:
                 self._single_clients[watch_key].discard(client_queue)
 
-                if (
-                    watch_key in self._single_watchers
-                    and queue_id in self._single_watchers[watch_key]
-                ):
-                    watcher_to_stop = self._single_watchers[watch_key][queue_id]
-                    del self._single_watchers[watch_key][queue_id]
-
                 if not self._single_clients[watch_key]:
                     del self._single_clients[watch_key]
-                if (
-                    watch_key in self._single_watchers
-                    and not self._single_watchers[watch_key]
-                ):
-                    del self._single_watchers[watch_key]
+                    watcher_to_stop = self._single_watchers.pop(watch_key, None)
 
         if watcher_to_stop and hasattr(watcher_to_stop, "stop"):
             watcher_to_stop.stop()
+
+    def _broadcast_to_clients(
+        self,
+        clients_by_key: Dict[str, Set[Queue]],
+        watch_key: str,
+        event_type: str,
+        obj: Any,
+    ):
+        """
+        Broadcast an event to all clients registered for a watch key.
+
+        Args:
+            clients_by_key: Mapping of watch keys to client queues
+            watch_key: The watch key that received an event
+            event_type: The type of event (ADDED, MODIFIED, DELETED, etc.)
+            obj: The Kubernetes object
+        """
+        with self._lock:
+            client_queues = list(clients_by_key.get(watch_key, set()))
+
+        for client_queue in client_queues:
+            self._broadcast_to_client(client_queue, event_type, obj)
 
     def _broadcast_to_client(self, client_queue: Queue, event_type: str, obj: Any):
         """

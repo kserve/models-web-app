@@ -13,6 +13,7 @@ import {
   SnackType,
   SnackBarConfig,
   Status,
+  STATUS_TYPE,
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { ConfigService } from 'src/app/services/config.service';
@@ -46,6 +47,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       text: 'EDIT',
       icon: 'edit',
       fn: () => {
+        if (!this.inferenceService) {
+          return;
+        }
         this.editingIsvc = JSON.parse(JSON.stringify(this.inferenceService));
         this.isEditing = true;
       },
@@ -66,6 +70,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   });
   private pollingSubscription = new Subscription();
   private sseSubscription = new Subscription();
+  private ownedObjectsSubscription = new Subscription();
+  private routeSubscription = new Subscription();
 
   constructor(
     private http: HttpClient,
@@ -81,7 +87,16 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Handle route params
-    this.route.params.subscribe(params => {
+    this.routeSubscription = this.route.params.subscribe(params => {
+      this.sseSubscription?.unsubscribe();
+      this.pollingSubscription?.unsubscribe();
+      this.ownedObjectsSubscription?.unsubscribe();
+      this.serverInfoLoaded = false;
+      this.inferenceService = null;
+      this.ownedObjects = {};
+      this.isEditing = false;
+      this.editingIsvc = null;
+
       this.ns.updateSelectedNamespace(params.namespace);
 
       this.serverName = params.name;
@@ -127,8 +142,10 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.routeSubscription?.unsubscribe();
     this.pollingSubscription?.unsubscribe();
     this.sseSubscription?.unsubscribe();
+    this.ownedObjectsSubscription?.unsubscribe();
   }
 
   private startPolling() {
@@ -140,18 +157,19 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   private loadOwnedObjects(inferenceService: InferenceServiceK8s) {
+    this.ownedObjectsSubscription?.unsubscribe();
     const components = ['predictor', 'transformer', 'explainer'];
-    const obs: Observable<[string, string, ComponentOwnedObjects]>[] = [];
+    const obs: Observable<[string, ComponentOwnedObjects]>[] = [];
 
     components.forEach(component => {
       obs.push(this.getOwnedObjects(inferenceService, component));
     });
 
-    forkJoin(...obs).subscribe(objects => {
+    this.ownedObjectsSubscription = forkJoin(...obs).subscribe(objects => {
       const ownedObjects: InferenceServiceOwnedObjects = {};
-      for (const obj of objects) {
-        const component: string = obj[0] as string;
-        (ownedObjects as Record<string, any>)[component] = obj[1];
+      for (const [component, componentObjects] of objects) {
+        (ownedObjects as Record<string, ComponentOwnedObjects>)[component] =
+          componentObjects;
       }
 
       this.ownedObjects = ownedObjects;
@@ -160,9 +178,15 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   get status(): Status {
-    return getK8sObjectUiStatus(
-      this.inferenceService || ({} as InferenceServiceK8s),
-    );
+    if (!this.inferenceService) {
+      return {
+        phase: STATUS_TYPE.UNINITIALIZED,
+        state: '',
+        message: '',
+      };
+    }
+
+    return getK8sObjectUiStatus(this.inferenceService);
   }
 
   public cancelEdit() {
@@ -259,12 +283,12 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   private getOwnedObjects(
     inferenceService: InferenceServiceK8s,
     component: string,
-  ): Observable<any> {
+  ): Observable<[string, ComponentOwnedObjects]> {
     if (
       !inferenceService.status ||
       !(inferenceService.status.components as Record<string, any>)?.[component]
     ) {
-      return of([component, {}]);
+      return of([component, {} as ComponentOwnedObjects]);
     }
 
     // Check deployment mode
@@ -279,8 +303,19 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
           component,
         )
         .pipe(
-          map(objects => [component, objects]),
-          catchError(() => of([component, {}])),
+          map(
+            objects =>
+              [component, objects as ComponentOwnedObjects] as [
+                string,
+                ComponentOwnedObjects,
+              ],
+          ),
+          catchError(() =>
+            of([component, {} as ComponentOwnedObjects] as [
+              string,
+              ComponentOwnedObjects,
+            ]),
+          ),
         );
     } else if (deploymentMode === 'Standard') {
       // Handle Standard mode
@@ -291,8 +326,19 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
           component,
         )
         .pipe(
-          map(objects => [component, objects]),
-          catchError(() => of([component, {}])),
+          map(
+            objects =>
+              [component, objects as ComponentOwnedObjects] as [
+                string,
+                ComponentOwnedObjects,
+              ],
+          ),
+          catchError(() =>
+            of([component, {} as ComponentOwnedObjects] as [
+              string,
+              ComponentOwnedObjects,
+            ]),
+          ),
         );
     } else {
       // Handle Serverless mode
@@ -340,8 +386,8 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         tap(route => (objects.route = route)),
 
         // return the final list of objects
-        map(_ => [component, objects]),
-      );
+        map(_ => [component, objects] as [string, ComponentOwnedObjects]),
+      ) as Observable<[string, ComponentOwnedObjects]>;
     }
   }
 

@@ -10,7 +10,7 @@ from pathlib import Path
 import sys
 import types
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 
 def _load_routes_module():
@@ -91,26 +91,64 @@ def _load_routes_module():
 
 
 class SseRouteAuthorizationTest(unittest.TestCase):
-    def test_authorizes_namespace_stream_with_list_access(self):
+    def test_authorizes_namespace_stream_with_list_and_watch_access(self):
         routes = _load_routes_module()
 
-        routes._authorize_inference_service_stream("kubeflow-user", "list")
+        routes._authorize_inference_service_stream("kubeflow-user", "list", "watch")
 
-        routes.authz.ensure_authorized.assert_called_once_with(
-            "list",
-            "serving.kserve.io",
-            "v1beta1",
-            "inferenceservices",
-            "kubeflow-user",
+        routes.authz.ensure_authorized.assert_has_calls(
+            [
+                call(
+                    "list",
+                    "serving.kserve.io",
+                    "v1beta1",
+                    "inferenceservices",
+                    "kubeflow-user",
+                ),
+                call(
+                    "watch",
+                    "serving.kserve.io",
+                    "v1beta1",
+                    "inferenceservices",
+                    "kubeflow-user",
+                ),
+            ]
         )
 
-    def test_authorizes_event_stream_with_event_list_access(self):
+    def test_authorizes_single_stream_with_get_and_watch_access(self):
+        routes = _load_routes_module()
+
+        routes._authorize_inference_service_stream("kubeflow-user", "get", "watch")
+
+        routes.authz.ensure_authorized.assert_has_calls(
+            [
+                call(
+                    "get",
+                    "serving.kserve.io",
+                    "v1beta1",
+                    "inferenceservices",
+                    "kubeflow-user",
+                ),
+                call(
+                    "watch",
+                    "serving.kserve.io",
+                    "v1beta1",
+                    "inferenceservices",
+                    "kubeflow-user",
+                ),
+            ]
+        )
+
+    def test_authorizes_event_stream_with_event_list_and_watch_access(self):
         routes = _load_routes_module()
 
         routes._authorize_events_stream("kubeflow-user")
 
-        routes.authz.ensure_authorized.assert_called_once_with(
-            "list", "", "v1", "events", "kubeflow-user"
+        routes.authz.ensure_authorized.assert_has_calls(
+            [
+                call("list", "", "v1", "events", "kubeflow-user"),
+                call("watch", "", "v1", "events", "kubeflow-user"),
+            ]
         )
 
 

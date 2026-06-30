@@ -13,19 +13,21 @@ log = logging.getLogger(__name__)
 bp = Blueprint("sse", __name__)
 
 
-def _authorize_inference_service_stream(namespace, verb):
+def _authorize_inference_service_stream(namespace, *verbs):
     gvk = versions.inference_service_gvk()
-    authz.ensure_authorized(
-        verb,
-        gvk["group"],
-        gvk["version"],
-        gvk["kind"],
-        namespace,
-    )
+    for verb in verbs:
+        authz.ensure_authorized(
+            verb,
+            gvk["group"],
+            gvk["version"],
+            gvk["kind"],
+            namespace,
+        )
 
 
 def _authorize_events_stream(namespace):
-    authz.ensure_authorized("list", "", "v1", "events", namespace)
+    for verb in ("list", "watch"):
+        authz.ensure_authorized(verb, "", "v1", "events", namespace)
 
 
 def event_stream(client_queue, timeout=5):
@@ -58,7 +60,7 @@ def stream_inference_services(namespace):
     from . import sse_manager
     from flask import current_app
 
-    _authorize_inference_service_stream(namespace, "list")
+    _authorize_inference_service_stream(namespace, "list", "watch")
     client_queue = Queue(maxsize=500)
 
     def watcher_factory(ns, callback):
@@ -97,7 +99,7 @@ def stream_inference_service(namespace, name):
     from . import sse_manager
     from flask import current_app
 
-    _authorize_inference_service_stream(namespace, "get")
+    _authorize_inference_service_stream(namespace, "get", "watch")
     client_queue = Queue(maxsize=500)
 
     def watcher_factory(ns, nm, callback):

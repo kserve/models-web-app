@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable, of, forkJoin, Subscription } from 'rxjs';
 import { tap, map, concatMap, timeout, catchError } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -83,6 +83,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     private snack: SnackBarService,
     private configService: ConfigService,
     private sseService: SSEService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -178,6 +179,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
         this.ownedObjects = ownedObjects;
         this.serverInfoLoaded = true;
+        this.cdr.detectChanges();
       },
     );
   }

@@ -28,6 +28,15 @@ describe('EventsComponent', () => {
     },
   } as InferenceServiceK8s;
 
+  const event = {
+    metadata: {
+      uid: 'event-uid',
+    },
+    type: 'Normal',
+    reason: 'Ready',
+    message: 'InferenceService is ready',
+  } as EventObject;
+
   beforeEach(async () => {
     sseEvents = new Subject<WatchEvent<EventObject>>();
     sseTeardown = jest.fn();
@@ -71,5 +80,20 @@ describe('EventsComponent', () => {
     sseEvents.next({ type: 'ERROR', message: 'watch failed' });
 
     expect(sseTeardown).toHaveBeenCalled();
+  });
+
+  it('should request change detection after SSE event updates', () => {
+    const cdr = (component as any).cdr;
+    expect(cdr).toBeDefined();
+    const detectChangesSpy = jest
+      .spyOn(cdr, 'detectChanges')
+      .mockImplementation(() => undefined);
+
+    component.inferenceService = inferenceService;
+
+    sseEvents.next({ type: 'INITIAL', items: [event] });
+
+    expect(component.events).toEqual([event]);
+    expect(detectChangesSpy).toHaveBeenCalled();
   });
 });

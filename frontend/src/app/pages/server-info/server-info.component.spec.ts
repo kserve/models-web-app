@@ -11,6 +11,7 @@ import { ConfigService } from 'src/app/services/config.service';
 import {
   firstValueFrom,
   Observable,
+  Observer,
   of,
   Subject,
   Subscription,
@@ -34,6 +35,7 @@ describe('ServerInfoComponent', () => {
   let fixture: ComponentFixture<ServerInfoComponent>;
   let routeParams: Subject<{ namespace: string; name: string }>;
   let sseTeardowns: jest.Mock[];
+  let sseEvents: Subject<WatchEvent<InferenceServiceK8s>>;
   let sseServiceStub: Partial<SSEService>;
   let watchInferenceServiceMock: jest.Mock;
   let backend: MWABackendService;
@@ -65,13 +67,20 @@ describe('ServerInfoComponent', () => {
 
   beforeEach(waitForAsync(() => {
     routeParams = new Subject<{ namespace: string; name: string }>();
+    sseEvents = new Subject<WatchEvent<InferenceServiceK8s>>();
     sseTeardowns = [];
     watchInferenceServiceMock = jest.fn(
       <T>() =>
-        new Observable<WatchEvent<T>>(() => {
+        new Observable<WatchEvent<T>>(observer => {
+          const subscription = sseEvents.subscribe(
+            observer as unknown as Observer<WatchEvent<InferenceServiceK8s>>,
+          );
           const teardown = jest.fn();
           sseTeardowns.push(teardown);
-          return teardown;
+          return () => {
+            teardown();
+            subscription.unsubscribe();
+          };
         }),
     );
     sseServiceStub = {
@@ -190,5 +199,22 @@ describe('ServerInfoComponent', () => {
     );
 
     expect(result).toEqual(['predictor', {}]);
+  });
+
+  it('should request change detection after an SSE update loads owned objects', () => {
+    const cdr = (component as any).cdr;
+    expect(cdr).toBeDefined();
+    const detectChangesSpy = jest
+      .spyOn(cdr, 'detectChanges')
+      .mockImplementation(() => undefined);
+
+    routeParams.next({ namespace: 'kubeflow-user', name: 'sklearn-iris' });
+    sseEvents.next({
+      type: 'INITIAL',
+      object: serverlessInferenceService(),
+    });
+
+    expect(component.serverInfoLoaded).toBe(true);
+    expect(detectChangesSpy).toHaveBeenCalled();
   });
 });

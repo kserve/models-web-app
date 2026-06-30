@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnDestroy } from '@angular/core';
 import { PollerService } from 'kubeflow';
 import { Subscription } from 'rxjs';
 import { MWABackendService } from 'src/app/services/backend.service';
@@ -32,6 +32,7 @@ export class EventsComponent implements OnDestroy {
     public backend: MWABackendService,
     public poller: PollerService,
     private sseService: SSEService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnDestroy(): void {
@@ -84,6 +85,7 @@ export class EventsComponent implements OnDestroy {
           } else if (event.type === 'ERROR') {
             this.fallbackToPolling(inferenceService);
           }
+          this.cdr.detectChanges();
         },
         error => {
           this.fallbackToPolling(inferenceService);

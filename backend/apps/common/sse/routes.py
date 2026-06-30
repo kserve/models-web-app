@@ -4,12 +4,28 @@ import json
 from queue import Queue, Empty, Full
 from flask import Blueprint, Response, request
 
-from kubeflow.kubeflow.crud_backend import logging
+from kubeflow.kubeflow.crud_backend import authz, logging
+from .. import versions
 from .watchers import InferenceServiceWatcher, EventWatcher, LogWatcher
 
 log = logging.getLogger(__name__)
 
 bp = Blueprint("sse", __name__)
+
+
+def _authorize_inference_service_stream(namespace, verb):
+    gvk = versions.inference_service_gvk()
+    authz.ensure_authorized(
+        verb,
+        gvk["group"],
+        gvk["version"],
+        gvk["kind"],
+        namespace,
+    )
+
+
+def _authorize_events_stream(namespace):
+    authz.ensure_authorized("list", "", "v1", "events", namespace)
 
 
 def event_stream(client_queue, timeout=5):
@@ -42,6 +58,7 @@ def stream_inference_services(namespace):
     from . import sse_manager
     from flask import current_app
 
+    _authorize_inference_service_stream(namespace, "list")
     client_queue = Queue(maxsize=500)
 
     def watcher_factory(ns, callback):
@@ -80,6 +97,7 @@ def stream_inference_service(namespace, name):
     from . import sse_manager
     from flask import current_app
 
+    _authorize_inference_service_stream(namespace, "get")
     client_queue = Queue(maxsize=500)
 
     def watcher_factory(ns, nm, callback):
@@ -117,6 +135,7 @@ def stream_events(namespace, name):
     """
     from flask import current_app
 
+    _authorize_events_stream(namespace)
     client_queue = Queue(maxsize=500)
 
     def callback(event_type, obj):
@@ -165,6 +184,7 @@ def stream_logs(namespace, name):
     """
     from flask import current_app
 
+    _authorize_inference_service_stream(namespace, "get")
     client_queue = Queue(maxsize=500)
     components = request.args.getlist("component")
 

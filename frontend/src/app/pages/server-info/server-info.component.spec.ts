@@ -8,7 +8,14 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ConfigService } from 'src/app/services/config.service';
-import { Observable, of, Subject, Subscription } from 'rxjs';
+import {
+  firstValueFrom,
+  Observable,
+  of,
+  Subject,
+  Subscription,
+  throwError,
+} from 'rxjs';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import {
   NamespaceService,
@@ -20,6 +27,7 @@ import { MWABackendService } from 'src/app/services/backend.service';
 import { SSEService, WatchEvent } from 'src/app/services/sse.service';
 
 import { ServerInfoComponent } from './server-info.component';
+import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 
 describe('ServerInfoComponent', () => {
   let component: ServerInfoComponent;
@@ -28,6 +36,32 @@ describe('ServerInfoComponent', () => {
   let sseTeardowns: jest.Mock[];
   let sseServiceStub: Partial<SSEService>;
   let watchInferenceServiceMock: jest.Mock;
+  let backend: MWABackendService;
+
+  const serverlessInferenceService = (
+    latestCreatedRevision?: string,
+  ): InferenceServiceK8s => ({
+    kind: 'InferenceService',
+    apiVersion: 'serving.kserve.io/v1beta1',
+    metadata: {
+      name: 'sklearn-iris',
+      namespace: 'kubeflow-user',
+    },
+    spec: {
+      predictor: {
+        sklearn: {
+          storageUri: 's3://models/sklearn-iris',
+        },
+      },
+      explainer: {},
+      transformer: {},
+    } as any,
+    status: {
+      components: {
+        predictor: latestCreatedRevision ? { latestCreatedRevision } : {},
+      },
+    } as any,
+  });
 
   beforeEach(waitForAsync(() => {
     routeParams = new Subject<{ namespace: string; name: string }>();
@@ -90,6 +124,7 @@ describe('ServerInfoComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(ServerInfoComponent);
     component = fixture.componentInstance;
+    backend = TestBed.inject(MWABackendService);
     fixture.detectChanges();
   });
 
@@ -122,5 +157,38 @@ describe('ServerInfoComponent', () => {
 
     expect(teardown).toHaveBeenCalled();
     (component as any).pollingSubscription.unsubscribe();
+  });
+
+  it('should return empty serverless owned objects when the latest revision is missing', async () => {
+    const getRevisionSpy = jest
+      .spyOn(backend, 'getKnativeRevision')
+      .mockReturnValue(throwError(() => new Error('should not be called')));
+    component.namespace = 'kubeflow-user';
+
+    const result = await firstValueFrom(
+      (component as any).getOwnedObjects(
+        serverlessInferenceService(),
+        'predictor',
+      ),
+    );
+
+    expect(getRevisionSpy).not.toHaveBeenCalled();
+    expect(result).toEqual(['predictor', {}]);
+  });
+
+  it('should return empty serverless owned objects when a Knative lookup fails', async () => {
+    jest
+      .spyOn(backend, 'getKnativeRevision')
+      .mockReturnValue(throwError(() => new Error('revision failed')));
+    component.namespace = 'kubeflow-user';
+
+    const result = await firstValueFrom(
+      (component as any).getOwnedObjects(
+        serverlessInferenceService('sklearn-iris-predictor-00001'),
+        'predictor',
+      ),
+    );
+
+    expect(result).toEqual(['predictor', {}]);
   });
 });

@@ -46,8 +46,9 @@ export class SSEService {
     let url = `api/sse/namespaces/${namespace}/inferenceservices/${name}/logs`;
 
     if (components && components.length > 0) {
-      const params = components.map(c => `component=${c}`).join('&');
-      url += `?${params}`;
+      const params = new URLSearchParams();
+      components.forEach(component => params.append('component', component));
+      url += `?${params.toString()}`;
     }
 
     return this.createEventSource<any>(url);

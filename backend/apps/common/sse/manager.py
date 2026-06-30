@@ -1,8 +1,9 @@
 """SSE Connection Manager for managing watch streams and client connections."""
 
+from copy import deepcopy
 import json
 import threading
-from typing import Dict, Set, Callable, Any
+from typing import Dict, Set, Callable, Any, Tuple
 from queue import Queue, Full
 
 from kubeflow.kubeflow.crud_backend import logging
@@ -19,6 +20,8 @@ class SSEConnectionManager:
         self._single_watchers: Dict[str, Any] = {}
         self._namespace_clients: Dict[str, Set[Queue]] = {}
         self._single_clients: Dict[str, Set[Queue]] = {}
+        self._namespace_initial_events: Dict[str, Tuple[str, Any]] = {}
+        self._single_initial_events: Dict[str, Tuple[str, Any]] = {}
         self._lock = threading.Lock()
 
     def register_namespace_watch(
@@ -36,12 +39,14 @@ class SSEConnectionManager:
         start_watcher = False
         watcher_token = None
         callback = None
+        event_to_replay = None
 
         with self._lock:
             if watch_key not in self._namespace_clients:
                 self._namespace_clients[watch_key] = set()
 
             self._namespace_clients[watch_key].add(client_queue)
+            event_to_replay = self._namespace_initial_events.get(watch_key)
 
             if watch_key not in self._namespace_watchers:
                 watcher_token = object()
@@ -49,9 +54,13 @@ class SSEConnectionManager:
                 start_watcher = True
 
                 def callback(event_type, obj):
+                    self._record_namespace_event(watch_key, event_type, obj)
                     self._broadcast_to_clients(
                         self._namespace_clients, watch_key, event_type, obj
                     )
+
+        if event_to_replay:
+            self._broadcast_to_client(client_queue, *event_to_replay)
 
         if start_watcher:
             watcher = watcher_factory(namespace, callback)
@@ -85,12 +94,14 @@ class SSEConnectionManager:
         start_watcher = False
         watcher_token = None
         callback = None
+        event_to_replay = None
 
         with self._lock:
             if watch_key not in self._single_clients:
                 self._single_clients[watch_key] = set()
 
             self._single_clients[watch_key].add(client_queue)
+            event_to_replay = self._single_initial_events.get(watch_key)
 
             if watch_key not in self._single_watchers:
                 watcher_token = object()
@@ -98,9 +109,13 @@ class SSEConnectionManager:
                 start_watcher = True
 
                 def callback(event_type, obj):
+                    self._record_single_event(watch_key, event_type, obj)
                     self._broadcast_to_clients(
                         self._single_clients, watch_key, event_type, obj
                     )
+
+        if event_to_replay:
+            self._broadcast_to_client(client_queue, *event_to_replay)
 
         if start_watcher:
             watcher = watcher_factory(namespace, name, callback)
@@ -135,6 +150,7 @@ class SSEConnectionManager:
 
                 if not self._namespace_clients[watch_key]:
                     del self._namespace_clients[watch_key]
+                    self._namespace_initial_events.pop(watch_key, None)
                     watcher_to_stop = self._namespace_watchers.pop(watch_key, None)
 
         if watcher_to_stop and hasattr(watcher_to_stop, "stop"):
@@ -158,6 +174,7 @@ class SSEConnectionManager:
 
                 if not self._single_clients[watch_key]:
                     del self._single_clients[watch_key]
+                    self._single_initial_events.pop(watch_key, None)
                     watcher_to_stop = self._single_watchers.pop(watch_key, None)
 
         if watcher_to_stop and hasattr(watcher_to_stop, "stop"):
@@ -184,6 +201,55 @@ class SSEConnectionManager:
 
         for client_queue in client_queues:
             self._broadcast_to_client(client_queue, event_type, obj)
+
+    def _record_namespace_event(self, watch_key: str, event_type: str, obj: Any):
+        with self._lock:
+            if event_type == "INITIAL":
+                self._namespace_initial_events[watch_key] = (event_type, deepcopy(obj))
+                return
+
+            cached_event = self._namespace_initial_events.get(watch_key)
+            if not cached_event or not isinstance(obj, dict):
+                return
+
+            _, snapshot = cached_event
+            if not isinstance(snapshot, dict) or "items" not in snapshot:
+                return
+
+            object_key = self._object_key(obj)
+            if not object_key:
+                return
+
+            items = list(snapshot.get("items", []))
+            if event_type in ("ADDED", "MODIFIED"):
+                next_obj = deepcopy(obj)
+                for index, item in enumerate(items):
+                    if self._object_key(item) == object_key:
+                        items[index] = next_obj
+                        break
+                else:
+                    items.append(next_obj)
+            elif event_type == "DELETED":
+                items = [item for item in items if self._object_key(item) != object_key]
+            else:
+                return
+
+            self._namespace_initial_events[watch_key] = ("INITIAL", {"items": items})
+
+    def _record_single_event(self, watch_key: str, event_type: str, obj: Any):
+        with self._lock:
+            if event_type in ("INITIAL", "ADDED", "MODIFIED", "DELETED"):
+                replay_type = "INITIAL" if event_type != "DELETED" else "DELETED"
+                self._single_initial_events[watch_key] = (replay_type, deepcopy(obj))
+
+    def _object_key(self, obj: Any):
+        if not isinstance(obj, dict):
+            return None
+        metadata = obj.get("metadata") or {}
+        name = metadata.get("name")
+        if not name:
+            return None
+        return metadata.get("namespace"), name
 
     def _broadcast_to_client(self, client_queue: Queue, event_type: str, obj: Any):
         """

@@ -102,6 +102,54 @@ class SSEConnectionManagerTest(unittest.TestCase):
         manager.unregister_namespace_watch("kubeflow-user", second_queue)
         self.assertEqual(watcher.stop_calls, 1)
 
+    def test_namespace_watch_replays_initial_snapshot_to_late_client(self):
+        manager = SSEConnectionManager()
+        first_queue = Queue()
+        second_queue = Queue()
+        callbacks = []
+
+        def watcher_factory(namespace, callback):
+            callbacks.append((namespace, callback))
+            return DummyWatcher()
+
+        manager.register_namespace_watch("kubeflow-user", first_queue, watcher_factory)
+        callbacks[0][1]("INITIAL", {"items": [{"metadata": {"name": "model-a"}}]})
+
+        manager.register_namespace_watch("kubeflow-user", second_queue, watcher_factory)
+
+        self.assertEqual(len(callbacks), 1)
+        self.assertEqual(
+            self._message(second_queue),
+            {"type": "INITIAL", "items": [{"metadata": {"name": "model-a"}}]},
+        )
+
+    def test_namespace_watch_replays_current_snapshot_to_late_client(self):
+        manager = SSEConnectionManager()
+        first_queue = Queue()
+        second_queue = Queue()
+        callbacks = []
+
+        def watcher_factory(namespace, callback):
+            callbacks.append((namespace, callback))
+            return DummyWatcher()
+
+        manager.register_namespace_watch("kubeflow-user", first_queue, watcher_factory)
+        callbacks[0][1]("INITIAL", {"items": [{"metadata": {"name": "model-a"}}]})
+        callbacks[0][1]("ADDED", {"metadata": {"name": "model-b"}})
+
+        manager.register_namespace_watch("kubeflow-user", second_queue, watcher_factory)
+
+        self.assertEqual(
+            self._message(second_queue),
+            {
+                "type": "INITIAL",
+                "items": [
+                    {"metadata": {"name": "model-a"}},
+                    {"metadata": {"name": "model-b"}},
+                ],
+            },
+        )
+
     def test_namespace_reconnect_does_not_replace_new_watcher_with_old_watcher(self):
         manager = SSEConnectionManager()
         first_queue = Queue()
@@ -162,6 +210,68 @@ class SSEConnectionManagerTest(unittest.TestCase):
 
         manager.unregister_single_watch("kubeflow-user", "model-a", second_queue)
         self.assertEqual(watcher.stop_calls, 1)
+
+    def test_single_watch_replays_initial_snapshot_to_late_client(self):
+        manager = SSEConnectionManager()
+        first_queue = Queue()
+        second_queue = Queue()
+        callbacks = []
+
+        def watcher_factory(namespace, name, callback):
+            callbacks.append((namespace, name, callback))
+            return DummyWatcher()
+
+        manager.register_single_watch(
+            "kubeflow-user", "model-a", first_queue, watcher_factory
+        )
+        callbacks[0][2]("INITIAL", {"metadata": {"name": "model-a"}})
+
+        manager.register_single_watch(
+            "kubeflow-user", "model-a", second_queue, watcher_factory
+        )
+
+        self.assertEqual(len(callbacks), 1)
+        self.assertEqual(
+            self._message(second_queue),
+            {"type": "INITIAL", "object": {"metadata": {"name": "model-a"}}},
+        )
+
+    def test_single_watch_replays_current_object_to_late_client(self):
+        manager = SSEConnectionManager()
+        first_queue = Queue()
+        second_queue = Queue()
+        callbacks = []
+
+        def watcher_factory(namespace, name, callback):
+            callbacks.append((namespace, name, callback))
+            return DummyWatcher()
+
+        manager.register_single_watch(
+            "kubeflow-user", "model-a", first_queue, watcher_factory
+        )
+        callbacks[0][2](
+            "INITIAL",
+            {"metadata": {"name": "model-a"}, "status": {"url": "http://old"}},
+        )
+        callbacks[0][2](
+            "MODIFIED",
+            {"metadata": {"name": "model-a"}, "status": {"url": "http://new"}},
+        )
+
+        manager.register_single_watch(
+            "kubeflow-user", "model-a", second_queue, watcher_factory
+        )
+
+        self.assertEqual(
+            self._message(second_queue),
+            {
+                "type": "INITIAL",
+                "object": {
+                    "metadata": {"name": "model-a"},
+                    "status": {"url": "http://new"},
+                },
+            },
+        )
 
     def test_single_reconnect_does_not_replace_new_watcher_with_old_watcher(self):
         manager = SSEConnectionManager()

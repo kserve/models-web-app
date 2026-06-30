@@ -159,22 +159,27 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   private loadOwnedObjects(inferenceService: InferenceServiceK8s) {
     this.ownedObjectsSubscription?.unsubscribe();
     const components = ['predictor', 'transformer', 'explainer'];
-    const obs: Observable<[string, ComponentOwnedObjects]>[] = [];
+    const ownedObjectRequests: Observable<[string, ComponentOwnedObjects]>[] =
+      [];
 
     components.forEach(component => {
-      obs.push(this.getOwnedObjects(inferenceService, component));
+      ownedObjectRequests.push(
+        this.getOwnedObjects(inferenceService, component),
+      );
     });
 
-    this.ownedObjectsSubscription = forkJoin(...obs).subscribe(objects => {
-      const ownedObjects: InferenceServiceOwnedObjects = {};
-      for (const [component, componentObjects] of objects) {
-        (ownedObjects as Record<string, ComponentOwnedObjects>)[component] =
-          componentObjects;
-      }
+    this.ownedObjectsSubscription = forkJoin(...ownedObjectRequests).subscribe(
+      objects => {
+        const ownedObjects: InferenceServiceOwnedObjects = {};
+        for (const [component, componentObjects] of objects) {
+          (ownedObjects as Record<string, ComponentOwnedObjects>)[component] =
+            componentObjects;
+        }
 
-      this.ownedObjects = ownedObjects;
-      this.serverInfoLoaded = true;
-    });
+        this.ownedObjects = ownedObjects;
+        this.serverInfoLoaded = true;
+      },
+    );
   }
 
   get status(): Status {
@@ -346,6 +351,13 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
         (inferenceService.status?.components as Record<string, any>)?.[
           component
         ]?.latestCreatedRevision || '';
+      if (!revName) {
+        return of([component, {} as ComponentOwnedObjects] as [
+          string,
+          ComponentOwnedObjects,
+        ]);
+      }
+
       const objects: ComponentOwnedObjects = {
         revision: null,
         configuration: null,
@@ -387,6 +399,12 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
         // return the final list of objects
         map(_ => [component, objects] as [string, ComponentOwnedObjects]),
+        catchError(() =>
+          of([component, {} as ComponentOwnedObjects] as [
+            string,
+            ComponentOwnedObjects,
+          ]),
+        ),
       ) as Observable<[string, ComponentOwnedObjects]>;
     }
   }

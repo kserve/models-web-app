@@ -18,7 +18,7 @@ class InferenceServiceWatcher:
         """Initialize the watcher.
 
         Args:
-            app: Flask application instance (for request context in threads)
+            app: Flask application instance (for app context in threads)
         """
         self._stop_event = threading.Event()
         self._thread = None
@@ -69,7 +69,7 @@ class InferenceServiceWatcher:
         while not self._stop_event.is_set():
             try:
                 if self._app:
-                    with self._app.test_request_context():
+                    with self._app.app_context():
                         gvk = versions.inference_service_gvk()
                         initial_sent, resource_version = self._do_namespace_watch(
                             gvk, namespace, callback, initial_sent, resource_version
@@ -100,13 +100,18 @@ class InferenceServiceWatcher:
         initial_sent: bool,
         resource_version: Optional[str],
     ) -> tuple:
-        """Perform one iteration of the namespace watch within request context."""
+        """Perform one iteration of the namespace watch within app context."""
         w = watch.Watch()
         self._set_active_watch(w)
 
         if not initial_sent:
             try:
-                initial_list = api.list_custom_rsrc(**gvk, namespace=namespace)
+                initial_list = api.custom_api.list_namespaced_custom_object(
+                    group=gvk["group"],
+                    version=gvk["version"],
+                    namespace=namespace,
+                    plural=gvk["kind"],
+                )
                 items = initial_list.get("items", [])
                 for item in items:
                     try:
@@ -169,7 +174,7 @@ class InferenceServiceWatcher:
         while not self._stop_event.is_set():
             try:
                 if self._app:
-                    with self._app.test_request_context():
+                    with self._app.app_context():
                         gvk = versions.inference_service_gvk()
                         initial_sent, resource_version = self._do_single_watch(
                             gvk,
@@ -206,13 +211,19 @@ class InferenceServiceWatcher:
         initial_sent: bool,
         resource_version: Optional[str],
     ) -> tuple:
-        """Perform one iteration of the single-resource watch within request context."""
+        """Perform one iteration of the single-resource watch within app context."""
         w = watch.Watch()
         self._set_active_watch(w)
 
         if not initial_sent:
             try:
-                initial_obj = api.get_custom_rsrc(**gvk, namespace=namespace, name=name)
+                initial_obj = api.custom_api.get_namespaced_custom_object(
+                    group=gvk["group"],
+                    version=gvk["version"],
+                    namespace=namespace,
+                    plural=gvk["kind"],
+                    name=name,
+                )
                 resource_version = initial_obj.get("metadata", {}).get(
                     "resourceVersion"
                 )
@@ -291,7 +302,7 @@ class EventWatcher:
         """Initialize the event watcher.
 
         Args:
-            app: Flask application instance (for request context in threads)
+            app: Flask application instance (for app context in threads)
         """
         self._stop_event = threading.Event()
         self._thread = None
@@ -333,7 +344,7 @@ class EventWatcher:
                         namespace, field_selector=field_selector
                     )
                     events_list = [
-                        api.object_to_dict(event) for event in initial_events.items
+                        self._serialize_event(event) for event in initial_events.items
                     ]
                     resource_version = initial_events.metadata.resource_version
                     callback("INITIAL", {"items": events_list})
@@ -355,7 +366,7 @@ class EventWatcher:
                     if not event_type or not obj:
                         continue
 
-                    obj_dict = api.object_to_dict(obj)
+                    obj_dict = self._serialize_event(obj)
                     resource_version = obj_dict.get("metadata", {}).get(
                         "resourceVersion", resource_version
                     )
@@ -392,6 +403,9 @@ class EventWatcher:
             if self._active_watch is active_watch:
                 self._active_watch = None
 
+    def _serialize_event(self, event):
+        return api.serialize(event)
+
 
 class LogWatcher:
     """Watches pod logs for InferenceServices."""
@@ -400,7 +414,7 @@ class LogWatcher:
         """Initialize the log watcher.
 
         Args:
-            app: Flask application instance (for request context in threads)
+            app: Flask application instance (for app context in threads)
         """
         self._stop_event = threading.Event()
         self._thread = None
@@ -443,9 +457,9 @@ class LogWatcher:
 
         while not self._stop_event.is_set():
             try:
-                # Use Flask app and request context if available to call API functions
+                # Use Flask app context if available to call API functions.
                 if self._app:
-                    with self._app.test_request_context():
+                    with self._app.app_context():
                         self._fetch_and_stream_logs(
                             namespace, name, components, callback
                         )
@@ -463,9 +477,15 @@ class LogWatcher:
     def _fetch_and_stream_logs(
         self, namespace: str, name: str, components: List[str], callback: Callable
     ):
-        """Helper method to fetch and stream logs within request context."""
+        """Helper method to fetch and stream logs within app context."""
         gvk = versions.inference_service_gvk()
-        svc = api.get_custom_rsrc(**gvk, namespace=namespace, name=name)
+        svc = api.custom_api.get_namespaced_custom_object(
+            group=gvk["group"],
+            version=gvk["version"],
+            namespace=namespace,
+            plural=gvk["kind"],
+            name=name,
+        )
 
         deployment_mode = utils.get_deployment_mode(svc)
 

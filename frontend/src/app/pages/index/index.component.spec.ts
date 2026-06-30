@@ -53,6 +53,36 @@ describe('IndexComponent', () => {
   let component: IndexComponent;
   let fixture: ComponentFixture<IndexComponent>;
 
+  const inferenceService = (
+    name: string,
+    url = `http://${name}.example.com`,
+  ): InferenceServiceK8s => ({
+    kind: 'InferenceService',
+    apiVersion: 'serving.kserve.io/v1beta1',
+    metadata: {
+      name,
+      namespace: 'kubeflow-user',
+    },
+    spec: {
+      predictor: {
+        sklearn: {
+          storageUri: `s3://models/${name}`,
+        },
+      },
+      explainer: {},
+      transformer: {},
+    } as any,
+    status: {
+      url,
+      conditions: [
+        {
+          type: 'Ready',
+          status: 'True',
+        },
+      ],
+    } as any,
+  });
+
   beforeEach(waitForAsync(() => {
     sseEvents = new Subject<WatchEvent<InferenceServiceK8s>>();
     sseTeardown = jest.fn();
@@ -105,5 +135,67 @@ describe('IndexComponent', () => {
     sseEvents.next({ type: 'ERROR', message: 'watch failed' });
 
     expect(sseTeardown).toHaveBeenCalled();
+  });
+
+  it('should replace inference services from an INITIAL SSE event', () => {
+    sseEvents.next({
+      type: 'INITIAL',
+      items: [inferenceService('model-a'), inferenceService('model-b')],
+    });
+
+    expect(component.inferenceServices.map(svc => svc.metadata?.name)).toEqual([
+      'model-a',
+      'model-b',
+    ]);
+  });
+
+  it('should append inference services from ADDED SSE events', () => {
+    sseEvents.next({
+      type: 'INITIAL',
+      items: [inferenceService('model-a')],
+    });
+
+    sseEvents.next({
+      type: 'ADDED',
+      object: inferenceService('model-b'),
+    });
+
+    expect(component.inferenceServices.map(svc => svc.metadata?.name)).toEqual([
+      'model-a',
+      'model-b',
+    ]);
+  });
+
+  it('should update matching inference services from MODIFIED SSE events', () => {
+    sseEvents.next({
+      type: 'INITIAL',
+      items: [inferenceService('model-a', 'http://old.example.com')],
+    });
+
+    sseEvents.next({
+      type: 'MODIFIED',
+      object: inferenceService('model-a', 'http://new.example.com'),
+    });
+
+    expect(component.inferenceServices).toHaveLength(1);
+    expect(component.inferenceServices[0].status?.url).toBe(
+      'http://new.example.com',
+    );
+  });
+
+  it('should remove matching inference services from DELETED SSE events', () => {
+    sseEvents.next({
+      type: 'INITIAL',
+      items: [inferenceService('model-a'), inferenceService('model-b')],
+    });
+
+    sseEvents.next({
+      type: 'DELETED',
+      object: inferenceService('model-a'),
+    });
+
+    expect(component.inferenceServices.map(svc => svc.metadata?.name)).toEqual([
+      'model-b',
+    ]);
   });
 });

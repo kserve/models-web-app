@@ -47,36 +47,41 @@ export interface InferenceServiceOwnedObjects {
 }
 
 export interface ComponentOwnedObjects {
-  revision: K8sObject;
-  configuration: K8sObject;
-  knativeService: K8sObject;
-  route: K8sObject;
+  revision?: K8sObject | null;
+  configuration?: K8sObject | null;
+  knativeService?: K8sObject | null;
+  route?: K8sObject | null;
+  deployment?: K8sObject | null;
+  service?: K8sObject | null;
+  hpa?: K8sObject | null;
+  predictor?: any;
+  servingRuntime?: K8sObject | null;
 }
 
 // Standard mode types
 export interface StandardDeploymentObjects {
-  deployment?: K8sObject;
-  service?: K8sObject;
-  hpa?: K8sObject;
+  deployment?: K8sObject | null;
+  service?: K8sObject | null;
+  hpa?: K8sObject | null;
 }
 
 export interface RawComponentOwnedObjects {
-  deployment?: K8sObject;
-  service?: K8sObject;
-  hpa?: K8sObject;
+  deployment?: K8sObject | null;
+  service?: K8sObject | null;
+  hpa?: K8sObject | null;
 }
 
 // ModelMesh mode types
 export interface ModelMeshObjects {
   predictor?: any;
-  servingRuntime?: K8sObject;
-  deployment?: K8sObject;
-  service?: K8sObject;
+  servingRuntime?: K8sObject | null;
+  deployment?: K8sObject | null;
+  service?: K8sObject | null;
 }
 
 export interface ModelMeshComponentOwnedObjects {
   predictor?: any;
-  servingRuntime?: K8sObject;
-  deployment?: K8sObject;
-  service?: K8sObject;
+  servingRuntime?: K8sObject | null;
+  deployment?: K8sObject | null;
+  service?: K8sObject | null;
 }

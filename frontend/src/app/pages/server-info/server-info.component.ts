@@ -14,6 +14,7 @@ import {
   SnackBarConfig,
   Status,
   STATUS_TYPE,
+  K8sObject,
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { ConfigService } from 'src/app/services/config.service';
@@ -295,7 +296,7 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       !inferenceService.status ||
       !(inferenceService.status.components as Record<string, any>)?.[component]
     ) {
-      return of([component, {} as ComponentOwnedObjects]);
+      return of(this.getOwnedObjectsResult(component));
     }
 
     // Check deployment mode
@@ -310,18 +311,10 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
           component,
         )
         .pipe(
-          map(
-            objects =>
-              [component, objects as ComponentOwnedObjects] as [
-                string,
-                ComponentOwnedObjects,
-              ],
-          ),
-          catchError(() =>
-            of([component, {} as ComponentOwnedObjects] as [
-              string,
-              ComponentOwnedObjects,
-            ]),
+          map(objects => this.getOwnedObjectsResult(component, objects)),
+          catchError(
+            (): Observable<[string, ComponentOwnedObjects]> =>
+              of(this.getOwnedObjectsResult(component)),
           ),
         );
     } else if (deploymentMode === 'Standard') {
@@ -333,18 +326,10 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
           component,
         )
         .pipe(
-          map(
-            objects =>
-              [component, objects as ComponentOwnedObjects] as [
-                string,
-                ComponentOwnedObjects,
-              ],
-          ),
-          catchError(() =>
-            of([component, {} as ComponentOwnedObjects] as [
-              string,
-              ComponentOwnedObjects,
-            ]),
+          map(objects => this.getOwnedObjectsResult(component, objects)),
+          catchError(
+            (): Observable<[string, ComponentOwnedObjects]> =>
+              of(this.getOwnedObjectsResult(component)),
           ),
         );
     } else {
@@ -354,61 +339,80 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
           component
         ]?.latestCreatedRevision || '';
       if (!revName) {
-        return of([component, {} as ComponentOwnedObjects] as [
-          string,
-          ComponentOwnedObjects,
-        ]);
+        return of(this.getOwnedObjectsResult(component));
       }
 
-      const objects: ComponentOwnedObjects = {
-        revision: null,
-        configuration: null,
-        knativeService: null,
-        route: null,
-      } as unknown as ComponentOwnedObjects;
+      const objects: ComponentOwnedObjects = {};
 
-      return this.backend.getKnativeRevision(this.namespace, revName).pipe(
-        tap(r => (objects.revision = r)),
+      const routeRequest: Observable<K8sObject | undefined> = this.backend
+        .getKnativeRevision(this.namespace, revName)
+        .pipe(
+          tap(r => (objects.revision = r ?? null)),
 
-        // GET the configuration
-        map(r => {
-          return r.metadata?.ownerReferences?.[0]?.name || '';
-        }),
-        concatMap(confName => {
-          return this.backend.getKnativeConfiguration(this.namespace, confName);
-        }),
-        tap(c => (objects.configuration = c)),
+          // GET the configuration
+          map(r => {
+            return r?.metadata?.ownerReferences?.[0]?.name || '';
+          }),
+          concatMap(confName => {
+            if (!confName) {
+              return of(undefined);
+            }
 
-        // GET the Knative service
-        map(c => {
-          return c.metadata?.ownerReferences?.[0]?.name || '';
-        }),
-        concatMap(svcName => {
-          return this.backend.getKnativeService(this.namespace, svcName);
-        }),
-        tap(knativeInferenceService => {
-          objects.knativeService = knativeInferenceService;
-        }),
+            return this.backend.getKnativeConfiguration(
+              this.namespace,
+              confName,
+            );
+          }),
+          tap(c => (objects.configuration = c ?? null)),
 
-        // GET the Knative route
-        map(knativeInferenceService => {
-          return knativeInferenceService.metadata?.name || '';
-        }),
-        concatMap(routeName => {
-          return this.backend.getKnativeRoute(this.namespace, routeName || '');
-        }),
-        tap(route => (objects.route = route)),
+          // GET the Knative service
+          map(c => {
+            return c?.metadata?.ownerReferences?.[0]?.name || '';
+          }),
+          concatMap(svcName => {
+            if (!svcName) {
+              return of(undefined);
+            }
+
+            return this.backend.getKnativeService(this.namespace, svcName);
+          }),
+          tap(knativeInferenceService => {
+            objects.knativeService = knativeInferenceService ?? null;
+          }),
+
+          // GET the Knative route
+          map(knativeInferenceService => {
+            return knativeInferenceService?.metadata?.name || '';
+          }),
+          concatMap(routeName => {
+            if (!routeName) {
+              return of(undefined);
+            }
+
+            return this.backend.getKnativeRoute(this.namespace, routeName);
+          }),
+        );
+
+      return routeRequest.pipe(
+        tap(route => (objects.route = route ?? null)),
 
         // return the final list of objects
-        map(_ => [component, objects] as [string, ComponentOwnedObjects]),
-        catchError(() =>
-          of([component, {} as ComponentOwnedObjects] as [
-            string,
-            ComponentOwnedObjects,
-          ]),
+        map((): [string, ComponentOwnedObjects] =>
+          this.getOwnedObjectsResult(component, objects),
         ),
-      ) as Observable<[string, ComponentOwnedObjects]>;
+        catchError(
+          (): Observable<[string, ComponentOwnedObjects]> =>
+            of(this.getOwnedObjectsResult(component)),
+        ),
+      );
     }
+  }
+
+  private getOwnedObjectsResult(
+    component: string,
+    objects: ComponentOwnedObjects = {},
+  ): [string, ComponentOwnedObjects] {
+    return [component, objects];
   }
 
   private checkGrafanaAvailability(grafanaPrefix: string): void {

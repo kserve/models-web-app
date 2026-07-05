@@ -1,4 +1,4 @@
-# Models web application
+# KSERVE UI
 
 This web application is responsible for allowing users to manage KServe inference resources in a Kubeflow cluster. It provides a user-friendly way to handle the lifecycle of both `InferenceService` and `InferenceGraph` custom resources.
 
@@ -10,7 +10,7 @@ This web application is responsible for allowing users to manage KServe inferenc
 The create form also supports multi-document YAML for ordered creation of
 supported KServe resources. Multi-document creation currently accepts
 `InferenceService`, `InferenceGraph`, and `TrainedModel` resources. Resources are
-created in document order; if one creation fails, the app reports the failed
+created in document order; if one creation fails, the application reports the failed
 document and any resources already created, but it does not roll back earlier
 successful creations.
 
@@ -45,7 +45,7 @@ Alternatively you can access the application via `kubectl port-forward`. In that
 
 1. Not perform any authorization checks, since there is no logged in user
 2. Work under the `/` prefix
-3. Disable Secure cookies, since the app will be exposed under plain http
+3. Disable Secure cookies, since the application will be exposed under plain http
 
 You can apply the mentioned configurations by doing the following commands:
 
@@ -68,12 +68,12 @@ kustomize build manifests/kustomize/base | kubectl apply -f -
 
 ## Configuration
 
-The following is a list of environment variables that can be set for any web app that is using this base app.
+The following is a list of environment variables that can be set for any web application that is using this base application.
 | Environment variable | Default value | Description |
 | - | - | - |
 | APP_PREFIX | /models | Controls the application's prefix, by setting the [base-url](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base) element |
 | APP_DISABLE_AUTH | False | Controls whether the application should use SubjectAccessReviews to ensure the user is authorized to perform an action |
-| APP_SECURE_COOKIES | True | Controls whether the app should use [Secure](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Secure) CSRF cookies. By default the application expects to be exposed with https |
+| APP_SECURE_COOKIES | True | Controls whether the application should use [Secure](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#Secure) CSRF cookies. By default the application expects to be exposed with https |
 | CSRF_SAMESITE | Strict| Controls the [SameSite value](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#SameSite) of the CSRF cookie |
 | USERID_HEADER | kubeflow-userid | Header in each request that will contain the username of the logged in user |
 | USERID_PREFIX | "" | Prefix to remove from the `USERID_HEADER` value to extract the logged in user name |
@@ -209,7 +209,7 @@ npm run build
 cd dist/kubeflow
 npm link
 
-# run the app frontend
+# run the application frontend
 cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/frontend
 npm i
 npm link kubeflow

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { Observable, of, forkJoin, Subscription } from 'rxjs';
 import { tap, map, concatMap, timeout, catchError } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -13,9 +13,12 @@ import {
   SnackType,
   SnackBarConfig,
   Status,
+  STATUS_TYPE,
+  K8sObject,
 } from 'kubeflow';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { ConfigService } from 'src/app/services/config.service';
+import { SSEService } from 'src/app/services/sse.service';
 import { isEqual } from 'lodash';
 import { generateDeleteConfig } from '../index/config';
 import { HttpClient } from '@angular/common/http';
@@ -32,26 +35,24 @@ import { getK8sObjectUiStatus } from 'src/app/shared/utils';
   styleUrls: ['./server-info.component.scss'],
 })
 export class ServerInfoComponent implements OnInit, OnDestroy {
-  public serverName: string;
-  public namespace: string;
+  public serverName: string = '';
+  public namespace: string = '';
   public serverInfoLoaded = false;
-  public inferenceService: InferenceServiceK8s;
+  public inferenceService: InferenceServiceK8s | null = null;
   public ownedObjects: InferenceServiceOwnedObjects = {};
   public grafanaFound = true;
   public isEditing = false;
-  public editingIsvc: InferenceServiceK8s;
-
+  public editingIsvc: InferenceServiceK8s | null = null;
   public buttonsConfig: ToolbarButton[] = [
     new ToolbarButton({
       text: 'EDIT',
       icon: 'edit',
       fn: () => {
-        console.log('[Debug] EDIT button clicked. Setting isEditing = true.'); // Add log
-        // Make a copy of current isvc so polling update doesn't affect editing
-        this.editingIsvc = JSON.parse(JSON.stringify(this.inferenceService)); // Use deep copy
+        if (!this.inferenceService) {
+          return;
+        }
+        this.editingIsvc = JSON.parse(JSON.stringify(this.inferenceService));
         this.isEditing = true;
-        console.log('[Debug] isEditing is now:', this.isEditing); // Add log
-        console.log('[Debug] editingIsvc data:', this.editingIsvc); // Add log
       },
     }),
     new ToolbarButton({
@@ -69,6 +70,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     retries: 1,
   });
   private pollingSubscription = new Subscription();
+  private sseSubscription = new Subscription();
+  private ownedObjectsSubscription = new Subscription();
+  private routeSubscription = new Subscription();
 
   constructor(
     private http: HttpClient,
@@ -79,48 +83,121 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
     private confirmDialog: ConfirmDialogService,
     private snack: SnackBarService,
     private configService: ConfigService,
+    private sseService: SSEService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
-      console.log($localize`Using namespace: ${params.namespace}`);
+    // Handle route params
+    this.routeSubscription = this.route.params.subscribe(params => {
+      this.sseSubscription?.unsubscribe();
+      this.pollingSubscription?.unsubscribe();
+      this.ownedObjectsSubscription?.unsubscribe();
+      this.serverInfoLoaded = false;
+      this.inferenceService = null;
+      this.ownedObjects = {};
+      this.isEditing = false;
+      this.editingIsvc = null;
+
       this.ns.updateSelectedNamespace(params.namespace);
 
       this.serverName = params.name;
       this.namespace = params.namespace;
 
-      this.pollingSubscription = this.poller.start().subscribe(() => {
-        this.getBackendObjects();
-      });
+      // Use SSE for real-time updates
+      this.sseSubscription = this.sseService
+        .watchInferenceService<InferenceServiceK8s>(
+          this.namespace,
+          this.serverName,
+        )
+        .subscribe(
+          event => {
+            if (event.type === 'INITIAL' && event.object) {
+              this.updateInferenceService(event.object);
+              this.loadOwnedObjects(event.object);
+            } else if (
+              (event.type === 'MODIFIED' || event.type === 'ADDED') &&
+              event.object
+            ) {
+              this.updateInferenceService(event.object);
+              this.loadOwnedObjects(event.object);
+            } else if (event.type === 'DELETED') {
+              this.router.navigate(['/']);
+            } else if (event.type === 'ERROR') {
+              this.startPolling();
+            }
+          },
+          error => {
+            this.startPolling();
+          },
+        );
     });
 
-    // don't show a METRICS tab if Grafana is not exposed
-    console.log($localize`Checking if Grafana endpoint is exposed`);
     this.configService.getConfig().subscribe(
       config => {
         this.checkGrafanaAvailability(config.grafanaPrefix);
       },
-      error => {
-        console.error(
-          'Failed to load configuration for ServerInfoComponent:',
-          error,
-        );
-        // Use default prefix as fallback
+      () => {
         this.checkGrafanaAvailability('/grafana');
       },
     );
   }
 
   ngOnDestroy() {
-    this.pollingSubscription.unsubscribe();
+    this.routeSubscription?.unsubscribe();
+    this.pollingSubscription?.unsubscribe();
+    this.sseSubscription?.unsubscribe();
+    this.ownedObjectsSubscription?.unsubscribe();
+  }
+
+  private startPolling() {
+    this.sseSubscription?.unsubscribe();
+    this.pollingSubscription?.unsubscribe();
+    this.pollingSubscription = this.poller.start().subscribe(() => {
+      this.getBackendObjects();
+    });
+  }
+
+  private loadOwnedObjects(inferenceService: InferenceServiceK8s) {
+    this.ownedObjectsSubscription?.unsubscribe();
+    const components = ['predictor', 'transformer', 'explainer'];
+    const ownedObjectRequests: Observable<[string, ComponentOwnedObjects]>[] =
+      [];
+
+    components.forEach(component => {
+      ownedObjectRequests.push(
+        this.getOwnedObjects(inferenceService, component),
+      );
+    });
+
+    this.ownedObjectsSubscription = forkJoin(...ownedObjectRequests).subscribe(
+      objects => {
+        const ownedObjects: InferenceServiceOwnedObjects = {};
+        for (const [component, componentObjects] of objects) {
+          (ownedObjects as Record<string, ComponentOwnedObjects>)[component] =
+            componentObjects;
+        }
+
+        this.ownedObjects = ownedObjects;
+        this.serverInfoLoaded = true;
+        this.cdr.detectChanges();
+      },
+    );
   }
 
   get status(): Status {
+    if (!this.inferenceService) {
+      return {
+        phase: STATUS_TYPE.UNINITIALIZED,
+        state: '',
+        message: '',
+      };
+    }
+
     return getK8sObjectUiStatus(this.inferenceService);
   }
 
   public cancelEdit() {
-    console.log('[Debug] cancelEdit called. Setting isEditing = false.'); // Add log
     this.isEditing = false;
   }
 
@@ -130,6 +207,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
 
   public deleteInferenceService() {
     const inferenceService = this.inferenceService;
+    if (!inferenceService) {
+      return;
+    }
     const dialogConfiguration = generateDeleteConfig(inferenceService);
 
     const dialogRef = this.confirmDialog.open(
@@ -176,33 +256,11 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   }
 
   private getBackendObjects() {
-    console.log(
-      $localize`Fetching info for InferenceService ${this.namespace}/${this.serverName}`,
-    );
-
     this.backend
       .getInferenceService(this.namespace, this.serverName)
       .subscribe(inferenceService => {
         this.updateInferenceService(inferenceService);
-
-        const components = ['predictor', 'transformer', 'explainer'];
-        const obs: Observable<[string, string, ComponentOwnedObjects]>[] = [];
-
-        components.forEach(component => {
-          obs.push(this.getOwnedObjects(inferenceService, component));
-        });
-
-        forkJoin(...obs).subscribe(objects => {
-          const ownedObjects = {};
-          for (const obj of objects) {
-            const component = obj[0];
-
-            ownedObjects[component] = obj[1];
-          }
-
-          this.ownedObjects = ownedObjects;
-          this.serverInfoLoaded = true;
-        });
+        this.loadOwnedObjects(inferenceService);
       });
   }
 
@@ -233,12 +291,12 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
   private getOwnedObjects(
     inferenceService: InferenceServiceK8s,
     component: string,
-  ): Observable<any> {
+  ): Observable<[string, ComponentOwnedObjects]> {
     if (
       !inferenceService.status ||
-      !inferenceService.status.components[component]
+      !(inferenceService.status.components as Record<string, any>)?.[component]
     ) {
-      return of([component, {}]);
+      return of(this.getOwnedObjectsResult(component));
     }
 
     // Check deployment mode
@@ -249,85 +307,112 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       return this.backend
         .getModelMeshObjects(
           this.namespace,
-          inferenceService.metadata.name,
+          inferenceService.metadata?.name || '',
           component,
         )
         .pipe(
-          map(objects => [component, objects]),
-          catchError(error => {
-            console.error(
-              `Error fetching ModelMesh objects for ${component}:`,
-              error,
-            );
-            return of([component, {}]);
-          }),
+          map(objects => this.getOwnedObjectsResult(component, objects)),
+          catchError(
+            (): Observable<[string, ComponentOwnedObjects]> =>
+              of(this.getOwnedObjectsResult(component)),
+          ),
         );
     } else if (deploymentMode === 'Standard') {
       // Handle Standard mode
       return this.backend
         .getStandardDeploymentObjects(
           this.namespace,
-          inferenceService.metadata.name,
+          inferenceService.metadata?.name || '',
           component,
         )
         .pipe(
-          map(objects => [component, objects]),
-          catchError(error => {
-            console.error(
-              `Error fetching Standard objects for ${component}:`,
-              error,
-            );
-            return of([component, {}]);
-          }),
+          map(objects => this.getOwnedObjectsResult(component, objects)),
+          catchError(
+            (): Observable<[string, ComponentOwnedObjects]> =>
+              of(this.getOwnedObjectsResult(component)),
+          ),
         );
     } else {
       // Handle Serverless mode
       const revName =
-        inferenceService.status.components[component].latestCreatedRevision;
-      const objects: ComponentOwnedObjects = {
-        revision: undefined,
-        configuration: undefined,
-        knativeService: undefined,
-        route: undefined,
-      };
+        (inferenceService.status?.components as Record<string, any>)?.[
+          component
+        ]?.latestCreatedRevision || '';
+      if (!revName) {
+        return of(this.getOwnedObjectsResult(component));
+      }
 
-      return this.backend.getKnativeRevision(this.namespace, revName).pipe(
-        tap(r => (objects.revision = r)),
+      const objects: ComponentOwnedObjects = {};
 
-        // GET the configuration
-        map(r => {
-          return r.metadata.ownerReferences[0].name;
-        }),
-        concatMap(confName => {
-          return this.backend.getKnativeConfiguration(this.namespace, confName);
-        }),
-        tap(c => (objects.configuration = c)),
+      const routeRequest: Observable<K8sObject | undefined> = this.backend
+        .getKnativeRevision(this.namespace, revName)
+        .pipe(
+          tap(r => (objects.revision = r ?? null)),
 
-        // GET the Knative service
-        map(c => {
-          return c.metadata.ownerReferences[0].name;
-        }),
-        concatMap(svcName => {
-          return this.backend.getKnativeService(this.namespace, svcName);
-        }),
-        tap(
-          knativeInferenceService =>
-            (objects.knativeService = knativeInferenceService),
-        ),
+          // GET the configuration
+          map(r => {
+            return r?.metadata?.ownerReferences?.[0]?.name || '';
+          }),
+          concatMap(confName => {
+            if (!confName) {
+              return of(undefined);
+            }
 
-        // GET the Knative route
-        map(knativeInferenceService => {
-          return knativeInferenceService.metadata.name;
-        }),
-        concatMap(routeName => {
-          return this.backend.getKnativeRoute(this.namespace, routeName);
-        }),
-        tap(route => (objects.route = route)),
+            return this.backend.getKnativeConfiguration(
+              this.namespace,
+              confName,
+            );
+          }),
+          tap(c => (objects.configuration = c ?? null)),
+
+          // GET the Knative service
+          map(c => {
+            return c?.metadata?.ownerReferences?.[0]?.name || '';
+          }),
+          concatMap(svcName => {
+            if (!svcName) {
+              return of(undefined);
+            }
+
+            return this.backend.getKnativeService(this.namespace, svcName);
+          }),
+          tap(knativeInferenceService => {
+            objects.knativeService = knativeInferenceService ?? null;
+          }),
+
+          // GET the Knative route
+          map(knativeInferenceService => {
+            return knativeInferenceService?.metadata?.name || '';
+          }),
+          concatMap(routeName => {
+            if (!routeName) {
+              return of(undefined);
+            }
+
+            return this.backend.getKnativeRoute(this.namespace, routeName);
+          }),
+        );
+
+      return routeRequest.pipe(
+        tap(route => (objects.route = route ?? null)),
 
         // return the final list of objects
-        map(_ => [component, objects]),
+        map((): [string, ComponentOwnedObjects] =>
+          this.getOwnedObjectsResult(component, objects),
+        ),
+        catchError(
+          (): Observable<[string, ComponentOwnedObjects]> =>
+            of(this.getOwnedObjectsResult(component)),
+        ),
       );
     }
+  }
+
+  private getOwnedObjectsResult(
+    component: string,
+    objects: ComponentOwnedObjects = {},
+  ): [string, ComponentOwnedObjects] {
+    return [component, objects];
   }
 
   private checkGrafanaAvailability(grafanaPrefix: string): void {
@@ -338,21 +423,9 @@ export class ServerInfoComponent implements OnInit, OnDestroy {
       .pipe(timeout(1000))
       .subscribe({
         next: resp => {
-          if (!Array.isArray(resp)) {
-            console.log(
-              $localize`Response from the Grafana endpoint was not as expected.`,
-            );
-            this.grafanaFound = false;
-            return;
-          }
-
-          console.log(
-            $localize`Grafana endpoint detected. Will expose a metrics tab.`,
-          );
-          this.grafanaFound = true;
+          this.grafanaFound = Array.isArray(resp);
         },
         error: () => {
-          console.log($localize`Could not detect a Grafana endpoint.`);
           this.grafanaFound = false;
         },
       });

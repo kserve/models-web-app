@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
+import { SSEService } from 'src/app/services/sse.service';
 import { Clipboard } from '@angular/cdk/clipboard';
 import {
   InferenceServiceK8s,
@@ -39,8 +40,9 @@ export class IndexComponent implements OnInit, OnDestroy {
   namespaceSubscription = new Subscription();
   dashboardSubscription = new Subscription();
   pollingSubscription = new Subscription();
+  sseSubscription = new Subscription();
 
-  currentNamespace: string | string[];
+  currentNamespace: string | string[] = '';
   config = defaultConfig;
   inferenceServices: InferenceServiceIR[] = [];
 
@@ -72,9 +74,11 @@ export class IndexComponent implements OnInit, OnDestroy {
     private snack: SnackBarService,
     private router: Router,
     private clipboard: Clipboard,
+    private sseService: SSEService,
     public ns: NamespaceService,
     public mwaNamespace: MWANamespaceService,
     public poller: PollerService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -119,17 +123,85 @@ export class IndexComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.namespaceSubscription.unsubscribe();
-    this.dashboardSubscription.unsubscribe();
-    this.pollingSubscription.unsubscribe();
+    this.namespaceSubscription?.unsubscribe();
+    this.dashboardSubscription?.unsubscribe();
+    this.pollingSubscription?.unsubscribe();
+    this.sseSubscription?.unsubscribe();
   }
 
   public poll(ns: string | string[]) {
-    this.pollingSubscription.unsubscribe();
+    this.pollingSubscription?.unsubscribe();
+    this.sseSubscription?.unsubscribe();
     this.inferenceServices = [];
 
+    if (typeof ns === 'string') {
+      // Use SSE for real-time updates
+      this.sseSubscription = this.sseService
+        .watchInferenceServices<InferenceServiceK8s>(ns)
+        .subscribe(
+          event => {
+            if (event.type === 'INITIAL' && event.items) {
+              this.inferenceServices = this.processIncomingData(event.items);
+              this.cdr.detectChanges();
+            } else if (event.type === 'ADDED' && event.object) {
+              const processed = this.processIncomingData([event.object]);
+              this.inferenceServices = [
+                ...this.inferenceServices,
+                ...processed,
+              ];
+              this.cdr.detectChanges();
+            } else if (
+              event.type === 'MODIFIED' &&
+              event.object &&
+              event.object.metadata
+            ) {
+              const processed = this.processIncomingData([event.object]);
+              if (processed.length > 0) {
+                const index = this.inferenceServices.findIndex(
+                  svc =>
+                    svc.metadata?.name === event.object?.metadata?.name &&
+                    svc.metadata?.namespace ===
+                      event.object?.metadata?.namespace,
+                );
+                if (index !== -1) {
+                  this.inferenceServices[index] = processed[0];
+                  this.inferenceServices = [...this.inferenceServices];
+                  this.cdr.detectChanges();
+                }
+              }
+            } else if (
+              event.type === 'DELETED' &&
+              event.object &&
+              event.object.metadata
+            ) {
+              this.inferenceServices = this.inferenceServices.filter(
+                svc =>
+                  !(
+                    svc.metadata?.name === event.object?.metadata?.name &&
+                    svc.metadata?.namespace ===
+                      event.object?.metadata?.namespace
+                  ),
+              );
+              this.cdr.detectChanges();
+            } else if (event.type === 'ERROR') {
+              this.fallbackToPolling(ns);
+            }
+          },
+          error => {
+            this.fallbackToPolling(ns);
+          },
+        );
+    } else {
+      // Use polling
+      this.fallbackToPolling(ns);
+    }
+  }
+
+  private fallbackToPolling(ns: string | string[]) {
+    this.sseSubscription?.unsubscribe();
     const request = this.backend.getInferenceServices(ns);
 
+    this.pollingSubscription?.unsubscribe();
     this.pollingSubscription = this.poller
       .exponential(request)
       .subscribe((svcs: InferenceServiceK8s[]) => {
@@ -146,23 +218,25 @@ export class IndexComponent implements OnInit, OnDestroy {
         this.deleteClicked(inferenceService);
         break;
       case 'copy-link':
-        this.clipboard.copy(inferenceService.status.url);
-        const snackConfiguration: SnackBarConfig = {
-          data: {
-            msg: `Copied: ${inferenceService.status.url}`,
-            snackType: SnackType.Info,
-          },
-        };
-        this.snack.open(snackConfiguration);
+        if (inferenceService.status?.url) {
+          this.clipboard.copy(inferenceService.status.url);
+          const snackConfiguration: SnackBarConfig = {
+            data: {
+              msg: `Copied: ${inferenceService.status.url}`,
+              snackType: SnackType.Info,
+            },
+          };
+          this.snack.open(snackConfiguration);
+        }
         break;
       case 'name:link':
         /*
          * don't allow the user to navigate to the details page of a server
          * that is being deleted
          */
-        if (inferenceService.ui.status.phase === STATUS_TYPE.TERMINATING) {
-          a.event.stopPropagation();
-          a.event.preventDefault();
+        if (inferenceService.ui?.status?.phase === STATUS_TYPE.TERMINATING) {
+          a.event?.stopPropagation();
+          a.event?.preventDefault();
           const snackConfiguration: SnackBarConfig = {
             data: {
               msg: $localize`Endpoint is being deleted, cannot show details.`,
@@ -205,8 +279,10 @@ export class IndexComponent implements OnInit, OnDestroy {
         return;
       }
 
-      inferenceService.ui.status.phase = STATUS_TYPE.TERMINATING;
-      inferenceService.ui.status.message = $localize`Preparing to delete Endpoint...`;
+      if (inferenceService.ui?.status) {
+        inferenceService.ui.status.phase = STATUS_TYPE.TERMINATING;
+        inferenceService.ui.status.message = $localize`Preparing to delete Endpoint...`;
+      }
     });
   }
 
@@ -230,22 +306,26 @@ export class IndexComponent implements OnInit, OnDestroy {
     inferenceService.ui.actions.delete =
       this.getDeletionActionStatus(inferenceService);
 
-    const predictorType = getPredictorType(inferenceService.spec.predictor);
+    const predictorType = getPredictorType(
+      inferenceService.spec?.predictor || ({} as any),
+    );
     const predictor = getPredictorExtensionSpec(
-      inferenceService.spec.predictor,
+      inferenceService.spec?.predictor || ({} as any),
     );
     inferenceService.ui.predictorType = predictorType;
     inferenceService.ui.runtimeVersion = predictor.runtimeVersion;
     inferenceService.ui.storageUri = predictor.storageUri;
     inferenceService.ui.protocolVersion = predictor.protocolVersion || 'v1';
     inferenceService.ui.link = {
-      text: inferenceService.metadata.name,
-      url: `/details/${inferenceService.metadata.namespace}/${inferenceService.metadata.name}`,
+      text: inferenceService.metadata?.name || '',
+      url: `/details/${inferenceService.metadata?.namespace || ''}/${
+        inferenceService.metadata?.name || ''
+      }`,
     };
   }
 
   private getCopyActionStatus(inferenceService: InferenceServiceIR) {
-    if (inferenceService.ui.status.phase !== STATUS_TYPE.READY) {
+    if (inferenceService.ui?.status?.phase !== STATUS_TYPE.READY) {
       return STATUS_TYPE.UNAVAILABLE;
     }
 
@@ -253,7 +333,7 @@ export class IndexComponent implements OnInit, OnDestroy {
   }
 
   private getDeletionActionStatus(inferenceService: InferenceServiceIR) {
-    if (inferenceService.ui.status.phase !== STATUS_TYPE.TERMINATING) {
+    if (inferenceService.ui?.status?.phase !== STATUS_TYPE.TERMINATING) {
       return STATUS_TYPE.READY;
     }
 
@@ -265,6 +345,8 @@ export class IndexComponent implements OnInit, OnDestroy {
     index: number,
     inferenceService: InferenceServiceK8s,
   ) {
-    return `${inferenceService.metadata.name}/${inferenceService.metadata.creationTimestamp}`;
+    return `${inferenceService.metadata?.name || 'unknown'}/${
+      inferenceService.metadata?.creationTimestamp || 'unknown'
+    }`;
   }
 }

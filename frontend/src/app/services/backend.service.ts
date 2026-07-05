@@ -5,7 +5,12 @@ import { Observable } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { InferenceServiceK8s } from '../types/kfserving/v1beta1';
 import { InferenceGraphK8s } from '../types/kfserving/v1alpha1';
-import { MWABackendResponse, InferenceServiceLogs } from '../types/backend';
+import {
+  MWABackendResponse,
+  InferenceServiceLogs,
+  ModelMeshObjects,
+  StandardDeploymentObjects,
+} from '../types/backend';
 import { EventObject } from '../types/event';
 
 @Injectable({
@@ -130,7 +135,7 @@ export class MWABackendService extends BackendService {
   public getKnativeService(
     namespace: string,
     name: string,
-  ): Observable<K8sObject> {
+  ): Observable<K8sObject | undefined> {
     const url = `api/namespaces/${namespace}/knativeServices/${name}`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
@@ -144,7 +149,7 @@ export class MWABackendService extends BackendService {
   public getKnativeConfiguration(
     namespace: string,
     name: string,
-  ): Observable<K8sObject> {
+  ): Observable<K8sObject | undefined> {
     const url = `api/namespaces/${namespace}/configurations/${name}`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
@@ -158,7 +163,7 @@ export class MWABackendService extends BackendService {
   public getKnativeRevision(
     namespace: string,
     name: string,
-  ): Observable<K8sObject> {
+  ): Observable<K8sObject | undefined> {
     const url = `api/namespaces/${namespace}/revisions/${name}`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
@@ -172,7 +177,7 @@ export class MWABackendService extends BackendService {
   public getKnativeRoute(
     namespace: string,
     name: string,
-  ): Observable<K8sObject> {
+  ): Observable<K8sObject | undefined> {
     const url = `api/namespaces/${namespace}/routes/${name}`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
@@ -343,7 +348,7 @@ export class MWABackendService extends BackendService {
     namespace: string,
     name: string,
     component: string,
-  ): Observable<any> {
+  ): Observable<StandardDeploymentObjects> {
     const url = `api/namespaces/${namespace}/inferenceservices/${name}/standard/${component}`;
 
     return this.http.get<MWABackendResponse>(url).pipe(
@@ -358,7 +363,7 @@ export class MWABackendService extends BackendService {
     namespace: string,
     name: string,
     component: string,
-  ): Observable<any> {
+  ): Observable<ModelMeshObjects> {
     const url = `api/namespaces/${namespace}/inferenceservices/${name}/modelmesh/${component}`;
 
     return this.http.get<MWABackendResponse>(url).pipe(

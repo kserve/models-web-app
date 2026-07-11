@@ -280,7 +280,9 @@ export class IndexComponent implements OnInit, OnDestroy {
     const applicationDetailsUrl =
       this.locationStrategy.prepareExternalUrl(detailsUrl);
 
-    if (this.navigateParentDashboardToDetails(applicationDetailsUrl, namespace)) {
+    if (
+      this.navigateParentDashboardToDetails(applicationDetailsUrl, namespace)
+    ) {
       return;
     }
 

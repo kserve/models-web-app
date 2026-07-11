@@ -18,7 +18,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { IndexComponent } from './index.component';
 import { defaultConfig } from './config';
-import { Observable, Observer, of, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, Observer, of, Subject } from 'rxjs';
 import { SSEService, WatchEvent } from 'src/app/services/sse.service';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { Router } from '@angular/router';
@@ -36,6 +36,7 @@ let locationAssign: jest.Mock;
 let parentLocationAssign: jest.Mock;
 let prepareExternalUrl: jest.Mock;
 let browserWindowMock: any;
+let dashboardConnectionState: BehaviorSubject<DashboardState>;
 
 MWABackendServiceStub = {
   getInferenceServices: () => of(),
@@ -95,7 +96,27 @@ describe('IndexComponent', () => {
     } as any,
   });
 
+  const nameLinkAction = (phase: STATUS_TYPE, event: any) =>
+    ({
+      action: 'name:link',
+      data: {
+        metadata: {
+          name: 'model-a',
+          namespace: 'kubeflow-user',
+        },
+        ui: {
+          status: {
+            phase,
+          },
+        },
+      },
+      event,
+    } as any);
+
   beforeEach(waitForAsync(() => {
+    dashboardConnectionState = new BehaviorSubject<DashboardState>(
+      DashboardState.Disconnected,
+    );
     sseEvents = new Subject<WatchEvent<InferenceServiceK8s>>();
     sseTeardown = jest.fn();
     snackBarOpen = jest.fn();
@@ -125,6 +146,12 @@ describe('IndexComponent', () => {
             subscription.unsubscribe();
           };
         }),
+    };
+
+    NamespaceServiceStub = {
+      getSelectedNamespace: () => of(),
+      getSelectedNamespace2: () => of(),
+      dashboardConnected$: dashboardConnectionState.asObservable(),
     };
 
     TestBed.configureTestingModule({
@@ -247,27 +274,14 @@ describe('IndexComponent', () => {
   });
 
   it('should reload the parent dashboard to the details route for name link actions', () => {
+    dashboardConnectionState.next(DashboardState.Connected);
     const event = {
       preventDefault: jest.fn(),
       stopPropagation: jest.fn(),
     };
     const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    component.reactToAction({
-      action: 'name:link',
-      data: {
-        metadata: {
-          name: 'model-a',
-          namespace: 'kubeflow-user',
-        },
-        ui: {
-          status: {
-            phase: STATUS_TYPE.READY,
-          },
-        },
-      },
-      event,
-    } as any);
+    component.reactToAction(nameLinkAction(STATUS_TYPE.READY, event));
 
     expect(event.preventDefault).toHaveBeenCalled();
     expect(event.stopPropagation).toHaveBeenCalled();
@@ -281,28 +295,60 @@ describe('IndexComponent', () => {
     expect(navigateSpy).not.toHaveBeenCalled();
   });
 
-  it('should reload the frame directly when the dashboard wrapper is absent', () => {
+  it('should use router navigation when disconnected from the dashboard', () => {
     browserWindowMock.parent = browserWindowMock;
     const event = {
       preventDefault: jest.fn(),
       stopPropagation: jest.fn(),
     };
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    component.reactToAction({
-      action: 'name:link',
-      data: {
-        metadata: {
-          name: 'model-a',
-          namespace: 'kubeflow-user',
-        },
-        ui: {
-          status: {
-            phase: STATUS_TYPE.READY,
-          },
-        },
+    component.reactToAction(nameLinkAction(STATUS_TYPE.READY, event));
+
+    expect(navigateSpy).toHaveBeenCalledWith([
+      '/details',
+      'kubeflow-user',
+      'model-a',
+    ]);
+    expect(locationAssign).not.toHaveBeenCalled();
+    expect(parentLocationAssign).not.toHaveBeenCalled();
+  });
+
+  it('should let the browser handle modified name link clicks', () => {
+    dashboardConnectionState.next(DashboardState.Connected);
+    const event = {
+      button: 0,
+      ctrlKey: true,
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+    };
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.reactToAction(nameLinkAction(STATUS_TYPE.READY, event));
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(event.stopPropagation).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
+    expect(locationAssign).not.toHaveBeenCalled();
+    expect(parentLocationAssign).not.toHaveBeenCalled();
+  });
+
+  it('should reload the frame directly when parent dashboard location cannot be read', () => {
+    dashboardConnectionState.next(DashboardState.Connected);
+    const event = {
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+    };
+    Object.defineProperty(browserWindowMock.parent.location, 'href', {
+      get: () => {
+        throw new DOMException(
+          'Blocked parent location access',
+          'SecurityError',
+        );
       },
-      event,
-    } as any);
+    });
+
+    component.reactToAction(nameLinkAction(STATUS_TYPE.READY, event));
 
     expect(locationAssign).toHaveBeenCalledWith(
       '/kserve-endpoints/details/kubeflow-user/model-a',
@@ -317,21 +363,7 @@ describe('IndexComponent', () => {
     };
     const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    component.reactToAction({
-      action: 'name:link',
-      data: {
-        metadata: {
-          name: 'model-a',
-          namespace: 'kubeflow-user',
-        },
-        ui: {
-          status: {
-            phase: STATUS_TYPE.TERMINATING,
-          },
-        },
-      },
-      event,
-    } as any);
+    component.reactToAction(nameLinkAction(STATUS_TYPE.TERMINATING, event));
 
     expect(event.preventDefault).toHaveBeenCalled();
     expect(event.stopPropagation).toHaveBeenCalled();

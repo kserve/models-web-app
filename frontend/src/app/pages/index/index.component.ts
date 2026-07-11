@@ -60,6 +60,7 @@ export class IndexComponent implements OnInit, OnDestroy {
   inferenceServices: InferenceServiceIR[] = [];
 
   dashboardDisconnectedState = DashboardState.Disconnected;
+  private dashboardState = DashboardState.Disconnected;
 
   private newEndpointButton = new ToolbarButton({
     text: $localize`New Endpoint`,
@@ -99,6 +100,7 @@ export class IndexComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.dashboardSubscription = this.ns.dashboardConnected$.subscribe(
       dashboardState => {
+        this.dashboardState = dashboardState;
         this.namespaceSubscription.unsubscribe();
 
         if (dashboardState === DashboardState.Disconnected) {
@@ -261,21 +263,29 @@ export class IndexComponent implements OnInit, OnDestroy {
           this.snack.open(snackConfiguration);
           return;
         }
+        if (this.isBrowserManagedLinkClick(a.event)) {
+          return;
+        }
+
         a.event?.stopPropagation();
         a.event?.preventDefault();
-        this.navigateToDetailsWithPageLoad(inferenceService);
+        this.navigateToDetails(inferenceService);
         break;
     }
   }
 
-  private navigateToDetailsWithPageLoad(inferenceService: InferenceServiceIR) {
+  private navigateToDetails(inferenceService: InferenceServiceIR) {
     const namespace = inferenceService.metadata?.namespace || '';
+    const name = inferenceService.metadata?.name || '';
+    const detailsRoute = ['/details', namespace, name];
+
+    if (this.dashboardState !== DashboardState.Connected) {
+      this.router.navigate(detailsRoute);
+      return;
+    }
+
     const detailsUrl = this.router.serializeUrl(
-      this.router.createUrlTree([
-        '/details',
-        namespace,
-        inferenceService.metadata?.name || '',
-      ]),
+      this.router.createUrlTree(detailsRoute),
     );
     const applicationDetailsUrl =
       this.locationStrategy.prepareExternalUrl(detailsUrl);
@@ -317,6 +327,21 @@ export class IndexComponent implements OnInit, OnDestroy {
     } catch {
       return false;
     }
+  }
+
+  private isBrowserManagedLinkClick(event?: Event): boolean {
+    if (!event) {
+      return false;
+    }
+
+    const mouseEvent = event as MouseEvent;
+    return (
+      mouseEvent.ctrlKey ||
+      mouseEvent.metaKey ||
+      mouseEvent.shiftKey ||
+      mouseEvent.altKey ||
+      (typeof mouseEvent.button === 'number' && mouseEvent.button !== 0)
+    );
   }
 
   private deleteClicked(inferenceService: InferenceServiceIR) {

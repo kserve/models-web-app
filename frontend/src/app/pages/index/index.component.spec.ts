@@ -12,12 +12,18 @@ import {
   PollerService,
   KubeflowModule,
   DashboardState,
+  STATUS_TYPE,
+  LinkType,
 } from 'kubeflow';
 import { CommonModule } from '@angular/common';
 import { IndexComponent } from './index.component';
-import { Observable, Observer, of, Subject } from 'rxjs';
+import { defaultConfig } from './config';
+import { BehaviorSubject, Observable, Observer, of, Subject } from 'rxjs';
 import { SSEService, WatchEvent } from 'src/app/services/sse.service';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
+import { Router } from '@angular/router';
+import { LocationStrategy } from '@angular/common';
+import { BROWSER_WINDOW } from './index.component';
 
 let MWABackendServiceStub: Partial<MWABackendService>;
 let NamespaceServiceStub: Partial<NamespaceService>;
@@ -25,6 +31,12 @@ let MWANamespaceServiceStub: Partial<MWANamespaceService>;
 let SSEServiceStub: Partial<SSEService>;
 let sseEvents: Subject<WatchEvent<InferenceServiceK8s>>;
 let sseTeardown: jest.Mock;
+let snackBarOpen: jest.Mock;
+let locationAssign: jest.Mock;
+let parentLocationAssign: jest.Mock;
+let prepareExternalUrl: jest.Mock;
+let browserWindowMock: any;
+let dashboardConnectionState: BehaviorSubject<DashboardState>;
 
 MWABackendServiceStub = {
   getInferenceServices: () => of(),
@@ -52,6 +64,7 @@ MWANamespaceServiceStub = {
 describe('IndexComponent', () => {
   let component: IndexComponent;
   let fixture: ComponentFixture<IndexComponent>;
+  let router: Router;
 
   const inferenceService = (
     name: string,
@@ -83,9 +96,45 @@ describe('IndexComponent', () => {
     } as any,
   });
 
+  const nameLinkAction = (phase: STATUS_TYPE, event: any) =>
+    ({
+      action: 'name:link',
+      data: {
+        metadata: {
+          name: 'model-a',
+          namespace: 'kubeflow-user',
+        },
+        ui: {
+          status: {
+            phase,
+          },
+        },
+      },
+      event,
+    } as any);
+
   beforeEach(waitForAsync(() => {
+    dashboardConnectionState = new BehaviorSubject<DashboardState>(
+      DashboardState.Disconnected,
+    );
     sseEvents = new Subject<WatchEvent<InferenceServiceK8s>>();
     sseTeardown = jest.fn();
+    snackBarOpen = jest.fn();
+    locationAssign = jest.fn();
+    parentLocationAssign = jest.fn();
+    prepareExternalUrl = jest.fn(path => `/kserve-endpoints${path}`);
+    browserWindowMock = {
+      location: {
+        href: 'http://localhost:8081/kserve-endpoints/',
+        assign: locationAssign,
+      },
+      parent: {
+        location: {
+          href: 'http://localhost:8081/_/kserve-endpoints/?ns=kubeflow-user',
+          assign: parentLocationAssign,
+        },
+      },
+    };
     SSEServiceStub = {
       watchInferenceServices: <T>() =>
         new Observable<WatchEvent<T>>(observer => {
@@ -97,6 +146,12 @@ describe('IndexComponent', () => {
             subscription.unsubscribe();
           };
         }),
+    };
+
+    NamespaceServiceStub = {
+      getSelectedNamespace: () => of(),
+      getSelectedNamespace2: () => of(),
+      dashboardConnected$: dashboardConnectionState.asObservable(),
     };
 
     TestBed.configureTestingModule({
@@ -114,9 +169,19 @@ describe('IndexComponent', () => {
         { provide: NamespaceService, useValue: NamespaceServiceStub },
         { provide: MWANamespaceService, useValue: MWANamespaceServiceStub },
         { provide: SSEService, useValue: SSEServiceStub },
-        { provide: SnackBarService, useValue: {} },
+        { provide: SnackBarService, useValue: { open: snackBarOpen } },
         { provide: Clipboard, useValue: {} },
         { provide: PollerService, useValue: { exponential: () => of() } },
+        {
+          provide: LocationStrategy,
+          useValue: {
+            prepareExternalUrl,
+          },
+        },
+        {
+          provide: BROWSER_WINDOW,
+          useValue: browserWindowMock,
+        },
       ],
     }).compileComponents();
   }));
@@ -124,6 +189,7 @@ describe('IndexComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(IndexComponent);
     component = fixture.componentInstance;
+    router = TestBed.inject(Router);
     fixture.detectChanges();
   });
 
@@ -197,5 +263,119 @@ describe('IndexComponent', () => {
     expect(component.inferenceServices.map(svc => svc.metadata?.name)).toEqual([
       'model-b',
     ]);
+  });
+
+  it('should render name links as internal anchors', () => {
+    const nameColumn = defaultConfig.columns.find(
+      column => column.matColumnDef === 'name',
+    );
+
+    expect(nameColumn?.value.linkType).toBe(LinkType.Internal);
+  });
+
+  it('should reload the parent dashboard to the details route for name link actions', () => {
+    dashboardConnectionState.next(DashboardState.Connected);
+    const event = {
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+    };
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.reactToAction(nameLinkAction(STATUS_TYPE.READY, event));
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(prepareExternalUrl).toHaveBeenCalledWith(
+      '/details/kubeflow-user/model-a',
+    );
+    expect(parentLocationAssign).toHaveBeenCalledWith(
+      '/_/kserve-endpoints/details/kubeflow-user/model-a?ns=kubeflow-user',
+    );
+    expect(locationAssign).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it('should use router navigation when disconnected from the dashboard', () => {
+    browserWindowMock.parent = browserWindowMock;
+    const event = {
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+    };
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.reactToAction(nameLinkAction(STATUS_TYPE.READY, event));
+
+    expect(navigateSpy).toHaveBeenCalledWith([
+      '/details',
+      'kubeflow-user',
+      'model-a',
+    ]);
+    expect(locationAssign).not.toHaveBeenCalled();
+    expect(parentLocationAssign).not.toHaveBeenCalled();
+  });
+
+  it('should let the browser handle modified name link clicks', () => {
+    dashboardConnectionState.next(DashboardState.Connected);
+    const event = {
+      button: 0,
+      ctrlKey: true,
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+    };
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.reactToAction(nameLinkAction(STATUS_TYPE.READY, event));
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(event.stopPropagation).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
+    expect(locationAssign).not.toHaveBeenCalled();
+    expect(parentLocationAssign).not.toHaveBeenCalled();
+  });
+
+  it('should reload the frame directly when parent dashboard location cannot be read', () => {
+    dashboardConnectionState.next(DashboardState.Connected);
+    const event = {
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+    };
+    Object.defineProperty(browserWindowMock.parent.location, 'href', {
+      get: () => {
+        throw new DOMException(
+          'Blocked parent location access',
+          'SecurityError',
+        );
+      },
+    });
+
+    component.reactToAction(nameLinkAction(STATUS_TYPE.READY, event));
+
+    expect(locationAssign).toHaveBeenCalledWith(
+      '/kserve-endpoints/details/kubeflow-user/model-a',
+    );
+    expect(parentLocationAssign).not.toHaveBeenCalled();
+  });
+
+  it('should block navigation for terminating inference service name link actions', () => {
+    const event = {
+      preventDefault: jest.fn(),
+      stopPropagation: jest.fn(),
+    };
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.reactToAction(nameLinkAction(STATUS_TYPE.TERMINATING, event));
+
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
+    expect(locationAssign).not.toHaveBeenCalled();
+    expect(parentLocationAssign).not.toHaveBeenCalled();
+    expect(snackBarOpen).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          msg: 'Endpoint is being deleted, cannot show details.',
+        }),
+      }),
+    );
   });
 });

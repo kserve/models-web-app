@@ -1,4 +1,12 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectorRef,
+  Inject,
+  InjectionToken,
+} from '@angular/core';
+import { LocationStrategy } from '@angular/common';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { SSEService } from 'src/app/services/sse.service';
@@ -29,6 +37,11 @@ import {
   getK8sObjectUiStatus,
   getPredictorExtensionSpec,
 } from 'src/app/shared/utils';
+
+export const BROWSER_WINDOW = new InjectionToken<Window>('Browser Window', {
+  providedIn: 'root',
+  factory: () => window,
+});
 
 @Component({
   selector: 'app-index',
@@ -79,6 +92,8 @@ export class IndexComponent implements OnInit, OnDestroy {
     public mwaNamespace: MWANamespaceService,
     public poller: PollerService,
     private cdr: ChangeDetectorRef,
+    private locationStrategy: LocationStrategy,
+    @Inject(BROWSER_WINDOW) private browserWindow: Window,
   ) {}
 
   ngOnInit(): void {
@@ -231,7 +246,7 @@ export class IndexComponent implements OnInit, OnDestroy {
         break;
       case 'name:link':
         /*
-         * don't allow the user to navigate to the details page of a server
+         * do not allow the user to navigate to the details page of a server
          * that is being deleted
          */
         if (inferenceService.ui?.status?.phase === STATUS_TYPE.TERMINATING) {
@@ -246,7 +261,59 @@ export class IndexComponent implements OnInit, OnDestroy {
           this.snack.open(snackConfiguration);
           return;
         }
+        a.event?.stopPropagation();
+        a.event?.preventDefault();
+        this.navigateToDetailsWithPageLoad(inferenceService);
         break;
+    }
+  }
+
+  private navigateToDetailsWithPageLoad(inferenceService: InferenceServiceIR) {
+    const namespace = inferenceService.metadata?.namespace || '';
+    const detailsUrl = this.router.serializeUrl(
+      this.router.createUrlTree([
+        '/details',
+        namespace,
+        inferenceService.metadata?.name || '',
+      ]),
+    );
+    const applicationDetailsUrl =
+      this.locationStrategy.prepareExternalUrl(detailsUrl);
+
+    if (this.navigateParentDashboardToDetails(applicationDetailsUrl, namespace)) {
+      return;
+    }
+
+    this.browserWindow.location.assign(applicationDetailsUrl);
+  }
+
+  private navigateParentDashboardToDetails(
+    applicationDetailsUrl: string,
+    namespace: string,
+  ): boolean {
+    const parentWindow = this.browserWindow.parent;
+
+    if (!parentWindow || parentWindow === this.browserWindow) {
+      return false;
+    }
+
+    try {
+      const parentUrl = new URL(parentWindow.location.href);
+      if (!parentUrl.pathname.startsWith('/_/')) {
+        return false;
+      }
+
+      parentUrl.pathname = `/_${applicationDetailsUrl}`;
+      if (namespace) {
+        parentUrl.searchParams.set('ns', namespace);
+      }
+
+      parentWindow.location.assign(
+        `${parentUrl.pathname}${parentUrl.search}${parentUrl.hash}`,
+      );
+      return true;
+    } catch {
+      return false;
     }
   }
 

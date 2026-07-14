@@ -42,7 +42,6 @@ export const defaultConfig: TableConfig = {
       matColumnDef: 'name',
       value: new LinkValue({
         field: 'ui.link',
-        popoverField: 'metadata.name',
         truncate: true,
         linkType: LinkType.Internal,
       }),

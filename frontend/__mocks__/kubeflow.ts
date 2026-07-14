@@ -241,13 +241,15 @@ export enum LinkType {
 // LinkValue class for table columns
 export class LinkValue {
   field: string;
-  popoverField?: string;
+  popoverField: string;
+  tooltipField: string;
   truncate?: boolean;
   linkType?: LinkType;
 
   constructor(config: any) {
     this.field = config.field || '';
-    this.popoverField = config.popoverField;
+    this.popoverField = config.popoverField || '';
+    this.tooltipField = config.tooltipField || '';
     this.truncate = config.truncate;
     this.linkType = config.linkType;
   }

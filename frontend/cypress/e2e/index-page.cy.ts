@@ -24,6 +24,32 @@ describe('Models Web App - Index Page Tests', () => {
     },
   };
 
+  const newerInferenceService = {
+    ...mockInferenceService,
+    metadata: {
+      ...mockInferenceService.metadata,
+      name: 'newer-endpoint',
+      creationTimestamp: '2025-04-10T10:00:00Z',
+    },
+    status: {
+      ...mockInferenceService.status,
+      url: 'http://newer-endpoint.kubeflow-user.example.com',
+    },
+  };
+
+  const inferenceServiceWithoutCreationTimestamp = {
+    ...mockInferenceService,
+    metadata: {
+      ...mockInferenceService.metadata,
+      name: 'no-creation-timestamp-endpoint',
+      creationTimestamp: '',
+    },
+    status: {
+      ...mockInferenceService.status,
+      url: 'http://no-creation-timestamp-endpoint.kubeflow-user.example.com',
+    },
+  };
+
   beforeEach(() => {
     // Mock the configuration API that's loaded during app initialization
     cy.intercept('GET', '/api/config', {
@@ -151,7 +177,8 @@ describe('Models Web App - Index Page Tests', () => {
     cy.url().should('include', '/new');
   });
 
-  it('should avoid hover overlays and preserve name-link navigation', () => {
+  it('should avoid name and creation-time hover overlays while preserving navigation', () => {
+    const creationTimestampSelector = `td[data-cy-timestamp="${mockInferenceService.metadata.creationTimestamp}"] lib-date-time > .truncate`;
     cy.intercept('GET', '/api/sse/**', {
       statusCode: 503,
       body: { error: 'Unexpected Server-Sent Events request' },
@@ -164,7 +191,11 @@ describe('Models Web App - Index Page Tests', () => {
       },
       body: `data: ${JSON.stringify({
         type: 'INITIAL',
-        items: [mockInferenceService],
+        items: [
+          newerInferenceService,
+          inferenceServiceWithoutCreationTimestamp,
+          mockInferenceService,
+        ],
       })}\n\n`,
     }).as('watchInferenceServicesForHover');
     cy.intercept('GET', '/api/namespaces/*/inferenceservices', {
@@ -174,18 +205,64 @@ describe('Models Web App - Index Page Tests', () => {
       },
       body: { error: 'Unexpected polling request' },
     }).as('unexpectedPollingRequest');
+    cy.intercept(
+      'GET',
+      `/api/namespaces/kubeflow-user/inferenceservices/${testEndpointName}`,
+      {
+        statusCode: 200,
+        body: {
+          inferenceService: mockInferenceService,
+        },
+      },
+    ).as('getInferenceServiceDetails');
 
     cy.visit('/');
     cy.wait('@watchInferenceServicesForHover');
     cy.contains('a', testEndpointName)
       .should('be.visible')
       .and('have.attr', 'href', `/details/kubeflow-user/${testEndpointName}`);
+    cy.get(creationTimestampSelector)
+      .should('contain.text', 'ago')
+      .and('have.css', 'pointer-events', 'none');
+
+    cy.contains('th', 'Created at').click();
+    cy.get('tbody tr td.mat-column-name a').then(endpointLinks => {
+      expect(
+        [...endpointLinks].map(link => link.textContent.trim()),
+      ).to.deep.eq([
+        'no-creation-timestamp-endpoint',
+        testEndpointName,
+        'newer-endpoint',
+      ]);
+    });
+
+    cy.get('#filterInput').type('Created at: 2025-04-10{enter}');
+    cy.get('tbody tr td.mat-column-name a')
+      .should('have.length', 1)
+      .and('contain.text', 'newer-endpoint');
+    cy.get('button[aria-label="Clear"]').click();
+
+    cy.get('#filterInput').type('Created at: -{enter}');
+    cy.get('tbody tr td.mat-column-name a')
+      .should('have.length', 1)
+      .and('contain.text', 'no-creation-timestamp-endpoint');
+    cy.get('button[aria-label="Clear"]').click();
+    cy.get('#filterInput').type('{esc}');
 
     Cypress._.times(5, () => {
       cy.contains('a', testEndpointName).trigger('mouseenter');
       cy.wait(150);
       cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
       cy.contains('a', testEndpointName).trigger('mouseleave');
+      cy.wait(150);
+      cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
+    });
+
+    Cypress._.times(5, () => {
+      cy.get(creationTimestampSelector).parent().trigger('mouseenter');
+      cy.wait(150);
+      cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
+      cy.get(creationTimestampSelector).parent().trigger('mouseleave');
       cy.wait(150);
       cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
     });
@@ -197,5 +274,6 @@ describe('Models Web App - Index Page Tests', () => {
 
     cy.contains('a', testEndpointName).click();
     cy.url().should('include', `/details/kubeflow-user/${testEndpointName}`);
+    cy.wait('@getInferenceServiceDetails');
   });
 });

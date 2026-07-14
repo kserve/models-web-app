@@ -27,3 +27,8 @@ body {
 .check_circle {
   color: green;
 }
+
+// The pinned date-time component cannot disable its empty popover.
+app-index .mat-column-age lib-date-time > .truncate {
+  pointer-events: none;
+}

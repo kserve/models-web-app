@@ -29,6 +29,7 @@ body {
 }
 
 // The pinned date-time component cannot disable its empty popover.
+// Tracking issue: https://github.com/kubeflow/notebooks/issues/1252
 app-index .mat-column-age lib-date-time > .truncate {
   pointer-events: none;
 }

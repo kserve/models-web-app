@@ -179,6 +179,23 @@ describe('Models Web App - Index Page Tests', () => {
 
   it('should avoid name and creation-time hover overlays while preserving navigation', () => {
     const creationTimestampSelector = `td[data-cy-timestamp="${mockInferenceService.metadata.creationTimestamp}"] lib-date-time > .truncate`;
+    const getCreationTimePointerTarget = () =>
+      cy.get(creationTimestampSelector).then(creationTimestampElements => {
+        const creationTimestampElement = creationTimestampElements[0];
+        const boundingRectangle =
+          creationTimestampElement.getBoundingClientRect();
+        const pointerTarget =
+          creationTimestampElement.ownerDocument.elementFromPoint(
+            boundingRectangle.left + boundingRectangle.width / 2,
+            boundingRectangle.top + boundingRectangle.height / 2,
+          );
+
+        if (pointerTarget === null) {
+          throw new Error('Creation-time pointer target was not found');
+        }
+
+        return cy.wrap(pointerTarget);
+      });
     cy.intercept('GET', '/api/sse/**', {
       statusCode: 503,
       body: { error: 'Unexpected Server-Sent Events request' },
@@ -221,9 +238,7 @@ describe('Models Web App - Index Page Tests', () => {
     cy.contains('a', testEndpointName)
       .should('be.visible')
       .and('have.attr', 'href', `/details/kubeflow-user/${testEndpointName}`);
-    cy.get(creationTimestampSelector)
-      .should('contain.text', 'ago')
-      .and('have.css', 'pointer-events', 'none');
+    cy.get(creationTimestampSelector).should('contain.text', 'ago');
 
     cy.contains('th', 'Created at').click();
     cy.get('tbody tr td.mat-column-name a').then(endpointLinks => {
@@ -259,13 +274,18 @@ describe('Models Web App - Index Page Tests', () => {
     });
 
     Cypress._.times(5, () => {
-      cy.get(creationTimestampSelector).parent().trigger('mouseenter');
+      getCreationTimePointerTarget().trigger('mouseenter');
       cy.wait(150);
       cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
-      cy.get(creationTimestampSelector).parent().trigger('mouseleave');
+      getCreationTimePointerTarget().trigger('mouseleave');
       cy.wait(150);
       cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
     });
+    cy.get(creationTimestampSelector).should(
+      'have.css',
+      'pointer-events',
+      'none',
+    );
 
     cy.contains('a', testEndpointName).trigger('mouseenter');
     cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');

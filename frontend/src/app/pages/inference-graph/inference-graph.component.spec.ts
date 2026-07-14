@@ -13,6 +13,7 @@ import {
   STATUS_TYPE,
   DIALOG_RESP,
   DashboardState,
+  LinkType,
 } from 'kubeflow';
 import { InferenceGraphComponent } from './inference-graph.component';
 import { of, Subject } from 'rxjs';
@@ -21,6 +22,7 @@ import {
   InferenceGraphK8s,
   InferenceGraphIR,
 } from 'src/app/types/kfserving/v1alpha1';
+import { defaultConfig } from './config';
 
 const mockInferenceGraph: any = {
   kind: 'InferenceGraph',
@@ -127,6 +129,16 @@ describe('InferenceGraphComponent (Jest)', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should render name links without hover overlays', () => {
+    const nameColumn = defaultConfig.columns.find(
+      column => column.matColumnDef === 'name',
+    );
+
+    expect(nameColumn?.value.linkType).toBe(LinkType.Internal);
+    expect(nameColumn?.value.tooltipField).toBe('');
+    expect(nameColumn?.value.popoverField).toBe('');
   });
 
   it('should initialize with namespace', () => {

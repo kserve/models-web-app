@@ -108,6 +108,43 @@ describe('Models Web App - InferenceGraph Tests', () => {
     cy.contains('Sequence', { timeout: 10000 }).should('be.visible');
   });
 
+  it('should avoid hover overlays and preserve name-link navigation', () => {
+    cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs`, {
+      statusCode: 200,
+      body: {
+        inferenceGraphs: [mockInferenceGraph],
+      },
+    }).as('getInferenceGraphsForHover');
+
+    cy.visit('/inference-graphs');
+    cy.wait('@getInferenceGraphsForHover');
+    cy.contains('a', testGraphName)
+      .should('be.visible')
+      .and(
+        'have.attr',
+        'href',
+        `/graph-details/${testNamespace}/${testGraphName}`,
+      );
+
+    Cypress._.times(5, () => {
+      cy.contains('a', testGraphName).trigger('mouseenter');
+      cy.wait(150);
+      cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
+      cy.contains('a', testGraphName).trigger('mouseleave');
+      cy.wait(150);
+      cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
+    });
+
+    cy.contains('a', testGraphName).trigger('mouseenter');
+    cy.get('lib-popover, .popover-card, .mat-tooltip').should('not.exist');
+
+    cy.contains('a', testGraphName).click();
+    cy.url().should(
+      'include',
+      `/graph-details/${testNamespace}/${testGraphName}`,
+    );
+  });
+
   it('should navigate to new graph form', () => {
     cy.intercept('GET', `/api/namespaces/${testNamespace}/inferencegraphs`, {
       statusCode: 200,

@@ -265,12 +265,14 @@ describe('IndexComponent', () => {
     ]);
   });
 
-  it('should render name links as internal anchors', () => {
+  it('should render name links as internal anchors without hover overlays', () => {
     const nameColumn = defaultConfig.columns.find(
       column => column.matColumnDef === 'name',
     );
 
     expect(nameColumn?.value.linkType).toBe(LinkType.Internal);
+    expect(nameColumn?.value.tooltipField).toBe('');
+    expect(nameColumn?.value.popoverField).toBe('');
   });
 
   it('should reload the parent dashboard to the details route for name link actions', () => {

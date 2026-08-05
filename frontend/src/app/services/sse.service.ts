@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { Observable } from 'rxjs';
 
 export interface WatchEvent<T> {
@@ -13,7 +13,7 @@ export interface WatchEvent<T> {
   providedIn: 'root',
 })
 export class SSEService {
-  constructor() {}
+  constructor(private zone: NgZone) {}
 
   public watchInferenceServices<T>(
     namespace: string,
@@ -60,6 +60,11 @@ export class SSEService {
       const maxReconnectAttempts = 3;
       const eventSource = new EventSource(url);
 
+      // EventSource is not patched by zone.js, so its callbacks run outside
+      // the Angular zone. Emitting through NgZone.run keeps change detection
+      // and event listener registration in downstream subscribers inside the
+      // zone; without this, views updated from SSE events render stale and
+      // clicks on them navigate without repainting.
       eventSource.onmessage = (event: MessageEvent) => {
         if (!event.data || event.data.trim() === '') {
           return;
@@ -67,10 +72,10 @@ export class SSEService {
 
         try {
           const data: WatchEvent<T> = JSON.parse(event.data);
-          observer.next(data);
+          this.zone.run(() => observer.next(data));
           reconnectAttempts = 0;
         } catch (parseError) {
-          observer.error(parseError);
+          this.zone.run(() => observer.error(parseError));
           eventSource.close();
         }
       };
@@ -79,16 +84,18 @@ export class SSEService {
         if (eventSource.readyState === EventSource.CONNECTING) {
           reconnectAttempts++;
           if (reconnectAttempts >= maxReconnectAttempts) {
-            observer.error(
-              new Error(
-                `SSE failed to reconnect after ${maxReconnectAttempts} attempts`,
+            this.zone.run(() =>
+              observer.error(
+                new Error(
+                  `SSE failed to reconnect after ${maxReconnectAttempts} attempts`,
+                ),
               ),
             );
             eventSource.close();
           }
           return;
         }
-        observer.error(error);
+        this.zone.run(() => observer.error(error));
         eventSource.close();
       };
 

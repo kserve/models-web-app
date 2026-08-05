@@ -1,3 +1,4 @@
+import { NgZone } from '@angular/core';
 import { SSEService } from './sse.service';
 
 describe('SSEService', () => {
@@ -29,7 +30,7 @@ describe('SSEService', () => {
   });
 
   it('should URL-encode log watch component query parameters', () => {
-    const service = new SSEService();
+    const service = new SSEService(new NgZone({ enableLongStackTrace: false }));
 
     const subscription = service
       .watchLogs('kubeflow-user', 'model-a', [

@@ -13,7 +13,7 @@ export interface WatchEvent<T> {
   providedIn: 'root',
 })
 export class SSEService {
-  constructor(private zone: NgZone) {}
+  constructor(private angularZone: NgZone) {}
 
   public watchInferenceServices<T>(
     namespace: string,
@@ -72,10 +72,10 @@ export class SSEService {
 
         try {
           const data: WatchEvent<T> = JSON.parse(event.data);
-          this.zone.run(() => observer.next(data));
+          this.angularZone.run(() => observer.next(data));
           reconnectAttempts = 0;
         } catch (parseError) {
-          this.zone.run(() => observer.error(parseError));
+          this.angularZone.run(() => observer.error(parseError));
           eventSource.close();
         }
       };
@@ -84,7 +84,7 @@ export class SSEService {
         if (eventSource.readyState === EventSource.CONNECTING) {
           reconnectAttempts++;
           if (reconnectAttempts >= maxReconnectAttempts) {
-            this.zone.run(() =>
+            this.angularZone.run(() =>
               observer.error(
                 new Error(
                   `SSE failed to reconnect after ${maxReconnectAttempts} attempts`,
@@ -95,7 +95,7 @@ export class SSEService {
           }
           return;
         }
-        this.zone.run(() => observer.error(error));
+        this.angularZone.run(() => observer.error(error));
         eventSource.close();
       };
 

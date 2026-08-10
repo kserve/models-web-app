@@ -1,12 +1,4 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  ChangeDetectorRef,
-  Inject,
-  InjectionToken,
-} from '@angular/core';
-import { LocationStrategy } from '@angular/common';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { SSEService } from 'src/app/services/sse.service';
@@ -38,11 +30,6 @@ import {
   getPredictorExtensionSpec,
 } from 'src/app/shared/utils';
 
-export const BROWSER_WINDOW = new InjectionToken<Window>('Browser Window', {
-  providedIn: 'root',
-  factory: () => window,
-});
-
 @Component({
   selector: 'app-index',
   templateUrl: './index.component.html',
@@ -60,7 +47,6 @@ export class IndexComponent implements OnInit, OnDestroy {
   inferenceServices: InferenceServiceIR[] = [];
 
   dashboardDisconnectedState = DashboardState.Disconnected;
-  private dashboardState = DashboardState.Disconnected;
 
   private newEndpointButton = new ToolbarButton({
     text: $localize`New Endpoint`,
@@ -92,15 +78,11 @@ export class IndexComponent implements OnInit, OnDestroy {
     public ns: NamespaceService,
     public mwaNamespace: MWANamespaceService,
     public poller: PollerService,
-    private cdr: ChangeDetectorRef,
-    private locationStrategy: LocationStrategy,
-    @Inject(BROWSER_WINDOW) private browserWindow: Window,
   ) {}
 
   ngOnInit(): void {
     this.dashboardSubscription = this.ns.dashboardConnected$.subscribe(
       dashboardState => {
-        this.dashboardState = dashboardState;
         this.namespaceSubscription.unsubscribe();
 
         if (dashboardState === DashboardState.Disconnected) {
@@ -159,14 +141,12 @@ export class IndexComponent implements OnInit, OnDestroy {
           event => {
             if (event.type === 'INITIAL' && event.items) {
               this.inferenceServices = this.processIncomingData(event.items);
-              this.cdr.detectChanges();
             } else if (event.type === 'ADDED' && event.object) {
               const processed = this.processIncomingData([event.object]);
               this.inferenceServices = [
                 ...this.inferenceServices,
                 ...processed,
               ];
-              this.cdr.detectChanges();
             } else if (
               event.type === 'MODIFIED' &&
               event.object &&
@@ -183,7 +163,6 @@ export class IndexComponent implements OnInit, OnDestroy {
                 if (index !== -1) {
                   this.inferenceServices[index] = processed[0];
                   this.inferenceServices = [...this.inferenceServices];
-                  this.cdr.detectChanges();
                 }
               }
             } else if (
@@ -199,7 +178,6 @@ export class IndexComponent implements OnInit, OnDestroy {
                       event.object?.metadata?.namespace
                   ),
               );
-              this.cdr.detectChanges();
             } else if (event.type === 'ERROR') {
               this.fallbackToPolling(ns);
             }
@@ -267,7 +245,12 @@ export class IndexComponent implements OnInit, OnDestroy {
           return;
         }
 
-        a.event?.stopPropagation();
+        /*
+         * preventDefault stops the anchor's own page load, but the click must
+         * keep propagating: the Central Dashboard mirrors the iframe location
+         * into the browser address bar from a click listener on the iframe
+         * document, and history.pushState itself fires no event.
+         */
         a.event?.preventDefault();
         this.navigateToDetails(inferenceService);
         break;
@@ -277,56 +260,7 @@ export class IndexComponent implements OnInit, OnDestroy {
   private navigateToDetails(inferenceService: InferenceServiceIR) {
     const namespace = inferenceService.metadata?.namespace || '';
     const name = inferenceService.metadata?.name || '';
-    const detailsRoute = ['/details', namespace, name];
-
-    if (this.dashboardState !== DashboardState.Connected) {
-      this.router.navigate(detailsRoute);
-      return;
-    }
-
-    const detailsUrl = this.router.serializeUrl(
-      this.router.createUrlTree(detailsRoute),
-    );
-    const applicationDetailsUrl =
-      this.locationStrategy.prepareExternalUrl(detailsUrl);
-
-    if (
-      this.navigateParentDashboardToDetails(applicationDetailsUrl, namespace)
-    ) {
-      return;
-    }
-
-    this.browserWindow.location.assign(applicationDetailsUrl);
-  }
-
-  private navigateParentDashboardToDetails(
-    applicationDetailsUrl: string,
-    namespace: string,
-  ): boolean {
-    const parentWindow = this.browserWindow.parent;
-
-    if (!parentWindow || parentWindow === this.browserWindow) {
-      return false;
-    }
-
-    try {
-      const parentUrl = new URL(parentWindow.location.href);
-      if (!parentUrl.pathname.startsWith('/_/')) {
-        return false;
-      }
-
-      parentUrl.pathname = `/_${applicationDetailsUrl}`;
-      if (namespace) {
-        parentUrl.searchParams.set('ns', namespace);
-      }
-
-      parentWindow.location.assign(
-        `${parentUrl.pathname}${parentUrl.search}${parentUrl.hash}`,
-      );
-      return true;
-    } catch {
-      return false;
-    }
+    this.router.navigate(['/details', namespace, name]);
   }
 
   private isBrowserManagedLinkClick(event?: Event): boolean {

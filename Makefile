@@ -12,6 +12,9 @@ docker-build:
 	docker build -t ${IMG}:${TAG} .
 
 docker-smoke-test:
+	docker run --rm --entrypoint python \
+		--mount "type=bind,source=$(CURDIR)/backend/runtime_test.py,target=/tmp/runtime_test.py,readonly" \
+		${IMG}:${TAG} /tmp/runtime_test.py -v
 	docker run --rm --entrypoint python ${IMG}:${TAG} -c \
 		'from kubernetes import config; config.load_incluster_config = lambda: None; config.load_kube_config = lambda: None; import entrypoint'
 

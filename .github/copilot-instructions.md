@@ -1,9 +1,4 @@
-### Clean Coding standards
+# GitHub Copilot instructions
 
-- Code, documentation and feedback shall be in line with principal level scientific elegance, minimalism, conciseness and precision.
-- Use explicitly long, expressive, pronounceable well chosen names instead of short abbreviating names. Complain about misnaming explicitly. Here is a list of mandatory rules unless there is hard technical evidence that it would break code when refactoring. app -> Application, dep -> dependencies, repo -> repository, sync -> synchronization, dev -> development, prod -> production, temp / tmp -> temporary, auth -> authentication XOR authorization, deploy -> deployment , cred -> credentials. In your github copilot comments and code suggestions itself that is not allowed, so use proper English! Trying to "save" letters is unprofessional and decreases readability. Code, documentation and also reviews and suggestions must be readable as proper technical English text, especially elaborated, well-readable and precise English.
-- Language should aim to be less context-dependent. Authentication is something entirely different than authorization, auto could mean automobile or automation, deps could be departments or dependencies. Blacklist such typical incorrect abbreviations, but whitelist very popular context-free acronyms such as OIDC, API, CPU, GPU. Make sure to use correct grammar. They is plural, not singlular and must only be used in plural. A company or team or contributor for example is a single abstract entity, so it is definitely not a plural they.
-The expectation for the contributor is that he must understand all changes he is proposing as if he had written the changes himself.
-- Code is more often read than written and most of the costs come from maintenance.
-- What is not tested is not supported. Automation is the best documentation.
-- We do trunk-based development in the master branch.
+The canonical agent and contributor instructions for this repository live in [AGENTS.md](../AGENTS.md).
+Follow that file in full. It defines coding standards, writing style, repository structure and the build and validation environment.

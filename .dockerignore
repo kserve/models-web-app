@@ -5,8 +5,21 @@
 # Don't ignore the necessary files for the app
 !frontend/
 !backend/
+!common/
 !Makefile
 
-# Ignore node_modules and pycache inside accepted dirs
-**/node_modules/*
-**/__pycache__/*
+# Ignore generated dependencies, caches, and package artifacts inside accepted dirs
+**/node_modules
+**/node_modules/**
+**/.angular
+**/.angular/**
+**/dist
+**/dist/**
+**/build
+**/build/**
+**/*.egg-info
+**/*.egg-info/**
+**/__pycache__
+**/__pycache__/**
+**/*.py[cod]
+**/*.whl

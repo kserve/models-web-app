@@ -1,13 +1,10 @@
 SHELL=bash
 
-# Local path to kubeflow/notebooks repository for common backend code.
-# Clone https://github.com/kubeflow/notebooks to develop locally.
-# Set KUBEFLOW_REPOSITORY environment variable or use the default /tmp/notebooks.
-KUBEFLOW_REPO ?= $(or $(KUBEFLOW_REPOSITORY),/tmp/notebooks)
-COMMON_BACKEND_DIR ?= ${KUBEFLOW_REPO}/components/crud-web-apps/common/backend
+# Local path to the common backend package in this repository.
+COMMON_BACKEND_DIRECTORY ?= ../common/backend
 
 install-deps:
-	pushd ${COMMON_BACKEND_DIR} && \
+	pushd ${COMMON_BACKEND_DIRECTORY} && \
 	pip install -e . && \
 	popd
 	pip install -r requirements.txt

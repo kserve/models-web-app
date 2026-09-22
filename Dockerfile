@@ -1,34 +1,20 @@
-# --- Clone the kubeflow/kubeflow code ---
-FROM ubuntu AS fetch-kubeflow-kubeflow
-
-RUN apt-get update && apt-get install git -y
-
-WORKDIR /kf
-COPY ./frontend/COMMIT ./
-RUN git clone https://github.com/kubeflow/notebooks.git kubeflow && \
-    COMMIT=$(cat ./COMMIT) && \
-    cd kubeflow && \
-    git checkout $COMMIT
-
-# --- Build the backend kubeflow-wheel ---
+# --- Build the backend kubeflow wheel ---
 FROM python:3.12-slim AS backend-kubeflow-wheel
 
 WORKDIR /src
 RUN pip install setuptools wheel
 
-ARG BACKEND_LIB=/kf/kubeflow/components/crud-web-apps/common/backend
-COPY --from=fetch-kubeflow-kubeflow $BACKEND_LIB .
+COPY ./common/backend/ ./
 RUN python setup.py sdist bdist_wheel
 
 # --- Build the frontend kubeflow library ---
 FROM node:22-bookworm-slim AS frontend-kubeflow-lib
 
 WORKDIR /src
-ARG LIB=/kf/kubeflow/components/crud-web-apps/common/frontend/kubeflow-common-lib
-COPY --from=fetch-kubeflow-kubeflow $LIB/package*.json ./
-RUN npm install
+COPY ./common/frontend/kubeflow-common-lib/package*.json ./
+RUN npm ci --no-audit
 
-COPY --from=fetch-kubeflow-kubeflow $LIB/ ./
+COPY ./common/frontend/kubeflow-common-lib/ ./
 RUN npm run build
 
 # --- Build the frontend ---

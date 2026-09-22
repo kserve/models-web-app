@@ -159,11 +159,11 @@ Expected response:
 
 ## Development
 
-The frontend is build with [Angular](https://angular.io/) and the backend is written with the Python [Flask](https://flask.palletsprojects.com/en/1.1.x/) framework.
+The frontend is built with [Angular](https://angular.io/) and the backend is written with the Python [Flask](https://flask.palletsprojects.com/en/1.1.x/) framework.
 
-This web application is utilizing common code from the [kubeflow/notebooks](https://github.com/kubeflow/notebooks/tree/master/components/crud-web-apps/common) repository. We want to enforce the same user experience across our different Kubeflow web applications and also keep them in the same development state. In order to achieve this the applications will be using this shared common code.
-
-This will require us to fetch this common code when we want to either build the application locally or in an OCI container image.
+The common Angular and Python libraries required by this web application are
+maintained in this repository under [`common`](common/README.md). Local
+development and OCI image builds therefore require only this repository.
 
 In order to run the application locally you will need to:
 
@@ -187,8 +187,6 @@ cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/frontend
 # Setup dependencies and build common library
 make setup
 
-# Optional: Specify custom Kubeflow repository path. Default: `../../notebooks` (relative to the frontend directory)
-# make setup KF_REPO=/path/to/notebooks
 # Clean Command: Provides a make clean target to remove node_modules
 # make clean
 
@@ -199,11 +197,8 @@ npm run build:watch
 #### Option 2: Manual setup
 
 ```bash
-# build the common library
-COMMIT=$(cat ./frontend/COMMIT)
-cd $KUBEFLOW_REPOSITORY/components/crud-web-apps/common/frontend/kubeflow-common-lib
-git checkout $COMMIT
-
+# build the common library included in this repository
+cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/common/frontend/kubeflow-common-lib
 npm i
 npm run build
 cd dist/kubeflow
@@ -223,13 +218,13 @@ npm run build:watch
 ```bash
 # create a virtual environment and install dependencies
 # https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
-cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY/backend
+cd $KSERVE_MODELS_WEB_APPLICATION_REPOSITORY
 python3.12 -m pip install --user virtualenv
-python3.12 -m venv web-application-development
-source web-application-development/bin/activate
+python3.12 -m venv backend/web-application-development
+source backend/web-application-development/bin/activate
 
 # install the dependencies on the activated virtual environment
-KUBEFLOW_REPOSITORY="/path/to/kubeflow/notebooks" make -C backend install-deps
+make -C backend install-deps
 
 # run the backend
 make -C backend run-dev

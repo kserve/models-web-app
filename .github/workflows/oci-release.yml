@@ -21,6 +21,7 @@ jobs:
     - name: Run tests
       run: |
         make docker-build
+        make docker-smoke-test
   push:
     needs: test
     runs-on: ubuntu-latest

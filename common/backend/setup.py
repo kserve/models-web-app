@@ -1,0 +1,30 @@
+import setuptools
+
+REQUIRES = [
+    "Flask >= 2.3.2",
+    "Flask-API >= 2.0",
+    "kubernetes == 34.1.0",
+    "requests",
+    "urllib3",
+    "Werkzeug >= 3.0.6",
+    "Flask-Cors >= 3.0.8",
+    "gevent",
+    "prometheus-flask-exporter >= 0.23.1",
+]
+
+setuptools.setup(
+    name="kubeflow",
+    version="1.2",
+    author="kubeflow-dev-team",
+    description="A package with a base Flask CRUD backend common code",
+    packages=setuptools.find_packages(),
+    install_requires=REQUIRES,
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Topic :: Software Development",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+    ],
+    python_requires=">=3.12",
+)

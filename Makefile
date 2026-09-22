@@ -1,8 +1,3 @@
-# Local path to kubeflow/notebooks repo for common backend code.
-# Clone https://github.com/kubeflow/notebooks to develop locally.
-# Set KUBEFLOW_REPOSITORY env var or use default /tmp/notebooks.
-KUBEFLOW_REPOSITORY ?= /tmp/notebooks
-
 # Default to kserve if not specified, but allow override via environment variable
 GITHUB_REPOSITORY_OWNER ?= kserve
 IMG ?= ghcr.io/$(shell echo $(GITHUB_REPOSITORY_OWNER) | tr '[:upper:]' '[:lower:]')/models-web-app
@@ -16,10 +11,14 @@ prettier-check:
 docker-build:
 	docker build -t ${IMG}:${TAG} .
 
+docker-smoke-test:
+	docker run --rm --entrypoint python ${IMG}:${TAG} -c \
+		'from kubernetes import config; config.load_incluster_config = lambda: None; config.load_kube_config = lambda: None; import entrypoint'
+
 docker-push:
 	docker push $(IMG):${TAG}
 
-.PHONY: docker-build-multi-arch
+.PHONY: docker-build docker-smoke-test docker-build-multi-arch
 docker-build-multi-arch: ##  Build multi-arch docker images with docker buildx
 	docker buildx build --platform ${ARCH} --tag ${IMG}:${TAG} .
 

@@ -1,16 +1,16 @@
 repos:
 - repo: https://github.com/psf/black
-  rev: 24.2.0
+  rev: 26.5.1
   hooks:
   - id: black
     files: ^(backend|common/backend)/.*\.py$
     exclude: .*upstream.*
 
 - repo: https://github.com/adrienverge/yamllint
-  rev: v1.35.1
+  rev: v1.38.0
   hooks:
   - id: yamllint
-    files: ^(common|example|hack|tests|\.github)/.*\.ya?ml$
+    files: ^(backend|frontend|common|example|hack|tests|\.github|manifests)/.*\.ya?ml$
     exclude: .*upstream.*
     args: [--config-file=.yamllint.yaml]
 

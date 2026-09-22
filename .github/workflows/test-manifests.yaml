@@ -26,32 +26,34 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout kserve/models-web-app
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout Kubeflow Community Distribution
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: kubeflow/community-distribution
+          path: kubeflow-manifests
+
+      - name: Install KinD, Create KinD cluster and Install kustomize
+        run: ./kubeflow-manifests/tests/install_KinD_create_KinD_cluster_install_kustomize.sh
 
       - name: Build and smoke-test pull request image
         run: |
           make docker-build
           make docker-smoke-test
 
-      - name: Checkout kubeflow/manifests
-        uses: actions/checkout@v5
-        with:
-          repository: kubeflow/manifests
-          path: kubeflow-manifests
-
-      - name: Install KinD, Create KinD cluster and Install kustomize
-        run: ./kubeflow-manifests/tests/install_KinD_create_KinD_cluster_install_kustomize.sh
-
       - name: Load pull request image into KinD
         run: kind load docker-image "${IMG}:${TAG}" --name "$(kind get clusters)"
+
+      - name: Validate Community Distribution KServe manifests
+        working-directory: kubeflow-manifests
+        run: |
+          pip3 install -q PyYAML
+          python3 tests/kserve_manifest_test.py
 
       - name: Create Kubeflow Namespace
         working-directory: kubeflow-manifests
         run: kustomize build common/kubeflow-namespace/base | kubectl apply -f -
-
-      - name: Install Certificate Manager
-        working-directory: kubeflow-manifests
-        run: ./tests/cert_manager_install.sh
 
       - name: Install Istio CNI
         working-directory: kubeflow-manifests
@@ -61,9 +63,36 @@ jobs:
         working-directory: kubeflow-manifests
         run: ./tests/oauth2-proxy_install.sh
 
-      - name: Install Kubeflow Istio Resources
+      - name: Install Certificate Manager
         working-directory: kubeflow-manifests
-        run: kustomize build common/istio/kubeflow-istio-resources/base | kubectl apply -f -
+        run: ./tests/cert_manager_install.sh
+
+      - name: Install Knative Serving
+        working-directory: kubeflow-manifests
+        run: ./tests/knative_serving_install.sh
+
+      - name: Prepare pull request manifests and image
+        run: |
+          configuration_directory=$(mktemp -d)
+          trap 'rm -rf "${configuration_directory}"' EXIT
+          cd "${configuration_directory}"
+          resources=$(realpath --relative-to="${configuration_directory}" "${GITHUB_WORKSPACE}/manifests/kustomize/overlays/kubeflow")
+          kustomize create --resources "${resources}"
+          kustomize edit set namespace kserve
+          kustomize edit set image "ghcr.io/kserve/models-web-app=${IMG}:${TAG}"
+          kustomize edit add patch --kind Deployment --name kserve-models-web-application \
+            --patch '[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"Never"}]'
+          kustomize edit add patch --kind VirtualService \
+            --patch '[{"op":"replace","path":"/spec/http/0/route/0/destination/host","value":"kserve-models-web-application.kserve.svc.cluster.local"}]'
+          application_directory="${GITHUB_WORKSPACE}/kubeflow-manifests/applications/kserve/kserve-ui"
+          kustomize build . > "${application_directory}/pull-request.yaml"
+          cd "${application_directory}"
+          rm kustomization.yaml
+          kustomize create --resources pull-request.yaml
+
+      - name: Install KServe and pull request application
+        working-directory: kubeflow-manifests
+        run: ./tests/kserve_install.sh
 
       - name: Install Profile Controller
         working-directory: kubeflow-manifests
@@ -73,38 +102,16 @@ jobs:
         working-directory: kubeflow-manifests
         run: ./tests/multi_tenancy_install.sh
 
-      - name: Install Knative Serving
+      - name: Install Kubeflow Istio Resources
         working-directory: kubeflow-manifests
-        run: ./tests/knative_serving_install.sh
-
-      - name: Install KServe (core + ClusterServingRuntimes)
-        working-directory: kubeflow-manifests
-        run: ./tests/kserve_install.sh
-
-      - name: Deploy pull request manifests and image
-        run: |
-          configuration_directory=$(mktemp -d)
-          trap 'rm -rf "${configuration_directory}"' EXIT
-          cd "${configuration_directory}"
-          resources=$(realpath --relative-to="${configuration_directory}" "${GITHUB_WORKSPACE}/manifests/kustomize/overlays/kubeflow")
-          kustomize create --resources "${resources}"
-          kustomize edit set image "ghcr.io/kserve/models-web-app=${IMG}:${TAG}"
-          kustomize edit add patch --kind Deployment --name kserve-models-web-application \
-            --patch '[{"op":"replace","path":"/spec/template/spec/containers/0/imagePullPolicy","value":"Never"}]'
-          kustomize build . | \
-            kubectl apply --server-side --force-conflicts -f -
-          kubectl rollout status deployment/kserve-models-web-application \
-            -n kubeflow --timeout=120s
-          kubectl wait --for=condition=Available \
-            deployment/kserve-models-web-application \
-            -n kubeflow --timeout=60s
+        run: kustomize build common/istio/kubeflow-istio-resources/base | kubectl apply -f -
 
       - name: Create KF Profile
         working-directory: kubeflow-manifests
         run: ./tests/kubeflow_profile_install.sh
 
       - name: Setup python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: 3.12
 
@@ -128,23 +135,25 @@ jobs:
 
       - name: Collect Logs on Failure
         if: failure() || cancelled()
+        timeout-minutes: 5
         run: |
           mkdir -p logs
           kubectl get all --all-namespaces > logs/resources.txt
           kubectl get events --all-namespaces \
             --sort-by=.metadata.creationTimestamp > logs/events.txt
-          for ns in kubeflow istio-system cert-manager auth kubeflow-user-example-com; do
-            kubectl describe pods -n $ns > logs/$ns-pods.txt
-            for pod in $(kubectl get pods -n $ns \
+          for namespace in kubeflow kserve kubeflow-system istio-system cert-manager auth kubeflow-user-example-com; do
+            kubectl get namespace "$namespace" >/dev/null 2>&1 || continue
+            kubectl describe pods -n "$namespace" > "logs/$namespace-pods.txt"
+            for pod in $(kubectl get pods -n "$namespace" \
                 -o jsonpath='{.items[*].metadata.name}'); do
-              kubectl logs -n $ns $pod --tail=100 \
-                > logs/$ns-$pod.txt 2>&1 || true
+              kubectl logs -n "$namespace" "$pod" --tail=100 \
+                > "logs/$namespace-$pod.txt" 2>&1 || true
             done
           done
 
       - name: Upload Diagnostic Logs
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kserve-models-web-app-test-logs
           path: logs/

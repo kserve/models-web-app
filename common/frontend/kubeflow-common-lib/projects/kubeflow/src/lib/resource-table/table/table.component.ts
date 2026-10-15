@@ -11,6 +11,7 @@ import {
   ElementRef,
   SimpleChanges,
   OnChanges,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
@@ -46,8 +47,10 @@ import { isEqual } from 'lodash-es';
 import { MemoryValue } from '../types/memory-value';
 
 @Component({
+  standalone: false,
   selector: 'lib-table',
   templateUrl: './table.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./table.component.scss'],
 })
 export class TableComponent

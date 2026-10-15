@@ -1,4 +1,10 @@
-import { ChangeDetectorRef, Component, Input, OnDestroy } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  Input,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { PollerService } from 'kubeflow';
 import { Subscription } from 'rxjs';
 import { MWABackendService } from 'src/app/services/backend.service';
@@ -8,8 +14,10 @@ import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 import { EventObject } from '../../../types/event';
 
 @Component({
+  standalone: false,
   selector: 'app-events',
   templateUrl: './events.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./events.component.scss'],
 })
 export class EventsComponent implements OnDestroy {

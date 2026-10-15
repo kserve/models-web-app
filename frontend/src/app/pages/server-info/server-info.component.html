@@ -58,7 +58,11 @@
           <app-metrics
             *ngIf="serverInfoLoaded"
             [namespace]="namespace"
-            [status]="inferenceService?.status"
+            [status]="
+              $safeNavigationMigration(
+                $safeNavigationMigration(inferenceService?.status)
+              )
+            "
           ></app-metrics>
         </mat-tab>
         <mat-tab label="LOGS">

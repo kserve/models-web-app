@@ -9,6 +9,7 @@ import {
   AfterViewInit,
   OnDestroy,
   NgZone,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { dump, load } from 'js-yaml';
 import { SnackBarService, SnackType } from 'kubeflow';
@@ -21,8 +22,10 @@ import 'ace-builds/src-noconflict/theme-xcode';
 import 'ace-builds/src-noconflict/ext-language_tools';
 
 @Component({
+  standalone: false,
   selector: 'app-edit',
   templateUrl: './edit.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./edit.component.scss'],
 })
 export class EditComponent implements OnInit, AfterViewInit, OnDestroy {

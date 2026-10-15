@@ -1,4 +1,9 @@
-import { Component, OnInit, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { AbstractControl } from '@angular/forms';
 import {
   getNameError,
@@ -8,8 +13,10 @@ import {
 } from '../../validators';
 
 @Component({
+  standalone: false,
   selector: 'lib-name-input',
   templateUrl: './name-input.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./name-input.component.scss'],
 })
 export class NameInputComponent implements OnInit {

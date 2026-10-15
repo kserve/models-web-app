@@ -1,12 +1,19 @@
-import { Component, Input, HostBinding } from '@angular/core';
+import {
+  Component,
+  Input,
+  HostBinding,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { ListValueType, ChipDescriptor, ListValue } from '../types';
 import { SnackBarService } from '../../snack-bar/snack-bar.service';
 import { SnackBarConfig, SnackType } from '../../snack-bar/types';
 import { Clipboard } from '@angular/cdk/clipboard';
 
 @Component({
+  standalone: false,
   selector: 'lib-details-list-item',
   templateUrl: './details-list-item.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./details-list-item.component.scss'],
 })
 export class DetailsListItemComponent {

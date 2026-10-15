@@ -9,7 +9,7 @@ module.exports = {
     "!src/polyfills.ts",
   ],
   coverageDirectory: "coverage-jest",
-  testEnvironment: "jsdom",
+  testEnvironment: "jest-preset-angular/environments/jest-jsdom-env",
   moduleNameMapper: {
     "^kubeflow$": "<rootDir>/__mocks__/kubeflow.ts",
     "^kubeflow/lib/(.*)$": "<rootDir>/__mocks__/kubeflow.ts",
@@ -19,7 +19,13 @@ module.exports = {
   },
   moduleFileExtensions: ["ts", "tsx", "js", "json"],
   transform: {
-    "^.+\\.(ts|js|html)$": "jest-preset-angular",
+    "^.+\\.(ts|js|mjs|html|svg)$": [
+      "jest-preset-angular",
+      {
+        tsconfig: "<rootDir>/tsconfig.spec.json",
+        stringifyContentPathRegex: "\\.(html|svg)$",
+      },
+    ],
   },
   transformIgnorePatterns: [
     "node_modules/(?!(kubeflow|@angular|rxjs|lodash-es)/)",

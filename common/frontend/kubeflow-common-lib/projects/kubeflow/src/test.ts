@@ -1,22 +1,22 @@
-// This file is required by karma.conf.js and loads recursively all the .spec and framework files
+// This file is required by karma.conf.js and initializes the Angular testing
+// environment. The Karma builder discovers the .spec files itself.
 
 import 'zone.js';
 import 'zone.js/testing';
 import '@angular/localize/init';
+import { NgModule, provideZoneChangeDetection } from '@angular/core';
 import { getTestBed } from '@angular/core/testing';
 import {
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
 
-declare const require: any;
+// Angular defaults to zoneless change detection; the applications consuming
+// this library run with Zone.js, so the tests do as well.
+@NgModule({ providers: [provideZoneChangeDetection()] })
+class ZoneChangeDetectionTestingModule {}
 
-// First, initialize the Angular testing environment.
 getTestBed().initTestEnvironment(
-  BrowserDynamicTestingModule,
+  [BrowserDynamicTestingModule, ZoneChangeDetectionTestingModule],
   platformBrowserDynamicTesting(),
 );
-// Then we find all the tests.
-const context = require.context('./', true, /\.spec\.ts$/);
-// And load the modules.
-context.keys().map(context);

@@ -280,7 +280,7 @@ describe('Models Web App - Model Edit Tests', () => {
     cy.wait('@updateInferenceService');
 
     // Verify success notification
-    cy.get('.mat-snack-bar-container', { timeout: 5000 })
+    cy.get('.mat-mdc-snack-bar-container', { timeout: 5000 })
       .should('be.visible')
       .and('contain', 'successfully updated');
 
@@ -360,7 +360,7 @@ describe('Models Web App - Model Edit Tests', () => {
     cy.wait('@updateInferenceServiceError');
 
     // Verify error notification
-    cy.get('.mat-snack-bar-container', { timeout: 5000 })
+    cy.get('.mat-mdc-snack-bar-container', { timeout: 5000 })
       .should('be.visible')
       .and('contain', 'Failed to update');
 

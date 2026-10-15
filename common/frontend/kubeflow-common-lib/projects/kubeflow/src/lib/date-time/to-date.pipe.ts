@@ -5,7 +5,10 @@ import {
   defaultTimeOptions,
 } from '../services/date-time.service';
 
-@Pipe({ name: 'libToDate' })
+@Pipe({
+  standalone: false,
+  name: 'libToDate',
+})
 export class ToDatePipe implements PipeTransform {
   constructor(private dtService: DateTimeService) {}
   transform(value: string | Date, type?: string): string {

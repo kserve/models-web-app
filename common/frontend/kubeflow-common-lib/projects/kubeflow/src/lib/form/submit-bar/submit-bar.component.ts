@@ -1,8 +1,17 @@
-import { Component, OnInit, Output, EventEmitter, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Output,
+  EventEmitter,
+  Input,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'lib-submit-bar',
   templateUrl: './submit-bar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./submit-bar.component.scss'],
 })
 export class SubmitBarComponent implements OnInit {

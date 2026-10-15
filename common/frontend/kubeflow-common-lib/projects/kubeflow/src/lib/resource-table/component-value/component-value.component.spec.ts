@@ -5,7 +5,7 @@ import {
   TableColumnComponent,
 } from './component-value.component';
 import { ResourceTableModule } from '../resource-table.module';
-import { Component, NgModule } from '@angular/core';
+import { Component, NgModule, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentValue } from '../types';
 import { By } from '@angular/platform-browser';
 
@@ -14,7 +14,9 @@ interface MockData {
 }
 
 @Component({
+  standalone: false,
   selector: 'lib-dummy-component',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '{{ element }}',
 })
 class MockComponent implements TableColumnComponent {
@@ -22,7 +24,9 @@ class MockComponent implements TableColumnComponent {
 }
 
 @Component({
+  standalone: false,
   selector: 'lib-dummy-dict-component',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '{{ element.message }}',
 })
 class MockDictComponent implements TableColumnComponent {
@@ -33,7 +37,6 @@ class MockDictComponent implements TableColumnComponent {
   declarations: [MockComponent, MockDictComponent],
   imports: [],
   exports: [MockComponent, MockDictComponent],
-  entryComponents: [MockComponent, MockDictComponent],
 })
 class MockModule {}
 

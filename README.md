@@ -174,7 +174,7 @@ The `npm run build:watch` command will build the frontend artifacts inside the b
 
 Requirements:
 
-- node 22.0.0
+- node 26
 - python 3.12
 
 ### Frontend

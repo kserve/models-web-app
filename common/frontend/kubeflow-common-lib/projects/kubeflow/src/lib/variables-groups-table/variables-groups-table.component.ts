@@ -1,9 +1,16 @@
-import { Component, Input, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { VariablesGroup } from './types';
 
 @Component({
+  standalone: false,
   selector: 'lib-variables-group-table',
   templateUrl: './variables-groups-table.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./variables-groups-table.component.scss'],
 })
 export class VariablesGroupsTableComponent implements OnInit {

@@ -1,10 +1,19 @@
-import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  EventEmitter,
+  Output,
+  Input,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { STATUS_TYPE } from '../status/types';
 import { ActionButtonValue, ActionEvent } from '../types';
 
 @Component({
+  standalone: false,
   selector: 'lib-action-button',
   templateUrl: './action-button.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./action-button.component.scss'],
 })
 export class ActionButtonComponent implements OnInit {

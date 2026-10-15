@@ -8,6 +8,7 @@ import {
 import { DateTimeService } from '../services/date-time.service';
 
 @Component({
+  standalone: false,
   selector: 'lib-date-time',
   templateUrl: './date-time.component.html',
   styleUrls: [],

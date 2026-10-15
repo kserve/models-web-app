@@ -5,6 +5,7 @@ import {
   OnInit,
   Output,
   EventEmitter,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ActionEvent, ComponentValue } from '../types';
 import { ComponentPortal, Portal } from '@angular/cdk/portal';
@@ -14,8 +15,10 @@ export interface TableColumnComponent {
 }
 
 @Component({
+  standalone: false,
   selector: 'lib-component-value',
   templateUrl: './component-value.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./component-value.component.scss'],
 })
 export class ComponentValueComponent implements OnInit {
@@ -49,10 +52,8 @@ export class ComponentValueComponent implements OnInit {
   onAttach(ref: ComponentRef<TableColumnComponent>) {
     this.componentRef = ref;
     this.componentRef.instance.element = this.element;
-    /* eslint-disable */
     if (this.componentRef.instance?.['emitter']) {
       this.componentRef.instance['emitter'] = this.emitter;
     }
-    /* eslint-enable */
   }
 }

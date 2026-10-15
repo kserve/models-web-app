@@ -22,76 +22,94 @@ $kubeflow-primary-palette: (
   ),
 );
 
-// Create the typography config that contains the styles of each level
-$kubeflow-typography-config: mat.define-typography-config(
-  $body-1:
-    mat.define-typography-level(
-      $font-family: Roboto,
-      $font-weight: $kubeflow-font-weight-regular,
-      $font-size: $kubeflow-font-size-regular,
-      $line-height: 20px,
-      $letter-spacing: 0.25px,
-    ),
-  $headline:
-    mat.define-typography-level(
+$kubeflow-body-typography-level: mat.m2-define-typography-level(
+  $font-family: Roboto,
+  $font-weight: $kubeflow-font-weight-regular,
+  $font-size: $kubeflow-font-size-regular,
+  $line-height: 20px,
+  $letter-spacing: 0.25px,
+);
+
+// The Material Design Components typography renamed the levels: `headline`
+// became `headline-5`, `title` became `headline-6`, and components render body
+// text with `body-2`. Both body levels keep the former `body-1` values.
+$kubeflow-typography-config: mat.m2-define-typography-config(
+  $font-family: Roboto,
+  $headline-5:
+    mat.m2-define-typography-level(
       $font-family: Roboto,
       $font-weight: $kubeflow-font-weight-regular,
       $font-size: $kubeflow-font-size-xlarge,
       $line-height: 24px,
       $letter-spacing: 0.18px,
     ),
-  $title:
-    mat.define-typography-level(
+  $headline-6:
+    mat.m2-define-typography-level(
       $font-family: Roboto,
       $font-weight: $kubeflow-font-weight-medium,
       $font-size: $kubeflow-font-size-large,
       $line-height: 24px,
       $letter-spacing: 0.15px,
     ),
+  $body-1: $kubeflow-body-typography-level,
+  $body-2: $kubeflow-body-typography-level,
+  $button: mat.m2-define-typography-level(14px, 14px, 500),
 );
 
-// Create the theme object. A theme consists of configurations for individual
-// theming systems such as "color" or "typography".
-$kubeflow-theme: mat.define-light-theme(
+$kubeflow-theme: mat.m2-define-light-theme(
   (
     color: (
-      primary: mat.define-palette($kubeflow-primary-palette, 700),
-      accent: mat.define-palette(mat.$pink-palette, A200, A100, A400),
+      primary: mat.m2-define-palette($kubeflow-primary-palette, 700),
+      accent: mat.m2-define-palette(mat.$m2-pink-palette, A200, A100, A400),
     ),
+    typography: $kubeflow-typography-config,
+    density: 0,
   )
 );
 
-// Always include only once per project.
-// Passing the typography config to core mixin will apply the specified values
-// to the corresponding Angular Material components.
-@include mat.core($kubeflow-typography-config);
-
-// Include theme styles for core and each component used in the app.
-// Alternatively, you can import and @include the theme mixins for each
-// component that you are using.
+@include mat.elevation-classes();
+@include mat.app-background();
 @include mat.all-component-themes($kubeflow-theme);
+@include mat.typography-hierarchy($kubeflow-typography-config);
 
-.mat-headline {
+@include mat.tooltip-overrides(
+  (
+    supporting-text-size: 14px,
+  )
+);
+
+// Make the outline grey instead of black
+@include mat.form-field-overrides(
+  (
+    outlined-hover-outline-color: rgba(0, 0, 0, 0.16),
+  )
+);
+
+// Keep the compact table header and row metrics of the Kubeflow tables.
+@include mat.table-overrides(
+  (
+    header-headline-size: 12px,
+    header-headline-color: rgba(0, 0, 0, 0.54),
+    row-item-container-height: 48px,
+  )
+);
+
+@include mat.chips-overrides(
+  (
+    label-text-weight: 500,
+  )
+);
+
+.mat-headline-5 {
   color: $kubeflow-black-1;
 }
 
-.mat-title {
+.mat-headline-6 {
   color: $kubeflow-black-1;
 }
 
 // Use the material icons offline
-$material-icons-font-path: '~material-icons/iconfont/';
-@import '~material-icons/iconfont/material-icons.scss';
-
-// Material Form Field error message
-mat-form-field .mat-form-field {
-  &-underline {
-    position: static;
-  }
-  &-subscript-wrapper {
-    position: static;
-  }
-}
+@import 'material-icons/iconfont/material-icons.scss';
 
 // Custom css
 html,
@@ -140,22 +158,14 @@ body {
   text-align: right;
 }
 
-.mat-tooltip-panel .mat-tooltip {
-  font-size: 14px !important;
-}
-
-.mat-snack-bar-container {
+.mat-mdc-snack-bar-container .mdc-snackbar__surface {
   max-width: 100% !important;
   width: 700px;
 }
 
-.form--container.mat-dialog-content {
+.form--container.mat-mdc-dialog-content {
   max-height: 88vh;
   padding: 16px;
-}
-
-.mat-form-field-wrapper {
-  padding-bottom: 0.2rem !important;
 }
 
 // Truncate text
@@ -168,29 +178,20 @@ body {
 /*
  * common table
  */
-.lib-table .mat-paginator-container {
+.lib-table .mat-mdc-paginator-container {
   min-height: 48px;
 }
 
 // Form global css
-.form--dialog-padding .mat-dialog-container {
+.form--dialog-padding .mat-mdc-dialog-surface {
   padding: 0 24px;
 }
 
-.mat-button-base.form--button-margin {
+.mat-mdc-button-base.form--button-margin {
   margin-right: 16px;
 }
 
-// Make the outline grey instead of black
-.mat-form-field-appearance-outline .mat-form-field-outline-thick {
-  color: rgba(0, 0, 0, 0.16);
-}
-
-.mat-checkbox-layout {
-  margin-bottom: 10px;
-}
-
-.form--input-padding .mat-form-field {
+.form--input-padding .mat-mdc-form-field {
   // Get the select and input elements have the same height
   line-height: 0;
 }
@@ -215,7 +216,7 @@ body {
   padding-left: 0.5rem;
 }
 
-.mat-button.button-with-icon .mat-button-wrapper {
+.mat-mdc-button.button-with-icon .mdc-button__label {
   display: flex;
   align-items: center;
 }
@@ -283,14 +284,17 @@ body {
   overflow: auto;
 }
 
-.mat-chip {
-  &.mat-chip-blue {
-    background-color: var(--accent-color);
-    color: white;
+.mat-mdc-chip.mat-chip-blue {
+  @include mat.chips-overrides(
+    (
+      elevated-container-color: var(--accent-color),
+      label-text-color: white,
+      with-trailing-icon-trailing-icon-color: white,
+    )
+  );
 
-    .mat-icon {
-      color: white;
-    }
+  .mat-icon {
+    color: white;
   }
 }
 

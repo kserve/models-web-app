@@ -1,4 +1,10 @@
-import { Component, Input, OnDestroy, ViewChild } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnDestroy,
+  ViewChild,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { ExponentialBackoff } from 'kubeflow';
 import { Subscription } from 'rxjs';
@@ -15,8 +21,10 @@ interface IsvcComponents {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-logs',
   templateUrl: './logs.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./logs.component.scss'],
 })
 export class LogsComponent implements OnDestroy {

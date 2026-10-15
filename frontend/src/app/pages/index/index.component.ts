@@ -1,4 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { SSEService } from 'src/app/services/sse.service';
@@ -31,7 +36,9 @@ import {
 } from 'src/app/shared/utils';
 
 @Component({
+  standalone: false,
   selector: 'app-index',
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './index.component.html',
 })
 export class IndexComponent implements OnInit, OnDestroy {

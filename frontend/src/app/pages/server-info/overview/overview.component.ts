@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { ListEntry, ChipDescriptor } from 'kubeflow';
 import {
   getPredictorType,
@@ -13,8 +13,10 @@ import {
 import { InferenceServiceOwnedObjects } from 'src/app/types/backend';
 
 @Component({
+  standalone: false,
   selector: 'app-overview',
   templateUrl: './overview.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./overview.component.scss'],
 })
 export class OverviewComponent {

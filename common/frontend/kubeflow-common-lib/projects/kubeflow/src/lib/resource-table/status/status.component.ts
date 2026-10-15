@@ -1,9 +1,11 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { StatusValue } from '../types';
 
 @Component({
+  standalone: false,
   selector: 'lib-status',
   templateUrl: './status.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./status.component.scss'],
 })
 export class StatusComponent {

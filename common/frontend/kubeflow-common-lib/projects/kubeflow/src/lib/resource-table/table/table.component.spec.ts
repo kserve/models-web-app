@@ -13,7 +13,11 @@ import {
 } from '../types';
 import { MatChipInputEvent } from '@angular/material/chips';
 import { TableColumnComponent } from '../component-value/component-value.component';
-import { Component, SimpleChange } from '@angular/core';
+import {
+  Component,
+  SimpleChange,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import subMonths from 'date-fns/sub_months';
 import { cloneDeep } from 'lodash-es';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -23,7 +27,9 @@ import { quantityToScalar } from './utils';
 import { STATUS_TYPE } from '../status/types';
 
 @Component({
+  standalone: false,
   selector: 'lib-server-type',
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: ``,
 })
 export class ServerTypeComponent implements TableColumnComponent {

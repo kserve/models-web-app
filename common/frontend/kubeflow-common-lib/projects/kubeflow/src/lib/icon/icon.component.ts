@@ -1,8 +1,16 @@
-import { Component, OnInit, Input, HostBinding } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  HostBinding,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'lib-icon',
   templateUrl: './icon.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./icon.component.scss'],
 })
 export class IconComponent implements OnInit {

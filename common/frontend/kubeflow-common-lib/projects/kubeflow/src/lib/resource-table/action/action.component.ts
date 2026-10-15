@@ -1,12 +1,21 @@
-import { Component, OnInit, Input, EventEmitter, Output } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  EventEmitter,
+  Output,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { STATUS_TYPE } from '../status/types';
 import { Observable, Subject } from 'rxjs';
 import { ActionIconValue, ActionEvent } from '../types';
 import { get as getAttributeValue } from 'lodash-es';
 
 @Component({
+  standalone: false,
   selector: 'lib-action',
   templateUrl: './action.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./action.component.scss'],
 })
 export class ActionComponent implements OnInit {

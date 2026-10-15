@@ -1,9 +1,16 @@
-import { Component, Input, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { PredictorExtensionSpec } from 'src/app/types/kfserving/v1beta1';
 
 @Component({
+  standalone: false,
   selector: 'app-storage-uri',
   templateUrl: './storage-uri.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./storage-uri.component.scss'],
 })
 export class StorageUriComponent {

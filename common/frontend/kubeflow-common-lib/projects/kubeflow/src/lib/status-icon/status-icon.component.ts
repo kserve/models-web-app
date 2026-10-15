@@ -1,9 +1,11 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { STATUS_TYPE } from '../resource-table/status/types';
 
 @Component({
+  standalone: false,
   selector: 'lib-status-icon',
   templateUrl: './status-icon.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./status-icon.component.scss'],
 })
 export class StatusIconComponent {

@@ -1,4 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import {
@@ -15,8 +20,10 @@ import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import { Subscription } from 'rxjs';
 
 @Component({
+  standalone: false,
   selector: 'app-graph-form',
   templateUrl: './graph-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./graph-form.component.scss'],
 })
 export class GraphFormComponent implements OnInit, OnDestroy {

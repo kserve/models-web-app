@@ -1,3 +1,5 @@
+@use '@angular/material' as mat;
+
 .namespace-select-container {
   display: flex;
   align-items: center;
@@ -42,18 +44,13 @@
   max-width: 300px;
 }
 
-.namespace-selector .mat-form-field-wrapper {
-  padding-bottom: 0;
-}
-
-.namespace-selector .mat-form-field-appearance-outline .mat-form-field-outline {
-  color: rgba(0, 0, 0, 0.12);
-}
-
-.namespace-selector
-  .mat-form-field-appearance-outline.mat-focused
-  .mat-form-field-outline-thick {
-  color: var(--accent-color, #2196f3);
+.namespace-selector {
+  @include mat.form-field-overrides(
+    (
+      outlined-outline-color: rgba(0, 0, 0, 0.12),
+      outlined-focus-outline-color: var(--accent-color, #2196f3),
+    )
+  );
 }
 
 /* Responsive adjustments */

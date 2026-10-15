@@ -1,4 +1,10 @@
-import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Observable, of, forkJoin, Subscription } from 'rxjs';
 import { tap, map, concatMap, timeout, catchError } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -30,8 +36,10 @@ import {
 import { getK8sObjectUiStatus } from 'src/app/shared/utils';
 
 @Component({
+  standalone: false,
   selector: 'app-server-info',
   templateUrl: './server-info.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./server-info.component.scss'],
 })
 export class ServerInfoComponent implements OnInit, OnDestroy {

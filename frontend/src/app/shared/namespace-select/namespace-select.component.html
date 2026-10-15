@@ -13,6 +13,7 @@
   <mat-form-field
     *ngIf="(shouldHideSelector$ | async) === false"
     appearance="outline"
+    subscriptSizing="dynamic"
     class="namespace-selector"
   >
     <mat-label>Namespace</mat-label>

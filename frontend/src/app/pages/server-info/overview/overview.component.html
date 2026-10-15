@@ -40,7 +40,11 @@
 
 <lib-conditions-table
   *ngIf="inferenceService?.status"
-  [conditions]="inferenceService.status?.conditions"
+  [conditions]="
+    $safeNavigationMigration(
+      $safeNavigationMigration(inferenceService.status?.conditions)
+    )
+  "
   title="InferenceService Conditions"
   class="negative-margin page-padding"
 ></lib-conditions-table>
@@ -48,21 +52,43 @@
 <lib-advanced-options text="Components status" *ngIf="inferenceService?.status">
   <app-serving-component-overview
     componentName="predictor"
-    [ownedObjs]="ownedObjects?.predictor"
-    [status]="inferenceService?.status?.components?.predictor"
+    [ownedObjs]="$safeNavigationMigration(ownedObjects?.predictor)"
+    [status]="
+      $safeNavigationMigration(inferenceService?.status?.components?.predictor)
+    "
   ></app-serving-component-overview>
 
   <app-serving-component-overview
     *ngIf="inferenceService?.status?.components?.transformer"
     componentName="transformer"
-    [ownedObjs]="ownedObjects?.transformer"
-    [status]="inferenceService?.status?.components?.transformer"
+    [ownedObjs]="
+      $safeNavigationMigration(
+        $safeNavigationMigration(ownedObjects?.transformer)
+      )
+    "
+    [status]="
+      $safeNavigationMigration(
+        $safeNavigationMigration(
+          inferenceService?.status?.components?.transformer
+        )
+      )
+    "
   ></app-serving-component-overview>
 
   <app-serving-component-overview
     *ngIf="inferenceService?.status?.components?.explainer"
     componentName="explainer"
-    [ownedObjs]="ownedObjects?.explainer"
-    [status]="inferenceService?.status?.components?.explainer"
+    [ownedObjs]="
+      $safeNavigationMigration(
+        $safeNavigationMigration(ownedObjects?.explainer)
+      )
+    "
+    [status]="
+      $safeNavigationMigration(
+        $safeNavigationMigration(
+          inferenceService?.status?.components?.explainer
+        )
+      )
+    "
   ></app-serving-component-overview>
 </lib-advanced-options>

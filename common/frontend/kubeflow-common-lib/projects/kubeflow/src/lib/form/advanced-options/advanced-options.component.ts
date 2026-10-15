@@ -6,11 +6,14 @@ import {
   ElementRef,
   AfterViewInit,
   HostBinding,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'lib-advanced-options',
   templateUrl: './advanced-options.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./advanced-options.component.scss'],
 })
 export class AdvancedOptionsComponent implements OnInit, AfterViewInit {

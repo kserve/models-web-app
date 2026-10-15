@@ -1,4 +1,10 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { EMPTY, Subscription, of } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -25,8 +31,10 @@ import {
 import { EventObject } from 'src/app/types/event';
 
 @Component({
+  standalone: false,
   selector: 'app-llm-details',
   templateUrl: './llm-details.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./llm-details.component.scss'],
 })
 export class LLMDetailsComponent implements OnInit, OnDestroy {

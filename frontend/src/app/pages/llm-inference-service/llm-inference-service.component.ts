@@ -1,4 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import {
@@ -28,7 +33,9 @@ import { defaultConfig } from './config';
 import { Router } from '@angular/router';
 
 @Component({
+  standalone: false,
   selector: 'app-llm-inference-service',
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './llm-inference-service.component.html',
 })
 export class LLMInferenceServiceComponent implements OnInit, OnDestroy {

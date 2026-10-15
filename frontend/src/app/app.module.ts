@@ -14,6 +14,7 @@ import {
   MatSnackBarConfig,
   MAT_SNACK_BAR_DEFAULT_OPTIONS,
 } from '@angular/material/snack-bar';
+import { MAT_TABS_CONFIG, MatTabsConfig } from '@angular/material/tabs';
 import { ConfigService } from './services/config.service';
 import { take, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -25,6 +26,12 @@ import { of } from 'rxjs';
  */
 const MwaSnackBarConfig: MatSnackBarConfig = {
   duration: 5000,
+};
+
+// Tabs keep their natural width and start alignment instead of stretching.
+const MwaTabsConfig: MatTabsConfig = {
+  stretchTabs: false,
+  alignTabs: 'start',
 };
 
 @NgModule({
@@ -41,6 +48,7 @@ const MwaSnackBarConfig: MatSnackBarConfig = {
   ],
   providers: [
     { provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, useValue: MwaSnackBarConfig },
+    { provide: MAT_TABS_CONFIG, useValue: MwaTabsConfig },
     {
       provide: APP_INITIALIZER,
       useFactory: () => configureAce,

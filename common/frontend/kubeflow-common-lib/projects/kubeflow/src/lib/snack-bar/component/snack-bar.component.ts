@@ -1,4 +1,9 @@
-import { Component, Inject, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Inject,
+  EventEmitter,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import {
   MAT_SNACK_BAR_DATA,
   MatSnackBarRef,
@@ -6,8 +11,10 @@ import {
 import { SnackType } from '../types';
 
 @Component({
+  standalone: false,
   selector: 'lib-snack-bar',
   templateUrl: './snack-bar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./snack-bar.component.scss'],
 })
 export class SnackBarComponent {

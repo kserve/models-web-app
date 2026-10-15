@@ -27,7 +27,9 @@
 
   <lib-details-list-item key="Created">
     <lib-date-time
-      [date]="inferenceService?.metadata?.creationTimestamp"
+      [date]="
+        $safeNavigationMigration(inferenceService?.metadata?.creationTimestamp)
+      "
     ></lib-date-time>
   </lib-details-list-item>
 

@@ -4,12 +4,15 @@ import {
   ViewChild,
   HostBinding,
   AfterViewInit,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
 @Component({
+  standalone: false,
   selector: 'lib-logs-viewer',
   templateUrl: './logs-viewer.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./logs-viewer.component.scss'],
 })
 export class LogsViewerComponent implements AfterViewInit {

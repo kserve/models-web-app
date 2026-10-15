@@ -1,12 +1,20 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnDestroy,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { NamespaceService } from '../services/namespace.service';
 import { BackendService } from '../services/backend/backend.service';
 import { ExponentialBackoff } from '../polling/exponential-backoff';
 import { Subscription } from 'rxjs';
 
 @Component({
+  standalone: false,
   selector: 'lib-namespace-select',
   templateUrl: './namespace-select.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./namespace-select.component.scss'],
 })
 export class NamespaceSelectComponent implements OnInit, OnDestroy {

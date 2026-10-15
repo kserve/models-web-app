@@ -167,14 +167,14 @@
   overflow-x: hidden;
   min-height: 0;
 
-  ::ng-deep .mat-tab-body-wrapper {
+  ::ng-deep .mat-mdc-tab-body-wrapper {
     height: 100% !important;
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
 
-  ::ng-deep .mat-tab-body {
+  ::ng-deep .mat-mdc-tab-body {
     height: 100% !important;
     overflow: auto !important;
   }
@@ -224,7 +224,7 @@
   }
 }
 
-::ng-deep .mat-tab-body-content {
+::ng-deep .mat-mdc-tab-body-content {
   overflow-y: auto !important;
   max-height: 100% !important;
   display: block !important;

@@ -40,7 +40,10 @@ type Position = 'above' | 'below' | 'before' | 'after';
 
 type PopoverValue = TemplateRef<any> | string;
 
-@Directive({ selector: '[libPopover]' })
+@Directive({
+  standalone: false,
+  selector: '[libPopover]',
+})
 export class PopoverDirective implements OnDestroy {
   private libPopoverPrv: PopoverValue;
   @Input('libPopover')

@@ -1,4 +1,10 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Subscription, of } from 'rxjs';
 import { switchMap, catchError } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -26,8 +32,10 @@ import { generateDeleteConfig } from '../config';
 import { EventObject } from 'src/app/types/event';
 
 @Component({
+  standalone: false,
   selector: 'app-graph-info',
   templateUrl: './graph-info.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./graph-info.component.scss'],
 })
 export class GraphInfoComponent implements OnInit, OnDestroy {

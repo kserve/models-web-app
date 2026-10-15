@@ -1,4 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import {
   NamespaceService,
@@ -27,8 +32,10 @@ const SUPPORTED_KSERVE_RESOURCE_LABELS = [
 ].join(', ');
 
 @Component({
+  standalone: false,
   selector: 'app-submit-form',
   templateUrl: './submit-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./submit-form.component.scss'],
 })
 export class SubmitFormComponent implements OnInit, OnDestroy {

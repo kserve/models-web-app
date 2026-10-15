@@ -1,10 +1,12 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { ChipDescriptor } from 'kubeflow';
 import { ExplainerSpec } from 'src/app/types/kfserving/v1beta1';
 import { getExplainerContainer } from 'src/app/shared/utils';
 
 @Component({
+  standalone: false,
   selector: 'app-explainer-details',
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './explainer.component.html',
 })
 export class ExplainerComponent {

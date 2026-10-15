@@ -5,6 +5,7 @@ import { generateConfig } from './config';
 import { TableConfig } from '../resource-table/types';
 
 @Component({
+  standalone: false,
   selector: 'lib-conditions-table',
   templateUrl: './conditions-table.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

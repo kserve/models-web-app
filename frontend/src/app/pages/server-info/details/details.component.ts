@@ -1,10 +1,12 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { ListEntry, ChipDescriptor } from 'kubeflow';
 import { InferenceServiceK8s } from 'src/app/types/kfserving/v1beta1';
 
 @Component({
+  standalone: false,
   selector: 'app-details',
   templateUrl: './details.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./details.component.scss'],
 })
 export class DetailsComponent {

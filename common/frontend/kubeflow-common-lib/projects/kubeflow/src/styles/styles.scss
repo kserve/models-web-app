@@ -1,4 +1,4 @@
-@use '@angular/material' as mat;
+@use '@angular/material' as material;
 @import './kubeflow.css';
 @import './variables.scss';
 
@@ -22,7 +22,7 @@ $kubeflow-primary-palette: (
   ),
 );
 
-$kubeflow-body-typography-level: mat.m2-define-typography-level(
+$kubeflow-body-typography-level: material.m2-define-typography-level(
   $font-family: Roboto,
   $font-weight: $kubeflow-font-weight-regular,
   $font-size: $kubeflow-font-size-regular,
@@ -33,10 +33,10 @@ $kubeflow-body-typography-level: mat.m2-define-typography-level(
 // The Material Design Components typography renamed the levels: `headline`
 // became `headline-5`, `title` became `headline-6`, and components render body
 // text with `body-2`. Both body levels keep the former `body-1` values.
-$kubeflow-typography-config: mat.m2-define-typography-config(
+$kubeflow-typography-config: material.m2-define-typography-config(
   $font-family: Roboto,
   $headline-5:
-    mat.m2-define-typography-level(
+    material.m2-define-typography-level(
       $font-family: Roboto,
       $font-weight: $kubeflow-font-weight-regular,
       $font-size: $kubeflow-font-size-xlarge,
@@ -44,7 +44,7 @@ $kubeflow-typography-config: mat.m2-define-typography-config(
       $letter-spacing: 0.18px,
     ),
   $headline-6:
-    mat.m2-define-typography-level(
+    material.m2-define-typography-level(
       $font-family: Roboto,
       $font-weight: $kubeflow-font-weight-medium,
       $font-size: $kubeflow-font-size-large,
@@ -53,40 +53,41 @@ $kubeflow-typography-config: mat.m2-define-typography-config(
     ),
   $body-1: $kubeflow-body-typography-level,
   $body-2: $kubeflow-body-typography-level,
-  $button: mat.m2-define-typography-level(14px, 14px, 500),
+  $button: material.m2-define-typography-level(14px, 14px, 500),
 );
 
-$kubeflow-theme: mat.m2-define-light-theme(
+$kubeflow-theme: material.m2-define-light-theme(
   (
     color: (
-      primary: mat.m2-define-palette($kubeflow-primary-palette, 700),
-      accent: mat.m2-define-palette(mat.$m2-pink-palette, A200, A100, A400),
+      primary: material.m2-define-palette($kubeflow-primary-palette, 700),
+      accent:
+        material.m2-define-palette(material.$m2-pink-palette, A200, A100, A400),
     ),
     typography: $kubeflow-typography-config,
     density: 0,
   )
 );
 
-@include mat.elevation-classes();
-@include mat.app-background();
-@include mat.all-component-themes($kubeflow-theme);
-@include mat.typography-hierarchy($kubeflow-typography-config);
+@include material.elevation-classes();
+@include material.app-background();
+@include material.all-component-themes($kubeflow-theme);
+@include material.typography-hierarchy($kubeflow-typography-config);
 
-@include mat.tooltip-overrides(
+@include material.tooltip-overrides(
   (
     supporting-text-size: 14px,
   )
 );
 
 // Make the outline grey instead of black
-@include mat.form-field-overrides(
+@include material.form-field-overrides(
   (
     outlined-hover-outline-color: rgba(0, 0, 0, 0.16),
   )
 );
 
 // Keep the compact table header and row metrics of the Kubeflow tables.
-@include mat.table-overrides(
+@include material.table-overrides(
   (
     header-headline-size: 12px,
     header-headline-color: rgba(0, 0, 0, 0.54),
@@ -94,7 +95,7 @@ $kubeflow-theme: mat.m2-define-light-theme(
   )
 );
 
-@include mat.chips-overrides(
+@include material.chips-overrides(
   (
     label-text-weight: 500,
   )
@@ -285,7 +286,7 @@ body {
 }
 
 .mat-mdc-chip.mat-chip-blue {
-  @include mat.chips-overrides(
+  @include material.chips-overrides(
     (
       elevated-container-color: var(--accent-color),
       label-text-color: white,

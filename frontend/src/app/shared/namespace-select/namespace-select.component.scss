@@ -1,4 +1,4 @@
-@use '@angular/material' as mat;
+@use '@angular/material' as material;
 
 .namespace-select-container {
   display: flex;
@@ -45,7 +45,7 @@
 }
 
 .namespace-selector {
-  @include mat.form-field-overrides(
+  @include material.form-field-overrides(
     (
       outlined-outline-color: rgba(0, 0, 0, 0.12),
       outlined-focus-outline-color: var(--accent-color, #2196f3),

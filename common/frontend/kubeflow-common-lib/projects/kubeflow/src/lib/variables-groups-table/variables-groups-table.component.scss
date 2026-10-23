@@ -1,4 +1,4 @@
-@use '@angular/material' as mat;
+@use '@angular/material' as material;
 .env-group-container {
   padding: 0.6rem 0;
   margin-bottom: 16px;
@@ -10,7 +10,7 @@
 }
 
 .chip-list-wa .list-chip {
-  @include mat.chips-overrides(
+  @include material.chips-overrides(
     (
       container-height: 28px,
     )

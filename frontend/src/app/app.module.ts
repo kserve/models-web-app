@@ -24,12 +24,12 @@ import { of } from 'rxjs';
  * here
  * https://github.com/angular/components/blob/main/src/material/snack-bar/snack-bar-config.ts#L25-L58
  */
-const MwaSnackBarConfig: MatSnackBarConfig = {
+const modelsWebApplicationSnackBarConfiguration: MatSnackBarConfig = {
   duration: 5000,
 };
 
 // Tabs keep their natural width and start alignment instead of stretching.
-const MwaTabsConfig: MatTabsConfig = {
+const modelsWebApplicationTabsConfiguration: MatTabsConfig = {
   stretchTabs: false,
   alignTabs: 'start',
 };
@@ -47,8 +47,14 @@ const MwaTabsConfig: MatTabsConfig = {
     LLMInferenceServiceModule,
   ],
   providers: [
-    { provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, useValue: MwaSnackBarConfig },
-    { provide: MAT_TABS_CONFIG, useValue: MwaTabsConfig },
+    {
+      provide: MAT_SNACK_BAR_DEFAULT_OPTIONS,
+      useValue: modelsWebApplicationSnackBarConfiguration,
+    },
+    {
+      provide: MAT_TABS_CONFIG,
+      useValue: modelsWebApplicationTabsConfiguration,
+    },
     {
       provide: APP_INITIALIZER,
       useFactory: () => configureAce,

@@ -1,11 +1,11 @@
-@use '@angular/material' as mat;
+@use '@angular/material' as material;
 @import '../../../styles/variables.scss';
 
 $row-padding: 8px;
 
 // The filter is a borderless field above the table.
 .example-chip-list {
-  @include mat.form-field-overrides(
+  @include material.form-field-overrides(
     (
       filled-container-color: transparent,
       filled-active-indicator-color: transparent,

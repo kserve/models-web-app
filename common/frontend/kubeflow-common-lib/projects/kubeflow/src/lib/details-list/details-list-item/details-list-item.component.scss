@@ -1,4 +1,4 @@
-@use '@angular/material' as mat;
+@use '@angular/material' as material;
 :host {
   display: block;
 }
@@ -22,7 +22,7 @@
 }
 
 .chip-list-wa .list-chip {
-  @include mat.chips-overrides(
+  @include material.chips-overrides(
     (
       container-height: 24px,
     )

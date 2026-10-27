@@ -1,4 +1,9 @@
-import { Component, OnInit, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { GrafanaService } from 'src/app/services/grafana.service';
 import { ConfigService } from 'src/app/services/config.service';
 import { InferenceServiceStatus } from 'src/app/types/kfserving/v1beta1';
@@ -6,8 +11,10 @@ import { GrafanaIframeConfig } from 'src/app/types/grafana';
 import { AppConfig } from 'src/app/types/config';
 
 @Component({
+  standalone: false,
   selector: 'app-metrics',
   templateUrl: './metrics.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./metrics.component.scss'],
 })
 export class MetricsComponent implements OnInit {

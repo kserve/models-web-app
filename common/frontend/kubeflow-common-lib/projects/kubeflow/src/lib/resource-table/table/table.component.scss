@@ -1,12 +1,29 @@
+@use '@angular/material' as material;
 @import '../../../styles/variables.scss';
 
 $row-padding: 8px;
+
+// The filter is a borderless field above the table.
+.example-chip-list {
+  @include material.form-field-overrides(
+    (
+      filled-container-color: transparent,
+      filled-active-indicator-color: transparent,
+      filled-hover-active-indicator-color: transparent,
+      filled-focus-active-indicator-color: transparent,
+      filled-active-indicator-height: 0,
+      filled-focus-active-indicator-height: 0,
+      hover-state-layer-opacity: 0,
+      focus-state-layer-opacity: 0,
+    )
+  );
+}
 
 :host {
   display: block;
 }
 
-.grey {
+th.mat-mdc-header-cell.grey {
   background-color: rgb(245, 245, 245);
 }
 
@@ -32,21 +49,21 @@ tr th.right-align {
   max-width: 20px;
 }
 
-th.mat-header-cell {
+th.mat-mdc-header-cell {
   padding-right: $row-padding;
   padding-left: $row-padding;
 }
 
-td.mat-cell {
+td.mat-mdc-cell {
   padding-right: $row-padding;
   padding-left: $row-padding;
 }
 
-.mat-row:hover {
+.mat-mdc-row:hover {
   background-color: rgb(245, 245, 245);
 }
 
-.mat-row:hover .link {
+.mat-mdc-row:hover .link {
   text-decoration: underline;
 }
 
@@ -70,7 +87,7 @@ lib-action {
   height: 40px;
 }
 
-.mat-form-field {
+.mat-mdc-form-field {
   width: 100%;
 }
 

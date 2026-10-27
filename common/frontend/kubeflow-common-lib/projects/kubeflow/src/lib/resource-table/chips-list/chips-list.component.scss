@@ -1,3 +1,8 @@
+@use '@angular/material' as material;
 .chip-list-wa .list-chip {
-  min-height: 24px;
+  @include material.chips-overrides(
+    (
+      container-height: 24px,
+    )
+  );
 }

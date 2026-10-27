@@ -1,4 +1,9 @@
-import { Component, Input, HostBinding } from '@angular/core';
+import {
+  Component,
+  Input,
+  HostBinding,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { GrafanaService } from 'src/app/services/grafana.service';
 import { Observable, of, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
@@ -14,8 +19,10 @@ const defaultIframeConfig: GrafanaIframeConfig = {
 };
 
 @Component({
+  standalone: false,
   selector: 'app-grafana-graph',
   templateUrl: './grafana-graph.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./grafana-graph.component.scss'],
 })
 export class GrafanaGraphComponent {

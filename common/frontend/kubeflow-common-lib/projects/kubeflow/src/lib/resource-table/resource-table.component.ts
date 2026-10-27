@@ -1,4 +1,11 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Observable } from 'rxjs';
 import { MatTableDataSource } from '@angular/material/table';
 import {
@@ -14,8 +21,10 @@ import {
 } from './types';
 
 @Component({
+  standalone: false,
   selector: 'lib-resource-table',
   templateUrl: './resource-table.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./resource-table.component.scss'],
 })
 export class ResourceTableComponent implements OnInit {

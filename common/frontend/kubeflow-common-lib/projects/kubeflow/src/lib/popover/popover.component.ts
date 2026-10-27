@@ -7,6 +7,7 @@ import {
   ChangeDetectorRef,
   HostBinding,
   ViewEncapsulation,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 import { TemplatePortal } from '@angular/cdk/portal';
@@ -22,9 +23,11 @@ export class PopoverTemplatePortal<C> extends TemplatePortal<C> {
 }
 
 @Component({
+  standalone: false,
   selector: 'lib-popover',
   templateUrl: './popover.component.html',
   styleUrls: ['./popover.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   encapsulation: ViewEncapsulation.None,
 })
 export class PopoverComponent {

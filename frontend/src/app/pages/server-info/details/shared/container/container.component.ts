@@ -1,9 +1,11 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { V1Container } from '@kubernetes/client-node';
 import { ListEntry, ChipDescriptor } from 'kubeflow';
 
 @Component({
+  standalone: false,
   selector: 'app-container-details',
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './container.component.html',
 })
 export class ContainerComponent {

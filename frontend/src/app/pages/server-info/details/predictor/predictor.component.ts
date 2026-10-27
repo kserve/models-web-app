@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import {
   PredictorSpec,
   PredictorExtensionSpec,
@@ -10,7 +10,9 @@ import {
 } from 'src/app/shared/utils';
 
 @Component({
+  standalone: false,
   selector: 'app-predictor-details',
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './predictor.component.html',
 })
 export class PredictorDetailsComponent {

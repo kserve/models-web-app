@@ -381,6 +381,8 @@ describe('Models Web App - Namespace Configuration Tests', () => {
       cy.get('lib-table', { timeout: 10000 }).within(() => {
         cy.contains('No rows to display').should('be.visible');
       });
+      // The select panel must finish its closing animation before it reopens.
+      cy.get('mat-option').should('not.exist');
 
       cy.get('app-namespace-select').within(() => {
         cy.get('mat-select').click();

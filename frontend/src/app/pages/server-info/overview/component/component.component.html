@@ -45,25 +45,41 @@
 
   <lib-conditions-table
     *ngIf="ownedObjs?.knativeService?.status"
-    [conditions]="ownedObjs?.knativeService?.status?.conditions"
+    [conditions]="
+      $safeNavigationMigration(
+        $safeNavigationMigration(ownedObjs?.knativeService?.status?.conditions)
+      )
+    "
     title="Service"
   ></lib-conditions-table>
 
   <lib-conditions-table
     *ngIf="ownedObjs?.route?.status"
-    [conditions]="ownedObjs?.route?.status?.conditions"
+    [conditions]="
+      $safeNavigationMigration(
+        $safeNavigationMigration(ownedObjs?.route?.status?.conditions)
+      )
+    "
     title="Route"
   ></lib-conditions-table>
 
   <lib-conditions-table
     *ngIf="ownedObjs?.configuration?.status"
-    [conditions]="ownedObjs?.configuration?.status?.conditions"
+    [conditions]="
+      $safeNavigationMigration(
+        $safeNavigationMigration(ownedObjs?.configuration?.status?.conditions)
+      )
+    "
     title="Configuration"
   ></lib-conditions-table>
 
   <lib-conditions-table
     *ngIf="ownedObjs?.revision?.status"
-    [conditions]="ownedObjs?.revision?.status?.conditions"
+    [conditions]="
+      $safeNavigationMigration(
+        $safeNavigationMigration(ownedObjs?.revision?.status?.conditions)
+      )
+    "
     title="Revision"
   ></lib-conditions-table>
 </lib-advanced-options>

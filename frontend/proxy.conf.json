@@ -7,5 +7,10 @@
     "target": "http://localhost:8300",
     "pathRewrite": { "^/grafana": "" },
     "secure": false
+  },
+  "/static/assets": {
+    "target": "http://localhost:4200",
+    "pathRewrite": { "^/static": "" },
+    "secure": false
   }
 }

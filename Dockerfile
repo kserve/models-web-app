@@ -8,7 +8,7 @@ COPY ./common/backend/ ./
 RUN python setup.py sdist bdist_wheel
 
 # --- Build the frontend kubeflow library ---
-FROM node:22-bookworm-slim AS frontend-kubeflow-lib
+FROM node:26-bookworm-slim AS frontend-kubeflow-lib
 
 WORKDIR /src
 COPY ./common/frontend/kubeflow-common-lib/package*.json ./
@@ -18,13 +18,14 @@ COPY ./common/frontend/kubeflow-common-lib/ ./
 RUN npm run build
 
 # --- Build the frontend ---
-FROM node:22-bookworm-slim AS frontend
+FROM node:26-bookworm-slim AS frontend
 
 WORKDIR /src
 COPY ./frontend/package*.json ./
 
-ENV NODE_OPTIONS=--openssl-legacy-provider
-RUN npm install --legacy-peer-deps
+# The image only builds the application; the end-to-end test runner is not needed.
+ENV CYPRESS_INSTALL_BINARY=0
+RUN npm ci --no-audit
 COPY --from=frontend-kubeflow-lib /src/dist/kubeflow/ ./node_modules/kubeflow/
 
 COPY ./frontend/ .

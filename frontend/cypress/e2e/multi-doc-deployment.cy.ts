@@ -146,7 +146,7 @@ spec:
     setComponentState(yaml);
     clickSubmit();
 
-    cy.get('.mat-snack-bar-container', { timeout: 10000 })
+    cy.get('.mat-mdc-snack-bar-container', { timeout: 10000 })
       .should('be.visible')
       .invoke('text')
       .should('match', /unsupported resource/i);
@@ -210,7 +210,7 @@ spec:
         expect(body.failedDocumentIndex).to.eq(2);
         expect(body.createdResources).to.have.length(1);
       });
-    cy.get('.mat-snack-bar-container', { timeout: 10000 }).should('be.visible');
+    cy.get('.mat-mdc-snack-bar-container', { timeout: 10000 }).should('be.visible');
     cy.url().should('include', '/new');
   });
 });

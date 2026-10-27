@@ -198,7 +198,7 @@ describe('Models Web App - LLMInferenceService Tests', () => {
     cy.contains('PresetsCombined', { timeout: 10000 }).should('be.visible');
     cy.contains('ConfigNotFound', { timeout: 10000 }).should('be.visible');
 
-    cy.contains('.mat-tab-label', 'YAML').click();
+    cy.contains('.mat-mdc-tab', 'YAML').click();
     cy.get('.yaml-content', { timeout: 10000 }).should(
       'contain.text',
       testServiceName,

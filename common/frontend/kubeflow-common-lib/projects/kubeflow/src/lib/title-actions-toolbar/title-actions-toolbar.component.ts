@@ -4,12 +4,15 @@ import {
   EventEmitter,
   Output,
   HostBinding,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { ToolbarButton } from './types';
 
 @Component({
+  standalone: false,
   selector: 'lib-title-actions-toolbar',
   templateUrl: './title-actions-toolbar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./title-actions-toolbar.component.scss'],
 })
 export class TitleActionsToolbarComponent {

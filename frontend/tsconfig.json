@@ -1,22 +1,23 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
     "paths": {
-    "kubeflow": ["node_modules/kubeflow"],
-    "kubeflow/*": ["node_modules/kubeflow/*"]
+      "kubeflow": ["./node_modules/kubeflow"],
+      "kubeflow/*": ["./node_modules/kubeflow/*"],
+      "src/*": ["./src/*"]
     },
+    "rootDir": "./",
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,
-    "downlevelIteration": true,
     "experimentalDecorators": true,
-    "module": "es2020",
-    "moduleResolution": "node",
+    "module": "es2022",
+    "moduleResolution": "bundler",
     "importHelpers": true,
-    "target": "es2020",
-    "typeRoots": ["node_modules/@types"],
-    "lib": ["es2020", "dom"],
+    "target": "es2022",
+    "useDefineForClassFields": false,
+    "strict": false,
+    "lib": ["es2022", "dom"],
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -24,8 +25,7 @@
     "noFallthroughCasesInSwitch": false
   },
   "angularCompilerOptions": {
-    "fullTemplateTypeCheck": true,
-    "strictInjectionParameters": true,
-    "enableIvy": true
+    "strictTemplates": false,
+    "strictInjectionParameters": true
   }
 }

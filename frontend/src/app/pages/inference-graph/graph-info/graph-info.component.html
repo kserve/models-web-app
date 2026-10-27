@@ -41,7 +41,11 @@
             </lib-details-list-item>
             <lib-details-list-item key="Created">
               <lib-date-time
-                [date]="inferenceGraph.metadata?.creationTimestamp"
+                [date]="
+                  $safeNavigationMigration(
+                    inferenceGraph.metadata?.creationTimestamp
+                  )
+                "
               ></lib-date-time>
             </lib-details-list-item>
             <lib-details-list-item key="URL" *ngIf="inferenceGraph.status?.url">

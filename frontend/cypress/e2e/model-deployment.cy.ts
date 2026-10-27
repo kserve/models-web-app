@@ -268,7 +268,7 @@ spec:
       // Either navigated away from /new OR submission completed
       if (url.includes('/new')) {
         // If still on /new, check for success message or completion
-        cy.get('.mat-snack-bar-container', { timeout: 5000 })
+        cy.get('.mat-mdc-snack-bar-container', { timeout: 5000 })
           .should('be.visible')
           .then($el => {
             const text = $el.text();
@@ -312,7 +312,7 @@ metadata:
       .click({ force: true });
 
     // Should show error message in snackbar (check for YAML parsing error)
-    cy.get('.mat-snack-bar-container', { timeout: 10000 })
+    cy.get('.mat-mdc-snack-bar-container', { timeout: 10000 })
       .should('be.visible')
       .and($el => {
         const text = $el.text().toLowerCase();
@@ -362,7 +362,7 @@ spec:
       .click({ force: true });
 
     // Should show error message in snackbar
-    cy.get('.mat-snack-bar-container', { timeout: 10000 }).should('be.visible');
+    cy.get('.mat-mdc-snack-bar-container', { timeout: 10000 }).should('be.visible');
 
     // Should stay on the same page
     cy.url().should('include', '/new');

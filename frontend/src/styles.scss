@@ -1,10 +1,14 @@
 /* You can add global styles to this file, and also import other style files */
-@import '@angular/material/theming';
 @import './styles/styles.scss';
 
 // Give some space after each input
 mat-form-field {
   margin-bottom: 1rem;
+}
+
+// Tab labels keep the minimum width of the former Material tabs.
+.mat-mdc-tab.mdc-tab {
+  min-width: 160px;
 }
 
 body {

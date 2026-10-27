@@ -1,9 +1,16 @@
-import { Component, OnInit, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { AbstractControl, Validators } from '@angular/forms';
 
 @Component({
+  standalone: false,
   selector: 'lib-positive-number-input',
   templateUrl: './positive-number-input.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./positive-number-input.component.scss'],
 })
 export class PositiveNumberInputComponent implements OnInit {

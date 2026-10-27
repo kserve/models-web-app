@@ -12,6 +12,7 @@ import {
   SimpleChanges,
   OnChanges,
   NgZone,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { EditorLoaderService } from '../services/frontend/editor-loader.service';
@@ -24,8 +25,10 @@ interface MonacoOptions {
 }
 
 @Component({
+  standalone: false,
   selector: 'lib-monaco-editor',
   templateUrl: './editor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./editor.component.scss'],
 })
 export class EditorComponent implements AfterViewInit, OnDestroy, OnChanges {

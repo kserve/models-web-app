@@ -7,8 +7,9 @@
       "node"
     ],
     "paths": {
-      "kubeflow": ["__mocks__/kubeflow.ts"],
-      "kubeflow/*": ["__mocks__/kubeflow.ts"]
+      "kubeflow": ["./__mocks__/kubeflow.ts"],
+      "kubeflow/*": ["./__mocks__/kubeflow.ts"],
+      "src/*": ["./src/*"]
     }
   },
   "files": [

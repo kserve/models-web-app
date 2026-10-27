@@ -1,4 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { MWABackendService } from 'src/app/services/backend.service';
 import { MWANamespaceService } from 'src/app/services/mwa-namespace.service';
 import {
@@ -27,7 +32,9 @@ import { defaultConfig, generateDeleteConfig } from './config';
 import { Router } from '@angular/router';
 
 @Component({
+  standalone: false,
   selector: 'app-inference-graph',
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './inference-graph.component.html',
 })
 export class InferenceGraphComponent implements OnInit, OnDestroy {

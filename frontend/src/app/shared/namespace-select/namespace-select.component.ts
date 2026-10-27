@@ -1,4 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
 import {
   MWANamespaceService,
@@ -6,8 +11,10 @@ import {
 } from '../../services/mwa-namespace.service';
 
 @Component({
+  standalone: false,
   selector: 'app-namespace-select',
   templateUrl: './namespace-select.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./namespace-select.component.scss'],
 })
 export class NamespaceSelectComponent implements OnInit, OnDestroy {

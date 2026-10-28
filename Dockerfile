@@ -8,7 +8,7 @@ COPY ./common/backend/ ./
 RUN python setup.py sdist bdist_wheel
 
 # --- Build the frontend kubeflow library ---
-FROM node:26-bookworm-slim AS frontend-kubeflow-lib
+FROM --platform=$BUILDPLATFORM node:26-bookworm-slim AS frontend-kubeflow-lib
 
 WORKDIR /src
 COPY ./common/frontend/kubeflow-common-lib/package*.json ./
@@ -18,7 +18,7 @@ COPY ./common/frontend/kubeflow-common-lib/ ./
 RUN npm run build
 
 # --- Build the frontend ---
-FROM node:26-bookworm-slim AS frontend
+FROM --platform=$BUILDPLATFORM node:26-bookworm-slim AS frontend
 
 WORKDIR /src
 COPY ./frontend/package*.json ./

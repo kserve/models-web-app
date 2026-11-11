@@ -101,11 +101,36 @@ def _standard_inference_service():
     }
 
 
-class StandardComponentLatestPodTest(unittest.TestCase):
+class ComponentPodLookupTest(unittest.TestCase):
     def setUp(self):
         self.list_namespaced_pod = utils.api.v1_core.list_namespaced_pod
         self.list_namespaced_pod.reset_mock()
         utils.api.list_pods.reset_mock()
+
+    def test_serverless_inference_service_uses_the_knative_revision_pod(self):
+        revision_pod = _pod("sklearn-iris-predictor-00001-deployment-a", 1)
+        revision_pod.metadata.labels = {
+            "serving.knative.dev/revision": "sklearn-iris-predictor-00001"
+        }
+        utils.api.list_pods.return_value = types.SimpleNamespace(items=[revision_pod])
+        serverless_inference_service = {
+            "metadata": {"name": "sklearn-iris", "namespace": "kubeflow-user"},
+            "status": {
+                "components": {
+                    "predictor": {
+                        "latestCreatedRevision": "sklearn-iris-predictor-00001"
+                    }
+                }
+            },
+        }
+
+        latest_pod = utils.get_component_latest_pod(
+            serverless_inference_service, "predictor"
+        )
+
+        self.assertIs(latest_pod, revision_pod)
+        utils.api.list_pods.assert_called_once_with("kubeflow-user", auth=False)
+        self.list_namespaced_pod.assert_not_called()
 
     def test_selects_pods_by_kserve_inference_service_and_component_labels(self):
         self.list_namespaced_pod.return_value = types.SimpleNamespace(

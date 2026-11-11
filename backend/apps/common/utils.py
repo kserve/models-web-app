@@ -9,6 +9,7 @@ from . import versions
 log = logging.getLogger(__name__)
 
 KNATIVE_REVISION_LABEL = "serving.knative.dev/revision"
+INFERENCE_SERVICE_POD_LABEL = "serving.kserve.io/inferenceservice"
 LATEST_CREATED_REVISION = "latestCreatedRevision"
 FILE_ABS_PATH = os.path.abspath(os.path.dirname(__file__))
 
@@ -40,7 +41,7 @@ def get_standard_inference_service_pods(svc, components=[]):
     """
     namespace = svc["metadata"]["namespace"]
     svc_name = svc["metadata"]["name"]
-    label_selector = "serving.kubeflow.org/inferenceservice={}".format(svc_name)
+    label_selector = "{}={}".format(INFERENCE_SERVICE_POD_LABEL, svc_name)
     pods = api.v1_core.list_namespaced_pod(
         namespace, label_selector=label_selector
     ).items
@@ -367,6 +368,9 @@ def get_component_latest_pod(
     """
     namespace = svc["metadata"]["namespace"]
 
+    if is_standard_deployment(svc):
+        return get_standard_component_latest_pod(svc, component)
+
     latest_revision = get_component_latest_revision(svc, component)
 
     if latest_revision is None:
@@ -385,6 +389,30 @@ def get_component_latest_pod(
 
     log.info(f"No pods are found for inference service: {svc['metadata']['name']}")
     return None
+
+
+def get_standard_component_latest_pod(
+    svc: Dict, component: str
+) -> Union[api.client.V1Pod, None]:
+    """Get the most recently created pod of a Standard InferenceService component.
+
+    Return:
+        Latest pod: k8s V1Pod
+    """
+    namespace = svc["metadata"]["namespace"]
+    name = svc["metadata"]["name"]
+    label_selector = "{}={},component={}".format(
+        INFERENCE_SERVICE_POD_LABEL, name, component
+    )
+    pods = api.v1_core.list_namespaced_pod(
+        namespace, label_selector=label_selector
+    ).items
+
+    if not pods:
+        log.info(f"No pods are found for inference service: {name}")
+        return None
+
+    return max(pods, key=lambda pod: pod.metadata.creation_timestamp)
 
 
 def get_component_latest_revision(svc: Dict, component: str) -> Union[str, None]:
